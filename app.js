@@ -1,13 +1,19 @@
 //imports
-import express from "express";
-import http from "http";
-import { PORT } from "./config/keys";
-import { mongoConnect } from "./config/mongo";
-import cors from "cors";
-import socket from "socket.io";
-import roomModel from "./models/room";
-import { doLeaveTable, doLeaveWatcher } from "./functions/functions";
-import { updateInGameStatus } from "./firestore/dbFetch";
+import express from 'express';
+import http from 'http';
+import { PORT } from './config/keys';
+import { mongoConnect } from './config/mongo';
+import cors from 'cors';
+import passport from 'passport';
+import socket from 'socket.io';
+import roomModel from './models/room';
+import { doLeaveTable, doLeaveWatcher } from './functions/functions';
+import { updateInGameStatus } from './firestore/dbFetch';
+import jwtStrategy from './landing-server/config/jwtstragety';
+import {
+  successHandler,
+  errorHandler as morganErrorHandler,
+} from './landing-server/config/morgan.js';
 
 let app = express();
 const server = http.createServer(app);
@@ -16,17 +22,17 @@ const io = socket(server, {
   pingTimeout: 5000,
 });
 const whitelist = [
-  "https://beta.las-vegas.com",
-  "https://las-vegas.com",
-  "http://localhost:3000",
-  "http://localhost:3001",
+  'https://beta.las-vegas.com',
+  'https://las-vegas.com',
+  'http://localhost:3000',
+  'http://localhost:3001',
 ];
 const corsOptions = {
   origin: function (origin, callback) {
     if (whitelist.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      callback("Not allowed by CORS");
+      callback('Not allowed by CORS');
     }
   },
 };
@@ -39,29 +45,40 @@ app.use(
 );
 app.use(cors());
 mongoConnect();
-require("./socketconnection/socketconnection")(io);
 
-app.get("/checkTableExist/:tableId", async (req, res) => {
+// Auth functions
+// jwt authentication
+app.use(passport.initialize());
+passport.use('jwt', jwtStrategy);
+
+if (process.env.ENVIROMENT !== 'test') {
+  app.use(successHandler);
+  app.use(morganErrorHandler);
+}
+
+require('./socketconnection/socketconnection')(io);
+
+app.get('/checkTableExist/:tableId', async (req, res) => {
   try {
     const { tableId } = req.params;
     const room = await roomModel.findOne({ tableId });
     if (room) {
       res.status(200).send({
         success: true,
-        error: "no-error",
+        error: 'no-error',
       });
     } else {
       res.status(404).send({
         success: false,
-        error: "Table not found",
+        error: 'Table not found',
       });
     }
   } catch (error) {
-    console.log("Error in Poker game server =>", error);
+    console.log('Error in Poker game server =>', error);
   }
 });
 
-app.get("/rescueTable/:tableId", async (req, res) => {
+app.get('/rescueTable/:tableId', async (req, res) => {
   try {
     const { tableId } = req.params;
     const room = await roomModel.findOne({ tableId });
@@ -101,7 +118,7 @@ app.get("/rescueTable/:tableId", async (req, res) => {
         let payload = {
           gameColl: room.gameType,
           tableId: room.tableId,
-          buyIn: room.gameType === "pokerTournament_Tables" ? room.maxchips : 0,
+          buyIn: room.gameType === 'pokerTournament_Tables' ? room.maxchips : 0,
           playerCount: player.length,
           users: users,
           adminUid: room.hostId,
@@ -109,49 +126,49 @@ app.get("/rescueTable/:tableId", async (req, res) => {
         res.status(200).send({
           stuckTable: payload,
           success: true,
-          error: "no-error",
+          error: 'no-error',
         });
       } else {
         res.status(404).send({
           success: false,
-          error: "Table exist and its running in game",
+          error: 'Table exist and its running in game',
         });
       }
     } else {
       res.status(404).send({
         success: false,
-        error: "Table not Found",
+        error: 'Table not Found',
       });
     }
   } catch (error) {
-    console.log("Error in rescueTable api", error);
+    console.log('Error in rescueTable api', error);
     res.status(500).send({
       success: false,
-      error: "Internal server error",
+      error: 'Internal server error',
     });
   }
 });
 
-app.get("/deleteStuckTable/:tableId", async (req, res) => {
+app.get('/deleteStuckTable/:tableId', async (req, res) => {
   try {
     const { tableId } = req.params;
     const room = await roomModel.deleteOne({ tableId });
     if (room) {
       res.status(200).send({
         success: true,
-        error: "no-error",
+        error: 'no-error',
       });
     } else {
       res.status(404).send({
         success: false,
-        error: "Table not found",
+        error: 'Table not found',
       });
     }
   } catch (error) {
-    console.log("Error in Poker game delete table api =>", error);
+    console.log('Error in Poker game delete table api =>', error);
   }
 });
-app.get("/leaveGame/:tableId/:userId", async (req, res) => {
+app.get('/leaveGame/:tableId/:userId', async (req, res) => {
   try {
     const { tableId, userId } = req.params;
     let roomdata = await roomModel
@@ -182,14 +199,14 @@ app.get("/leaveGame/:tableId/:userId", async (req, res) => {
       }
     }
   } catch (error) {
-    console.log("Error in checkUserInGame api", error);
+    console.log('Error in checkUserInGame api', error);
     res.status(500).send({
       success: false,
-      error: "Internal server error",
+      error: 'Internal server error',
     });
   }
 });
-app.get("/checkUserInGame/:userId", async (req, res) => {
+app.get('/checkUserInGame/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const room = await roomModel.findOne({
@@ -207,7 +224,7 @@ app.get("/checkUserInGame/:userId", async (req, res) => {
     ) {
       res.status(200).send({
         success: false,
-        gameStatus: "InGame",
+        gameStatus: 'InGame',
         link: `${req.baseUrl}/poker/index.html?tableid=${room.tableId}&gameCollection=${room.gameType}#/`,
         leaveTableUrl: `https://poker-server-t3e66zpola-uc.a.run.app/leaveGame/${room.tableId}/${userId}`,
       });
@@ -215,14 +232,14 @@ app.get("/checkUserInGame/:userId", async (req, res) => {
       updateInGameStatus(userId);
       res.status(200).send({
         success: true,
-        gameStatus: "online",
+        gameStatus: 'online',
       });
     }
   } catch (error) {
-    console.log("Error in checkUserInGame api", error);
+    console.log('Error in checkUserInGame api', error);
     res.status(500).send({
       success: false,
-      error: "Internal server error",
+      error: 'Internal server error',
     });
   }
 });
