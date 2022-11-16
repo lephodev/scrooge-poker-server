@@ -4,7 +4,7 @@ import http from 'http';
 import { PORT } from './config/keys';
 import { mongoConnect } from './config/mongo';
 import cors from 'cors';
-import passport from 'passport';
+import passport, { authenticate } from 'passport';
 import socket from 'socket.io';
 import roomModel from './models/room';
 import { doLeaveTable, doLeaveWatcher } from './functions/functions';
@@ -14,6 +14,8 @@ import {
   successHandler,
   errorHandler as morganErrorHandler,
 } from './landing-server/config/morgan.js';
+import pokerRoute from './routes/pokerRoutes.js';
+import auth from './landing-server/middlewares/auth.js';
 
 let app = express();
 const server = http.createServer(app);
@@ -168,6 +170,7 @@ app.get('/deleteStuckTable/:tableId', async (req, res) => {
     console.log('Error in Poker game delete table api =>', error);
   }
 });
+
 app.get('/leaveGame/:tableId/:userId', async (req, res) => {
   try {
     const { tableId, userId } = req.params;
@@ -206,6 +209,7 @@ app.get('/leaveGame/:tableId/:userId', async (req, res) => {
     });
   }
 });
+
 app.get('/checkUserInGame/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
@@ -243,5 +247,8 @@ app.get('/checkUserInGame/:userId', async (req, res) => {
     });
   }
 });
+
+app.use('/poker', auth(), pokerRoute);
+
 //server
 server.listen(PORT, () => console.log(`server running on port ${PORT}`));

@@ -67,6 +67,14 @@ const userSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    wallet: {
+      type: Number,
+      default: 0,
+    },
+    termsAccept: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
