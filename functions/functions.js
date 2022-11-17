@@ -27,6 +27,8 @@ import {
   updateInGameStatus,
 } from "../firestore/dbFetch";
 import BetModal from "../models/betModal";
+import gameService from "../service/game.service";
+import userService from "../service/user.service";
 var Hand = require("pokersolver").Hand;
 const admin = require("firebase-admin");
 //checking if request body is valid
@@ -7108,5 +7110,52 @@ export const finishHandApiCall = async (room, userId) => {
   } catch (err) {
     console.log("Error in finishHand APi call =>", err.message);
     return false;
+  }
+};
+
+
+// NEW functions
+export const checkForGameTable = async (data, socket, io) => {
+  try {
+    const { gameId, userId } = data;
+    const game = await gameService.getGameById(gameId);
+    console.log({userId, game})
+    if (!game || game.finish) {
+      return socket.emit('notFound', { message: 'Game not found. Either game is finished or not exist' });
+    }
+    let lastSocketData = io.room;
+    lastSocketData.push({ gameId, pretimer: false });
+    io.room = [...new Set(lastSocketData.map((ele) => ele.room))].map((el) => ({ room: el, pretimer: false }));
+    socket.customRoom = gameId;
+
+    const user = await userService.getUserById(userId);
+    if (!user) {
+      return socket.emit('notAuthorized', { message: 'You are not authorized' });
+    }
+    lastSocketData = io.users;
+    lastSocketData.push(userId);
+    io.users = [...new Set(lastSocketData)];
+    socket.customId = userId;
+    
+  // if user is already in the room
+    if (game.players.find((el) => el.id.toString() === userId.toString())) {
+      socket.join(gameId);
+      io.in(gameId).emit('updateGame', { game });
+      return;
+    } 
+    // If user is not in the room
+    const updatedRoom = await gameService.joinRoomByUserId(game, userId);
+    console.log({updatedRoom})
+    if(updatedRoom){
+      socket.join(gameId);
+      io.in(gameId).emit('updateGame', { game : updatedRoom});
+      return;
+    }
+ 
+    socket.emit('notInvited', { message: 'Your are not invited.' });
+    
+  } catch (error) {
+    console.log('Error in check for table =>', error);
+    socket.emit('socketError', error.message);
   }
 };

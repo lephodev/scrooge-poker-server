@@ -1,5 +1,5 @@
 import {
-  verifyJwt,
+  checkForGameTable,
   socketDoFold,
   socketDoCall,
   socketDoBet,
@@ -51,71 +51,10 @@ let returnSocket = (io) => {
     });
 
     socket.on('checkTable', async (data) => {
-      console.log('User checktable', data);
+      console.log('CHECK TABLE')
+      console.log('One user connected', data.userId);
       try {
-        let userId = data.userId;
-        if (!data.userId && data.token) {
-          userId = await getUserId(data.token);
-          socket.emit('userId', userId);
-        } else {
-          userId = data.userId;
-        }
-        let room = data.tableId;
-        if (!room) return;
-        let res, userData;
-        if (room !== 'undefined') {
-          // console.log('Rmmm : ', room);
-          if (room) {
-            res = await getDoc(data.gameType, room);
-            if (!res) {
-              return socket.emit('noTable', 'there is no such table exist');
-            }
-            //code for notification
-            let socketid = socket.id;
-
-            // console.log('frm cnnect:', io.room);
-            // code for online users
-            let lastSocketData = io.room;
-            lastSocketData.push(room);
-            io.room = [...new Set(lastSocketData)];
-            console.log('io.room =>', io.room);
-            socket.customRoom = room;
-          }
-          // console.log(
-          //   'connectedUser Rmmmmm',
-          //   socket.id,
-          //   socket.customId,
-          //   socket.customRoom,
-          // );
-        }
-        if (userId && userId !== 'undefined') {
-          userData = await getDoc('users', userId);
-          if (userData) {
-            userData.userid = userId;
-            res.roomid = data.tableId;
-            //code for notification
-            let socketid = socket.id;
-
-            // console.log('User: ', io.users);
-            // code for online users
-            let lastSocketData = io.users;
-            lastSocketData.push(userData.userid);
-            io.users = [...new Set(lastSocketData)];
-            socket.customId = userData.userid;
-            console.log('Io.users=>', io.users);
-            let payload = {
-              user: userData,
-              room: res,
-              gameType: data.gameType,
-            };
-            socket.join(res.roomid.toString());
-            await checkRoomForConnectedUser(payload, socket, io);
-          } else {
-            socket.emit('notAuthorized', '');
-          }
-        } else {
-          socket.emit('notAuthorized', '');
-        }
+        await checkForGameTable(data, socket, io);
       } catch (err) {
         console.log('Error in checkTable =>', err.message);
       }

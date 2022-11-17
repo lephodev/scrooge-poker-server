@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import User from '../landing-server/models/user.model.js';
 import roomModel from './../models/room.js';
 
+const img = 'https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg'
+
 export const getDocument = async (req, res) => {
   try {
     const { coll, id } = req.params;
@@ -20,21 +22,37 @@ export const getDocument = async (req, res) => {
 
 export const createTable = async (req, res) => {
   try {
-    const { gameName, public: gameType, minChips, timer } = req.body;
+    const { gameName, public: isPublic, minchips } = req.body;
     const userData = req.user;
+    const {username, wallet, email, _id, avatar} = userData;
+    const timer = 15;
 
-    await roomModel.create({
+    const roomData = await roomModel.create({
       gameName,
-      public: gameType,
+      public: isPublic,
       smallBlind: minchips / 2,
-      bigblind: minChips,
+      bigblind: minchips,
       timer,
       hostId: userData._id,
-      players: [],
+      players: [{
+        name: username,
+        userid: _id,
+        id:_id,
+        photoURI: avatar || img,
+        wallet: wallet,
+        position: 0,
+        missedSmallBlind: false,
+        missedBigBlind: false,
+        forceBigBlind: false,
+        playing: true,
+        initialCoinBeforeStart: wallet,
+        gameJoinedAt: new Date(),
+        hands: [],
+      }],
     });
 
-    console.log({ gameName, gameType, minchips, userData });
-    res.status(200).send({});
+  
+    res.status(200).send({roomData});
   } catch (error) {
     res.status(500).send({ message: 'Internal server error' });
   }

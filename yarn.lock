@@ -278,7 +278,7 @@
     "chalk" "^2.0.0"
     "js-tokens" "^4.0.0"
 
-"@babel/node@^7.4.5":
+"@babel/node@^7.20.2":
   "integrity" "sha512-s4zKG8fccCpqXEXxSkzE8vAREefRneatdGfNQDPqikTTpQmWF4Bt1OTZ9r8GghKJSeNEgRJwbI5ZSmGBQLvAEQ=="
   "resolved" "https://registry.npmjs.org/@babel/node/-/node-7.20.2.tgz"
   "version" "7.20.2"
@@ -958,11 +958,6 @@
   "resolved" "https://registry.npmjs.org/@firebase/app-types/-/app-types-0.6.2.tgz"
   "version" "0.6.2"
 
-"@firebase/app-types@0.x":
-  "integrity" "sha512-p75Ow3QhB82kpMzmOntv866wH9eZ3b4+QbUY+8/DA5Zzdf1c8Nsk8B7kbFpzJt4wwHMdy5LTF5YUnoTc1JiWkw=="
-  "resolved" "https://registry.npmjs.org/@firebase/app-types/-/app-types-0.8.1.tgz"
-  "version" "0.8.1"
-
 "@firebase/auth-interop-types@0.1.6":
   "integrity" "sha512-etIi92fW3CctsmR9e3sYM3Uqnoq861M0Id9mdOPF6PWIg38BXL5k4upCNBggGUpLIS0H1grMOvy/wn1xymwe2g=="
   "resolved" "https://registry.npmjs.org/@firebase/auth-interop-types/-/auth-interop-types-0.1.6.tgz"
@@ -1233,11 +1228,11 @@
     "ws" "^7.0.0"
 
 "@pm2/pm2-version-check@latest":
-  "integrity" "sha512-SBuYsh+o35knItbRW97vl5/5nEc5c5DYP7PxjyPLOfmm9bMaDsVeATXjXMBy6+KLlyrYWHZxGbfXe003NnHClg=="
-  "resolved" "https://registry.npmjs.org/@pm2/pm2-version-check/-/pm2-version-check-1.0.3.tgz"
-  "version" "1.0.3"
+  "integrity" "sha512-SXsM27SGH3yTWKc2fKR4SYNxsmnvuBQ9dd6QHtEWmiZ/VqaOYPAIlS8+vMcn27YLtAEBGvNRSh3TPNvtjZgfqA=="
+  "resolved" "https://registry.npmjs.org/@pm2/pm2-version-check/-/pm2-version-check-1.0.4.tgz"
+  "version" "1.0.4"
   dependencies:
-    "debug" "^4.1.1"
+    "debug" "^4.3.1"
 
 "@protobufjs/aspromise@^1.1.1", "@protobufjs/aspromise@^1.1.2":
   "integrity" "sha1-m4sMxmPWaafY9vXQiToU00jzD78= sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ=="
@@ -2764,7 +2759,7 @@
   dependencies:
     "ms" "2.1.2"
 
-"debug@^4.3.0":
+"debug@^4.3.0", "debug@^4.3.1":
   "integrity" "sha512-doEwdvm4PCeK4K3RQN2ZC2BYUBaxwLARCqZmMjtF8a51J2Rb0xpVloFRnCODwqjpwnAoao4pelN8l3RJdv3gRQ=="
   "resolved" "https://registry.npmjs.org/debug/-/debug-4.3.1.tgz"
   "version" "4.3.1"
@@ -3298,11 +3293,6 @@
   "integrity" "sha1-FQStJSMVjKpA20onh8sBQRmU6k8= sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw=="
   "resolved" "https://registry.npmjs.org/fs.realpath/-/fs.realpath-1.0.0.tgz"
   "version" "1.0.0"
-
-"fsevents@~2.3.1":
-  "integrity" "sha512-YR47Eg4hChJGAB1O3yEAOkGO+rlzutoICGqGo9EZ4lKWokzZRSyIW1QmTzqjtw8MJdj9srP869CuWw/hyzSiBw=="
-  "resolved" "https://registry.npmjs.org/fsevents/-/fsevents-2.3.1.tgz"
-  "version" "2.3.1"
 
 "ftp@~0.3.10":
   "integrity" "sha1-kZfYYa2BQvPmPVqDv+TFn3MwiF0= sha512-faFVML1aBx2UoDStmLwv2Wptt4vw5x03xxX172nhA5Y5HBshW5JweqQ2W4xL4dezQTG8inJsuYcpPHHU3X5OTQ=="
