@@ -7138,7 +7138,7 @@ export const finishHandApiCall = async (room, userId) => {
 // NEW functions
 export const checkForGameTable = async (data, socket, io) => {
   try {
-    console.log('------In checkForGameTable Socket------');
+    console.log('1------In checkForGameTable Socket------1', data);
     const { gameId, userId } = data;
     const game = await gameService.getGameById(gameId);
     console.log({ userId, game });
@@ -7168,7 +7168,12 @@ export const checkForGameTable = async (data, socket, io) => {
     socket.customId = userId;
 
     // if user is already in the room
-    if (game.players.find((el) => el.id.toString() === userId.toString())) {
+    if (
+      game.players.find((el) => {
+        console.log('Check 3 ', { el, elId: el.userid, userId });
+        return el.userid?.toString() === userId.toString();
+      })
+    ) {
       socket.join(gameId);
       io.in(gameId).emit('updateGame', { game });
       return;
