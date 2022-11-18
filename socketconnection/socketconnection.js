@@ -25,7 +25,8 @@ import {
   InvitePlayers,
   doLeaveWatcher,
 } from '../functions/functions';
-import { getDoc, getUserId } from '../firestore/dbFetch';
+import mongoose from 'mongoose';
+const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
 import roomModel from '../models/room';
 let returnSocket = (io) => {
@@ -51,7 +52,7 @@ let returnSocket = (io) => {
     });
 
     socket.on('checkTable', async (data) => {
-      console.log('CHECK TABLE')
+      console.log('CHECK TABLE');
       console.log('One user connected', data.userId);
       try {
         await checkForGameTable(data, socket, io);
@@ -89,12 +90,13 @@ let returnSocket = (io) => {
     });
 
     socket.on('startPreflopRound', async (data) => {
+      console.log('startPreflopRound - ', { data });
       await startPreflopRound(data, socket, io);
     });
 
     socket.on('dofold', async (data) => {
       let room = await roomModel.findOne({
-        tableId: data.roomid,
+        _id: convertMongoId(data.roomid),
       });
       data.roomid = room._id;
       await socketDoFold(data, io, socket);
@@ -102,7 +104,7 @@ let returnSocket = (io) => {
 
     socket.on('docall', async (data) => {
       let room = await roomModel.findOne({
-        tableId: data.roomid,
+        _id: convertMongoId(data.roomid),
       });
       data.roomid = room._id;
       await socketDoCall(data, io, socket);
@@ -110,7 +112,7 @@ let returnSocket = (io) => {
 
     socket.on('dobet', async (data) => {
       let room = await roomModel.findOne({
-        tableId: data.roomid,
+        _id: convertMongoId(data.roomid),
       });
       data.roomid = room._id;
       await socketDoBet(data, io, socket);
@@ -118,7 +120,7 @@ let returnSocket = (io) => {
 
     socket.on('doraise', async (data) => {
       let room = await roomModel.findOne({
-        tableId: data.roomid,
+        _id: convertMongoId(data.roomid),
       });
       data.roomid = room._id;
       await socketDoRaise(data, io, socket);
@@ -126,7 +128,7 @@ let returnSocket = (io) => {
 
     socket.on('docheck', async (data) => {
       let room = await roomModel.findOne({
-        tableId: data.roomid,
+        _id: convertMongoId(data.roomid),
       });
       data.roomid = room._id;
       await socketDoCheck(data, io, socket);
@@ -134,7 +136,7 @@ let returnSocket = (io) => {
 
     socket.on('doallin', async (data) => {
       let room = await roomModel.findOne({
-        tableId: data.roomid,
+        _id: convertMongoId(data.roomid),
       });
       data.roomid = room._id;
       await socketDoAllin(data, io, socket);
@@ -142,7 +144,7 @@ let returnSocket = (io) => {
 
     socket.on('dopausegame', async (data) => {
       let room = await roomModel.findOne({
-        tableId: data.roomid,
+        _id: convertMongoId(data.roomid),
       });
       data.roomid = room._id;
       await doPauseGame(data, io, socket);
@@ -150,7 +152,7 @@ let returnSocket = (io) => {
 
     socket.on('dofinishgame', async (data) => {
       let room = await roomModel.findOne({
-        tableId: data.roomid,
+        _id: convertMongoId(data.roomid),
       });
       data.roomid = room._id;
       await doFinishGame(data, io, socket);
@@ -158,7 +160,7 @@ let returnSocket = (io) => {
 
     socket.on('doresumegame', async (data) => {
       let room = await roomModel.findOne({
-        tableId: data.roomid,
+        _id: convertMongoId(data.roomid),
       });
       data.roomid = room._id;
       await doResumeGame(data, io, socket);
