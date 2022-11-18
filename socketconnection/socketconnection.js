@@ -25,7 +25,6 @@ import {
   InvitePlayers,
   doLeaveWatcher,
 } from '../functions/functions';
-import { getDoc, getUserId } from '../firestore/dbFetch';
 
 import roomModel from '../models/room';
 let returnSocket = (io) => {
@@ -51,7 +50,7 @@ let returnSocket = (io) => {
     });
 
     socket.on('checkTable', async (data) => {
-      console.log('CHECK TABLE')
+      console.log('CHECK TABLE');
       console.log('One user connected', data.userId);
       try {
         await checkForGameTable(data, socket, io);
@@ -89,6 +88,7 @@ let returnSocket = (io) => {
     });
 
     socket.on('startPreflopRound', async (data) => {
+      console.log('startPreflopRound - ', { data });
       await startPreflopRound(data, socket, io);
     });
 
