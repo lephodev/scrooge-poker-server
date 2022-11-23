@@ -23,12 +23,7 @@ const io = socket(server, {
   pingInterval: 10000,
   pingTimeout: 5000,
 });
-const whitelist = [
-  'https://beta.las-vegas.com',
-  'https://las-vegas.com',
-  'http://localhost:3000',
-  'http://localhost:3001',
-];
+const whitelist = ['*'];
 const corsOptions = {
   origin: function (origin, callback) {
     if (whitelist.indexOf(origin) !== -1) {
