@@ -129,7 +129,7 @@ let returnSocket = (io) => {
 
     socket.on('docheck', async (data) => {
       let room = await roomModel.findOne({
-        _id: data.roomid,
+        _id: convertMongoId(data.roomid),
       });
       data.roomid = room._id;
       await socketDoCheck(data, io, socket);
