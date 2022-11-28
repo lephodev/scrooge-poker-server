@@ -257,17 +257,23 @@ let returnSocket = (io) => {
         console.log(
           'disconnected',
           socket.id,
-          socket.customId,
-          socket.customRoom
+          socket.customId, // userid of player who leaves the game
+          socket.customRoom // Room id on which user was playing game
         );
 
         const lastSockets = io.users;
+        console.log({ lastSockets });
         let filteredSockets = lastSockets.filter(
-          (el) => el === socket.customId
+          (el) => el.toString() === socket.customId.toString()
         );
         const roomid = io.room;
-        let filteredRoom = roomid.filter((el) => el === socket.customRoom);
+        console.log({ roomid, custoumId: socket.customId });
+        let filteredRoom = roomid.filter(
+          (el) => el.room.toString() === socket.customRoom.toString()
+        );
+        console.log({ filteredSockets, filteredRoom });
         if (filteredSockets.length > 0 && filteredRoom.length > 0) {
+          console.log('IN THE IF');
           let indexUser = lastSockets.indexOf(socket.customId);
           if (indexUser !== -1) lastSockets.splice(indexUser, 1);
 
