@@ -16,6 +16,7 @@ import {
 } from './landing-server/config/morgan.js';
 import pokerRoute from './routes/pokerRoutes.js';
 import auth from './landing-server/middlewares/auth.js';
+import mongoose from 'mongoose';
 
 let app = express();
 const server = http.createServer(app);
@@ -58,7 +59,9 @@ require('./socketconnection/socketconnection')(io);
 app.get('/checkTableExist/:tableId', async (req, res) => {
   try {
     const { tableId } = req.params;
-    const room = await roomModel.findOne({ tableId });
+    const room = await roomModel.findOne({
+      _id: mongoose.Types.ObjectId(tableId),
+    });
     if (room) {
       res.status(200).send({
         success: true,
@@ -78,7 +81,9 @@ app.get('/checkTableExist/:tableId', async (req, res) => {
 app.get('/rescueTable/:tableId', async (req, res) => {
   try {
     const { tableId } = req.params;
-    const room = await roomModel.findOne({ tableId });
+    const room = await roomModel.findOne({
+      _id: mongoose.Types.ObjectId(tableId),
+    });
     if (room) {
       let firstGameTime = new Date(room.firstGameTime);
       let now = new Date();
@@ -149,7 +154,9 @@ app.get('/rescueTable/:tableId', async (req, res) => {
 app.get('/deleteStuckTable/:tableId', async (req, res) => {
   try {
     const { tableId } = req.params;
-    const room = await roomModel.deleteOne({ tableId });
+    const room = await roomModel.deleteOne({
+      _id: mongoose.Types.ObjectId(tableId),
+    });
     if (room) {
       res.status(200).send({
         success: true,
@@ -168,13 +175,17 @@ app.get('/deleteStuckTable/:tableId', async (req, res) => {
 
 app.get('/leaveGame/:tableId/:userId', async (req, res) => {
   try {
-    const { tableId, userId } = req.params;
+    let { tableId, userId } = req.params;
+    tableId = mongoose.Types.ObjectId(tableId);
     let roomdata = await roomModel
       .findOne({
-        tableId,
+        _id: tableId,
       })
       .lean();
-    if (roomdata && roomdata.players.find((el) => el.userid === userId)) {
+    if (
+      roomdata &&
+      roomdata.players.find((el) => el.userid.toString() === userId?.toString())
+    ) {
       const ress = await doLeaveTable({ tableId, userId }, io);
       return res.send({
         success: true,
@@ -211,21 +222,23 @@ app.get('/checkUserInGame/:userId', async (req, res) => {
     const room = await roomModel.findOne({
       $or: [
         {
-          players: { $elemMatch: { userid: userId } },
+          players: { $elemMatch: { userid: mongoose.Types.ObjectId(userId) } },
         },
-        { watchers: { $elemMatch: { userid: userId } } },
+        {
+          watchers: { $elemMatch: { userid: mongoose.Types.ObjectId(userId) } },
+        },
       ],
     });
     if (
       room &&
-      (room.players.find((el) => el.userid === userId) ||
-        room.watchers.find((el) => el.userid === userId))
+      (room.players.find((el) => el.userid.toString() === userId?.toString()) ||
+        room.watchers.find((el) => el.userid.toString() === userId?.toString()))
     ) {
       res.status(200).send({
         success: false,
         gameStatus: 'InGame',
-        link: `${req.baseUrl}/poker/index.html?tableid=${room.tableId}&gameCollection=${room.gameType}#/`,
-        leaveTableUrl: `https://poker-server-t3e66zpola-uc.a.run.app/leaveGame/${room.tableId}/${userId}`,
+        link: `${req.baseUrl}/poker/index.html?tableid=${room._id}&gameCollection=${room.gameType}#/`,
+        leaveTableUrl: `https://poker-server-t3e66zpola-uc.a.run.app/leaveGame/${room._id}/${userId}`,
       });
     } else {
       updateInGameStatus(userId);
