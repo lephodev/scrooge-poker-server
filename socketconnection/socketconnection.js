@@ -153,7 +153,7 @@ let returnSocket = (io) => {
 
     socket.on('dofinishgame', async (data) => {
       let room = await roomModel.findOne({
-        _id: data.roomid,
+        _id: convertMongoId(data.roomid),
       });
       data.roomid = room._id;
       await doFinishGame(data, io, socket);

@@ -40,28 +40,31 @@ const pushUserInRoom = async (roomId, userId, position) => {
     const userData = await userService.getUserById(userId);
     const { username, wallet, email, _id, avatar } = userData;
 
-    await roomModel.updateOne(
-      { _id: roomId },
-      {
-        $push: {
-          players: {
-            name: username,
-            userid: _id,
-            id: _id,
-            photoURI: avatar || img,
-            wallet: wallet,
-            position,
-            missedSmallBlind: false,
-            missedBigBlind: false,
-            forceBigBlind: false,
-            playing: true,
-            initialCoinBeforeStart: wallet,
-            gameJoinedAt: new Date(),
-            hands: [],
+    await Promise.allSettled([
+      userService.updateUserWallet(_id),
+      roomModel.updateOne(
+        { _id: roomId },
+        {
+          $push: {
+            players: {
+              name: username,
+              userid: _id,
+              id: _id,
+              photoURI: avatar || img,
+              wallet: wallet,
+              position,
+              missedSmallBlind: false,
+              missedBigBlind: false,
+              forceBigBlind: false,
+              playing: true,
+              initialCoinBeforeStart: wallet,
+              gameJoinedAt: new Date(),
+              hands: [],
+            },
           },
-        },
-      }
-    );
+        }
+      ),
+    ]);
 
     const room = await getGameById(roomId);
     return room;
@@ -82,7 +85,7 @@ const joinRoomByUserId = async (game, userId) => {
     }
     const room = pushUserInRoom(game._id, userId, availblePosition.i);
     return room;
-    // else check invite array
+    // else check invite array for private tables
     // join user in game if there is empty slot else return slot full
   } else if (
     game.inviteEmail.find((uId) => uId === userId) &&

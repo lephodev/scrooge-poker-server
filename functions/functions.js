@@ -29,6 +29,7 @@ import {
 import BetModal from '../models/betModal';
 import gameService from '../service/game.service';
 import userService from '../service/user.service';
+import rankModel from '../models/rankModel';
 var Hand = require('pokersolver').Hand;
 const admin = require('firebase-admin');
 
@@ -2622,7 +2623,7 @@ export const doFinishGame = async (data, io, socket) => {
         }
 
         if (updatedData.runninground === 0) {
-          await finishedTableGame(updatedData);
+          await finishedTableGame(updatedData, userid);
         }
         io.in(updatedData._id.toString()).emit('roomFinished', {
           msg: msg,
@@ -2630,7 +2631,7 @@ export const doFinishGame = async (data, io, socket) => {
           roomdata: updatedData,
         });
       } else {
-        await finishedTableGame(roomData);
+        await finishedTableGame(roomData, userid);
         if (socket)
           socket.emit('actionError', { code: 400, msg: 'Bad request' });
       }
@@ -2685,7 +2686,7 @@ export const doSitOut = async (data, io, socket) => {
         })
         .lean();
       if (roomData) {
-        console.log('IN FOLD');
+        console.log('IN FOLD', { userid });
         let lastAction = 'fold';
         if (roomData && roomData.lastAction === 'check') {
           lastAction = 'check';
@@ -3060,6 +3061,7 @@ export const doLeaveTable = async (data, io, socket) => {
         )
         .lean();
       if (roomdata) {
+        console.log('IN ROOM DATA');
         roomid = roomdata._id;
         if (roomdata.hostId.toString() === userid.toString()) {
           console.log({
@@ -3122,6 +3124,7 @@ export const doLeaveTable = async (data, io, socket) => {
             msg: `${playerdata[0].name} has left the game`,
           });
       } else {
+        console.log('IN THE ELSE BLOCK');
         let roomdata = await roomModel
           .findOne({
             _id: tableId,
@@ -3132,6 +3135,7 @@ export const doLeaveTable = async (data, io, socket) => {
         // }
       }
     } else {
+      console.log('BEFORE ERROR ACTION');
       if (socket) socket.emit('actionError', { code: 400, msg: 'Bad request' });
     }
   } catch (e) {
@@ -4624,7 +4628,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
             roomdata: updatedRoomPlayers,
           });
           if (updatedRoomPlayers.gameType === 'pokerTournament_Tables') {
-            await finishedTableGame(updatedRoomPlayers);
+            await finishedTableGame(updatedRoomPlayers, playerid);
             io.in(updatedRoomPlayers._id.toString()).emit('roomFinished', {
               msg: 'Game finished',
               finish: updatedRoomPlayers.finish,
@@ -4640,7 +4644,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     }
     const roomUpdate = await roomModel.findOne({ _id: updatedRoom._id });
     if (roomUpdate.finish) {
-      await finishedTableGame(roomUpdate);
+      await finishedTableGame(roomUpdate, playerid);
       io.in(roomUpdate._id.toString()).emit('roomFinished', {
         msg: 'Room Finished',
         finish: roomUpdate.finish,
@@ -6431,7 +6435,7 @@ export const startPreflopRound = async (data, socket, io) => {
     let room = await gameService.getGameById(data.tableId);
     console.log({ room });
     if (room && room.players.length === 1) {
-      return socket.emit('OnlyOne');
+      return socket.emit('OnlyOne', room);
     }
     if (room && !room.gamestart) {
       await roomModel.findOneAndUpdate(
@@ -7000,10 +7004,29 @@ export const doLeaveWatcher = async (data, io, socket) => {
 
 const createTransactionFromUsersArray = (roomId, users = []) => {
   let transactionObjectsArray = [];
+  const rankModelUpdate = [];
+
   users.forEach((el, i) => {
     let updatedAmount = el.coinsBeforeJoin;
     const userId = el.uid;
+
+    let totalWinAmount = 0;
+    let totalLossAmount = 0;
+    let totalWin = 0;
+    let totalLose = 0;
+
     const handsTransaction = el.hands.map((elem) => {
+      console.log({ elem });
+      if (elem.action === 'game-lose') {
+        console.log('GAME LOSE');
+        totalLossAmount += elem.amount;
+        totalLose++;
+      } else {
+        console.log('GAME WIN');
+        totalWinAmount += elem.amount;
+        totalWin++;
+      }
+
       const gameWinOrLoseamount =
         elem.action === 'game-lose' ? -elem.amount : elem.amount;
       const lastAmount = updatedAmount;
@@ -7018,10 +7041,34 @@ const createTransactionFromUsersArray = (roomId, users = []) => {
         transactionType: 'poker',
       };
     });
+
+    console.log({ totalWin, totalLose, totalWinAmount, totalLossAmount });
+
+    if (totalWin || totalLose || totalWinAmount || totalLossAmount) {
+      rankModelUpdate.push(
+        rankModel.updateOne(
+          {
+            userId: convertMongoId(userId),
+            gameName: 'poker',
+          },
+          {
+            $inc: {
+              win: totalWin,
+              loss: totalLose,
+              totalWinAmount: totalWinAmount,
+              totalLossAmount: totalLossAmount,
+            },
+          },
+          { upsert: true }
+        )
+      );
+    }
+
     transactionObjectsArray = [...transactionObjectsArray, ...handsTransaction];
     users[i].newBalance = updatedAmount;
   });
-  return transactionObjectsArray;
+
+  return [transactionObjectsArray, rankModelUpdate];
 };
 
 export const leaveApiCall = async (room, userId) => {
@@ -7042,12 +7089,13 @@ export const leaveApiCall = async (room, userId) => {
       player = room.showdown;
     }
     if (
-      !player.find((el) =>
+      !userId ||
+      (!player.find((el) =>
         el.id
-          ? el.id.toString() === userId.toString()
-          : el.userid.toString() === userId.toString()
+          ? el.id.toString() === userId?.toString()
+          : el.userid.toString() === userId?.toString()
       ) &&
-      room.players.find((el) => el.userid.toString() === userId.toString())
+        room.players.find((el) => el.userid.toString() === userId?.toString()))
     ) {
       player = room.players;
     }
@@ -7083,11 +7131,15 @@ export const leaveApiCall = async (room, userId) => {
           userId.toString()
       );
     }
+
     let users = [];
     console.log({ users });
     allUsers.forEach((item) => {
       console.log({ item });
       let hands = item.hands ? [...item.hands] : [];
+      let uid = item.id ? item.id : item.userid;
+      console.log({ uid });
+      console.log({ hands });
       if (room.runninground !== 0 && room.runninground !== 5) {
         hands.push({
           action: 'game-lose',
@@ -7100,9 +7152,7 @@ export const leaveApiCall = async (room, userId) => {
             : false,
         });
       }
-      console.log({ hands });
-      let uid = item.id ? item.id : item.userid;
-      console.log({ uid });
+
       users.push({
         uid,
         hands:
@@ -7131,7 +7181,10 @@ export const leaveApiCall = async (room, userId) => {
       adminUid: room.hostId,
     };
 
-    const transactions = createTransactionFromUsersArray(room._id, users);
+    const [transactions, rankModelUpdate] = createTransactionFromUsersArray(
+      room._id,
+      users
+    );
     const userBalancePromise = users.map((el) => {
       return userModel.updateOne(
         {
@@ -7156,8 +7209,17 @@ export const leaveApiCall = async (room, userId) => {
         transactionModel.insertMany(transactions),
         // Update user wallet
         ...userBalancePromise,
+        ...rankModelUpdate,
       ]);
       console.log(response);
+    } else {
+      const response = await Promise.allSettled([
+        // Create transaction
+        transactionModel.insertMany(transactions),
+        // Update user wallet
+        ...userBalancePromise,
+        ...rankModelUpdate,
+      ]);
     }
     return true;
   } catch (err) {
