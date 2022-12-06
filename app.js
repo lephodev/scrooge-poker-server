@@ -24,7 +24,7 @@ const io = socket(server, {
   pingInterval: 10000,
   pingTimeout: 5000,
 });
-const whitelist = ['*'];
+const whitelist = ['http://localhost:3000', 'https://poker.scrooge.casino'];
 const corsOptions = {
   origin: function (origin, callback) {
     if (whitelist.indexOf(origin) !== -1) {
@@ -41,7 +41,7 @@ app.use(
     extended: false,
   })
 );
-app.use(cors());
+app.use(cors(corsOptions));
 mongoConnect();
 
 // Auth functions
