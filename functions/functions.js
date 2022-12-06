@@ -7319,26 +7319,43 @@ export const checkForGameTable = async (data, socket, io) => {
     socket.customRoom = gameId;
 
     const user = await userService.getUserById(userId);
+
     if (!user) {
       return socket.emit('notAuthorized', {
         message: 'You are not authorized',
       });
     }
+
+    const ifUserInGame = game.players.find((el) => {
+      return el.userid?.toString() === userId.toString();
+    });
+
+    // check user
+    if (game.smallBlind > user.wallet && !ifUserInGame) {
+      return socket.emit('notEnoughBalance', {
+        message: "You don't have enough balance to sit on the table.",
+      });
+    }
+
     lastSocketData = io.users;
     lastSocketData.push(userId.toString());
     io.users = [...new Set(lastSocketData)];
     socket.customId = userId;
 
     // if user is already in the room
-    if (
-      game.players.find((el) => {
-        return el.userid?.toString() === userId.toString();
-      })
-    ) {
+    if (ifUserInGame) {
       socket.join(gameId);
       io.in(gameId).emit('updateGame', { game });
       return;
     }
+
+    const checkIfInOtherGame = await gameService.checkIfUserInGame(userId);
+    if (checkIfInOtherGame) {
+      return socket.emit('inOtherGame', {
+        message: 'You are also on other tabe.',
+      });
+    }
+
     // If user is not in the room
     const updatedRoom = await gameService.joinRoomByUserId(game, userId);
     console.log({ updatedRoom });

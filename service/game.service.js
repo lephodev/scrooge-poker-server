@@ -1,6 +1,9 @@
 import roomModel from '../models/room.js';
 import Game from '../models/room.js';
 import userService from './user.service.js';
+import mongoose from 'mongoose';
+
+const converMongoId = (id) => mongoose.Types.ObjectId(id);
 
 const maxPlayer = 10;
 const img =
@@ -102,9 +105,34 @@ const joinRoomByUserId = async (game, userId) => {
   }
 };
 
+// leave roomId empty if you want exclude any room to come in search
+// Because in check game function we want to exclude it from there
+const checkIfUserInGame = async (userId, roomId = '') => {
+  try {
+    let query = { 'players.userid': converMongoId(userId) };
+
+    if (roomId) {
+      query['_id'] = { $ne: converMongoId(roomId) };
+    }
+
+    console.log({ query });
+    const checkRoom = await Game.findOne(query);
+
+    if (checkRoom) {
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.log(error);
+    return true;
+  }
+};
+
 const gameService = {
   getGameById,
   joinRoomByUserId,
+  checkIfUserInGame,
 };
 
 export default gameService;

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import User from '../landing-server/models/user.model.js';
+import gameService from '../service/game.service.js';
 import roomModel from './../models/room.js';
 
 const img =
@@ -27,6 +28,14 @@ export const createTable = async (req, res) => {
     const userData = req.user;
     const { username, wallet, email, _id, avatar } = userData;
     const timer = 15;
+
+    const checkInGame = await gameService.checkIfUserInGame(userData._id);
+
+    if (checkInGame) {
+      return res.status(403).send({ message: 'You are already in a game.' });
+    }
+
+    console.log({ minchips });
 
     const roomData = await roomModel.create({
       gameName,
