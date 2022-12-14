@@ -310,7 +310,7 @@ let returnSocket = (io) => {
           users[roomID] = room;
         }
       } catch (e) {
-        console.log('error in disconnect block');
+        console.log('error in disconnect block', e);
       }
       console.log('Player gone!');
     });

@@ -24,7 +24,14 @@ export const getDocument = async (req, res) => {
 
 export const createTable = async (req, res) => {
   try {
-    const { gameName, public: isPublic, minchips } = req.body;
+    const {
+      gameName,
+      public: isPublic,
+      minchips,
+      maxchips,
+      autohand,
+      invitedUsers,
+    } = req.body;
     const userData = req.user;
     const { username, wallet, email, _id, avatar } = userData;
     const timer = 15;
@@ -39,9 +46,11 @@ export const createTable = async (req, res) => {
 
     const roomData = await roomModel.create({
       gameName,
+      autoNextHand: autohand,
+      invPlayers: invitedUsers.map((el) => el.value),
       public: isPublic,
-      smallBlind: minchips / 2,
-      bigblind: minchips,
+      smallBlind: minchips,
+      bigblind: maxchips,
       timer,
       hostId: userData._id,
       players: [
@@ -72,9 +81,24 @@ export const createTable = async (req, res) => {
 export const getAllGame = async (req, res) => {
   try {
     const getAllRunningRoom = await roomModel
-      .find({})
+      .find({ public: true })
       .populate('players.userid');
     return res.status(200).send({ rooms: getAllRunningRoom || [] });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: 'Internal server error' });
+  }
+};
+
+export const getAllUsers = async (req, res) => {
+  try {
+    const allUsers = await User.find({
+      _id: { $ne: req.user._id },
+    }).select('_id username');
+
+    console.log({ allUsers });
+
+    return res.status(200).send({ allUsers });
   } catch (error) {
     console.log(error);
     res.status(500).send({ message: 'Internal server error' });

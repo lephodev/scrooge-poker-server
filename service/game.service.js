@@ -92,7 +92,7 @@ const joinRoomByUserId = async (game, userId) => {
     // else check invite array for private tables
     // join user in game if there is empty slot else return slot full
   } else if (
-    game.inviteEmail.find((uId) => uId === userId) &&
+    game.invPlayers.find((uId) => uId.toString() === userId.toString()) &&
     game.players.length < 10
   ) {
     const availblePosition = await findAvailablePosition(game.players);
