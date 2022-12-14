@@ -53,8 +53,8 @@ let returnSocket = (io) => {
     });
 
     socket.on('checkTable', async (data) => {
-      console.log('CHECK TABLE');
-      console.log('One user connected', data.userId);
+      console.log('---------------CHECK TABLE-------------------', { data });
+      console.log('One user connected', data);
       try {
         await checkForGameTable(data, socket, io);
       } catch (err) {
@@ -289,6 +289,10 @@ let returnSocket = (io) => {
           setTimeout(async () => {
             console.log('After three second =>');
             let dd = { ...data };
+            console.log(
+              'RESULT ',
+              io.users.find((ele) => ele === dd.userId)
+            );
             if (io.users.find((ele) => ele === dd.userId)) {
               return;
             } else {
@@ -297,7 +301,9 @@ let returnSocket = (io) => {
             }
           }, 120000);
         }
+        console.log({ socketToRoom, idSocket: socket.id });
         const roomID = socketToRoom[socket.id];
+        console.log({ roomID });
         let room = users[roomID];
         if (room) {
           room = room.filter((el) => el.socketid !== socket.id);

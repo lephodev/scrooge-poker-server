@@ -2342,7 +2342,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
           );
         });
       };
-
+      console.log(roomData);
       let sitin = roomData.sitin;
       let leavereq = roomData.leavereq;
       console.log('PLAYER DATA BEFORE ', JSON.stringify(playerData));
@@ -3041,7 +3041,7 @@ export const doSitIn = async (data, io, socket) => {
 };
 
 export const doLeaveTable = async (data, io, socket) => {
-  console.log('doLeaveTable API called ');
+  console.log('doLeaveTable API called ', data);
   const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
   let roomid;
@@ -3068,6 +3068,8 @@ export const doLeaveTable = async (data, io, socket) => {
             hostId: roomdata.hostId.toString(),
             userid: userid.toString(),
           });
+          console.log('PLAYER ', JSON.stringify(roomdata.players));
+          console.log('HERE OK ', userid);
           let p = roomdata.players.filter(
             (ele) => ele.userid.toString() !== userid.toString()
           )[0];
@@ -7003,10 +7005,12 @@ export const doLeaveWatcher = async (data, io, socket) => {
 };
 
 const createTransactionFromUsersArray = (roomId, users = []) => {
+  console.log({ roomId, users });
   let transactionObjectsArray = [];
   const rankModelUpdate = [];
 
   users.forEach((el, i) => {
+    console.log('7013', el);
     let updatedAmount = el.coinsBeforeJoin;
     const userId = el.uid;
 
@@ -7302,6 +7306,7 @@ export const finishHandApiCall = async (room, userId) => {
 export const checkForGameTable = async (data, socket, io) => {
   try {
     const { gameId, userId } = data;
+    console.log({ gameId, userId });
     const game = await gameService.getGameById(gameId);
     console.log({ userId, game });
     if (!game || game.finish) {
@@ -7330,6 +7335,8 @@ export const checkForGameTable = async (data, socket, io) => {
       return el.userid?.toString() === userId.toString();
     });
 
+    console.log('USER IN THE GAME -------->', { ifUserInGame, user });
+
     // check user
     if (game.smallBlind > user.wallet && !ifUserInGame) {
       return socket.emit('notEnoughBalance', {
@@ -7344,6 +7351,7 @@ export const checkForGameTable = async (data, socket, io) => {
 
     // if user is already in the room
     if (ifUserInGame) {
+      console.log('Already in the table');
       socket.join(gameId);
       io.in(gameId).emit('updateGame', { game });
       return;
@@ -7351,6 +7359,7 @@ export const checkForGameTable = async (data, socket, io) => {
 
     const checkIfInOtherGame = await gameService.checkIfUserInGame(userId);
     if (checkIfInOtherGame) {
+      console.log('User in the other table');
       return socket.emit('inOtherGame', {
         message: 'You are also on other tabe.',
       });
@@ -7360,6 +7369,7 @@ export const checkForGameTable = async (data, socket, io) => {
     const updatedRoom = await gameService.joinRoomByUserId(game, userId);
     console.log({ updatedRoom });
     if (updatedRoom) {
+      console.log('Add user in the room');
       socket.join(gameId);
       io.in(gameId).emit('updateGame', { game: updatedRoom });
       return;
