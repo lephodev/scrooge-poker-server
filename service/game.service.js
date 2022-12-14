@@ -10,7 +10,8 @@ const img =
   'https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg';
 
 const getGameById = async (id) => {
-  const game = await Game.findById(id).lean();
+  const game = await Game.findOne({ _id: converMongoId(id) }).lean();
+  console.log({ game });
   if (game) return { ...game, id: game._id };
   return null;
 };
