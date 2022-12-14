@@ -7323,6 +7323,18 @@ export const checkForGameTable = async (data, socket, io) => {
     }));
     socket.customRoom = gameId;
 
+    if (!socket.customId) {
+      socket.customId = userId;
+      console.log('----JOIN USER CUSTOUM ID---', socket.customId);
+    }
+
+    if (!socket.customRoom) {
+      socket.customRoom = gameId;
+      console.log('----ADING USER GAME ID-----', socket.customRoom);
+    } else {
+      console.log('----ADING USER GAME ID-----', socket.customRoom);
+    }
+
     const user = await userService.getUserById(userId);
 
     if (!user) {
@@ -7347,7 +7359,6 @@ export const checkForGameTable = async (data, socket, io) => {
     lastSocketData = io.users;
     lastSocketData.push(userId.toString());
     io.users = [...new Set(lastSocketData)];
-    socket.customId = userId;
 
     // if user is already in the room
     if (ifUserInGame) {
