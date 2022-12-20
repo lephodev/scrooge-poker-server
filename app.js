@@ -17,6 +17,7 @@ import {
 import pokerRoute from './routes/pokerRoutes.js';
 import auth from './landing-server/middlewares/auth.js';
 import mongoose from 'mongoose';
+import User from './landing-server/models/user.model';
 
 let app = express();
 const server = http.createServer(app);
@@ -253,6 +254,36 @@ app.get('/checkUserInGame/:userId', async (req, res) => {
       success: false,
       error: 'Internal server error',
     });
+  }
+});
+
+app.get('/getUserForInvite/:tableId', async (req, res) => {
+  try {
+    if (!req.params.tableId) {
+      return res.status(400).send({ msg: 'Table id not found.' });
+    }
+
+    const roomData = await roomModel.findOne({
+      _id: mongoose.Types.ObjectId(req.params.tableId),
+    });
+
+    if (!roomData) {
+      return res.status(403).send({ msg: 'Table not found.' });
+    }
+
+    const { leavereq, invPlayers, players } = roomData;
+    console.log({ leavereq, invPlayers, players });
+    const allId = [...leavereq, ...invPlayers, ...players.map((el) => el.id)];
+
+    const allUsers = await User.find({
+      _id: { $nin: allId },
+      isRegistrationComplete: true,
+    }).select({ id: 1, username: 1 });
+
+    return res.status(200).send({ data: allUsers });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({ msg: 'Internal server error' });
   }
 });
 

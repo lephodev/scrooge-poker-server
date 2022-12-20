@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 import User from '../landing-server/models/user.model.js';
+import Message from '../models/messageModal.js';
+import Notification from '../models/notificationModal.js';
 import gameService from '../service/game.service.js';
 import roomModel from './../models/room.js';
 
@@ -43,11 +45,11 @@ export const createTable = async (req, res) => {
     }
 
     console.log({ minchips });
-
+    const invitetedPlayerUserId = invitedUsers.map((el) => el.value);
     const roomData = await roomModel.create({
       gameName,
       autoNextHand: autohand,
-      invPlayers: invitedUsers.map((el) => el.value),
+      invPlayers: invitetedPlayerUserId,
       public: isPublic,
       smallBlind: minchips,
       bigblind: maxchips,
@@ -72,8 +74,35 @@ export const createTable = async (req, res) => {
       ],
     });
 
+    if (Array.isArray(invitetedPlayerUserId) && invitetedPlayerUserId.length) {
+      const sendMessageToInvitedUsers = [
+        ...invitetedPlayerUserId.map((el) => {
+          return {
+            sender: _id,
+            receiver: el,
+            message: `<a href='${process.env.CLIENTURL}/table?tableid=${roomData._id}&gamecollection=poker#/'>Click here</a> to play poker with me.`,
+          };
+        }),
+      ];
+
+      const sendNotificationToInvitedUsers = [
+        ...invitetedPlayerUserId.map((el) => {
+          return {
+            sender: _id,
+            receiver: el,
+            message: `has invited you to play poker.`,
+            url: `${process.env.CLIENTURL}/table?tableid=${roomData._id}&gamecollection=poker#/`,
+          };
+        }),
+      ];
+
+      await Message.insertMany(sendMessageToInvitedUsers);
+      await Notification.insertMany(sendNotificationToInvitedUsers);
+    }
+
     res.status(200).send({ roomData });
   } catch (error) {
+    console.log(error);
     res.status(500).send({ message: 'Internal server error' });
   }
 };
@@ -94,6 +123,7 @@ export const getAllUsers = async (req, res) => {
   try {
     const allUsers = await User.find({
       _id: { $ne: req.user._id },
+      isRegistrationComplete: true,
     }).select('_id username');
 
     console.log({ allUsers });

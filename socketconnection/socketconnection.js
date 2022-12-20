@@ -287,13 +287,17 @@ let returnSocket = (io) => {
           console.log('data =>', data);
 
           setTimeout(async () => {
+            console.log('Player join in game again');
             console.log('After three second =>');
             let dd = { ...data };
+            console.log({ dd });
             console.log(
               'RESULT ',
-              io.users.find((ele) => ele === dd.userId)
+              io.users.find((ele) => ele?.toString() === dd?.userId?.toString())
             );
-            if (io.users.find((ele) => ele === dd.userId)) {
+            if (
+              io.users.find((ele) => ele?.toString() === dd?.userId?.toString())
+            ) {
               return;
             } else {
               console.log('dd =>', dd);
