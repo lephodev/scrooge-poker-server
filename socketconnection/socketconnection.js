@@ -136,6 +136,7 @@ let returnSocket = (io) => {
     });
 
     socket.on('doallin', async (data) => {
+      console.log('INSIDE ALL IN');
       let room = await roomModel.findOne({
         _id: data.roomid,
       });
@@ -298,6 +299,7 @@ let returnSocket = (io) => {
             if (
               io.users.find((ele) => ele?.toString() === dd?.userId?.toString())
             ) {
+              console.log('USER JOINS THE ROOM AGAIN');
               return;
             } else {
               console.log('dd =>', dd);
