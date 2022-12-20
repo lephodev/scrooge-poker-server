@@ -32,8 +32,34 @@ import userService from '../service/user.service';
 import rankModel from '../models/rankModel';
 var Hand = require('pokersolver').Hand;
 const admin = require('firebase-admin');
+import MessageModal from '../models/messageModal';
+import Notification from '../models/notificationModal';
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
+
+const addUserInSocket = (io, socket, gameId, userId) => {
+  let lastSocketData = io.room || [];
+  // Add room
+  lastSocketData.push({ gameId, pretimer: false, room: gameId.toString() });
+  io.room = [...new Set(lastSocketData.map((ele) => ele.room.toString()))].map(
+    (el) => ({
+      room: el,
+      pretimer: false,
+    })
+  );
+
+  // Add users
+  lastSocketData = io.users;
+  lastSocketData.push(userId.toString());
+  io.users = [...new Set(lastSocketData)];
+
+  // Add user id and room id in socket
+  socket.customId = userId.toString();
+  socket.customRoom = gameId.toString();
+
+  // JOIN USER IN GAME ROOM
+  socket.join(gameId);
+};
 
 //checking if request body is valid
 export const checkIfEmpty = (requestBody) => {
@@ -156,7 +182,7 @@ export const verifycards = (distributedCards, noOfCards) => {
 };
 
 export const preflopPlayerPush = async (players, roomid) => {
-  console.log('Inside preflopPlayerPush');
+  console.log('Inside preflopPlayerPush', roomid);
   return new Promise((resolve, reject) => {
     let distributedCards = [];
 
@@ -168,10 +194,14 @@ export const preflopPlayerPush = async (players, roomid) => {
         // let game= req.body._id;
         let checkcards = [];
         const roomData = await roomModel
-          .findById(roomid)
+          .findOne({ _id: convertMongoId(roomid) })
           .sort({ _id: -1 })
           .lean();
-        if (!roomData.preflopround.find((ele) => ele.id === elem.userid)) {
+        if (
+          !roomData.preflopround.find(
+            (ele) => ele.id.toString() === elem.userid.toString()
+          )
+        ) {
           let playing;
           if (typeof elem.playing !== 'undefined' && elem.playing !== null) {
             playing = elem.playing;
@@ -187,10 +217,10 @@ export const preflopPlayerPush = async (players, roomid) => {
             checkcards = verifycards(distributedCards, 2);
             checkcards.map((e) => distributedCards.push(e));
           }
-
+          console.log('ON LINE NUMBER 192');
           const a = await roomModel.updateOne(
             {
-              _id: roomid,
+              _id: convertMongoId(roomid),
             },
             {
               $push: {
@@ -4152,204 +4182,210 @@ export const socketDoCheck = async (dta, io, socket) => {
 };
 
 export const doAllin = async (roomid, playerid, io) => {
-  const roomData = await roomModel.findOne({ _id: roomid });
-  let updatedRoom = null;
-  let res = true;
-  let roundData = null;
-  let raiseAmount = roomData.raiseAmount;
-  let raisePlayerPosition = roomData.raisePlayerPosition;
-  let allinPlayer = roomData.allinPlayers;
+  try {
+    const roomData = await roomModel.findOne({ _id: roomid });
+    let updatedRoom = null;
+    let res = true;
+    let roundData = null;
+    let raiseAmount = roomData.raiseAmount;
+    let raisePlayerPosition = roomData.raisePlayerPosition;
+    let allinPlayer = roomData.allinPlayers;
 
-  const filterDta = roomData.players.filter(
-    (el) => el.userid.toString() === roomData.timerPlayer.toString()
-  );
-  if (roomData.timerPlayer.toString() === playerid.toString()) {
-    switch (roomData.runninground) {
-      case 1:
-        roundData = roomData.preflopround.filter(
-          (el) => el.id.toString() === playerid.toString()
-        );
-        // amt = amt-roundData[0].pot
-        if (roundData[0].wallet + roundData[0].pot > roomData.raiseAmount) {
-          raiseAmount = roundData[0].wallet + roundData[0].pot;
-          raisePlayerPosition = roundData[0].position;
-        }
-        allinPlayer.push({
-          id: playerid,
-          amt: roundData[0].wallet + roundData[0].pot,
-          wallet: roundData[0].wallet,
-          round: roomData.runninground,
-        });
-
-        updatedRoom = await roomModel.findOneAndUpdate(
-          {
-            _id: roomid,
-            'preflopround.id': playerid,
-          },
-          {
-            $inc: {
-              'preflopround.$.wallet': -roundData[0].wallet,
-              'preflopround.$.pot': +roundData[0].wallet,
-            },
-            'preflopround.$.action': true,
-            'preflopround.$.actionType': 'all-in',
-
-            raisePlayerPosition: raisePlayerPosition,
-            raiseAmount: raiseAmount,
-            lastAction: 'all-in',
-            allinPlayers: allinPlayer,
-          },
-          {
-            new: true,
+    const filterDta = roomData.players.filter(
+      (el) => el.userid.toString() === roomData.timerPlayer.toString()
+    );
+    if (roomData.timerPlayer.toString() === playerid.toString()) {
+      switch (roomData.runninground) {
+        case 1:
+          roundData = roomData.preflopround.filter(
+            (el) => el.id.toString() === playerid.toString()
+          );
+          // amt = amt-roundData[0].pot
+          if (roundData[0].wallet + roundData[0].pot > roomData.raiseAmount) {
+            raiseAmount = roundData[0].wallet + roundData[0].pot;
+            raisePlayerPosition = roundData[0].position;
           }
-        );
-        io.in(updatedRoom._id.toString()).emit('actionperformed', {
-          id: playerid,
-          action: 'all-in',
-        });
-        io.in(updatedRoom._id.toString()).emit('allin', { updatedRoom });
+          allinPlayer.push({
+            id: playerid,
+            amt: roundData[0].wallet + roundData[0].pot,
+            wallet: roundData[0].wallet,
+            round: roomData.runninground,
+          });
 
-        break;
-
-      case 2:
-        roundData = roomData.flopround.filter(
-          (el) => el.id.toString() === playerid.toString()
-        );
-        if (roundData[0].wallet + roundData[0].pot > roomData.raiseAmount) {
-          raiseAmount = roundData[0].wallet + roundData[0].pot;
-          raisePlayerPosition = roundData[0].position;
-        }
-        allinPlayer.push({
-          id: playerid,
-          amt: roundData[0].wallet + roundData[0].pot,
-          round: roomData.runninground,
-          wallet: roundData[0].wallet,
-        });
-        updatedRoom = await roomModel.findOneAndUpdate(
-          {
-            _id: roomid,
-            'flopround.id': playerid,
-          },
-          {
-            $inc: {
-              'flopround.$.wallet': -roundData[0].wallet,
-              'flopround.$.pot': +roundData[0].wallet,
+          updatedRoom = await roomModel.findOneAndUpdate(
+            {
+              _id: roomid,
+              'preflopround.id': playerid,
             },
-            'flopround.$.action': true,
-            'flopround.$.actionType': 'all-in',
+            {
+              $inc: {
+                'preflopround.$.wallet': -roundData[0].wallet,
+                'preflopround.$.pot': +roundData[0].wallet,
+              },
+              'preflopround.$.action': true,
+              'preflopround.$.actionType': 'all-in',
 
-            raisePlayerPosition: raisePlayerPosition,
-            raiseAmount: raiseAmount,
-            lastAction: 'all-in',
-            allinPlayers: allinPlayer,
-          },
-          {
-            new: true,
-          }
-        );
-
-        io.in(updatedRoom._id.toString()).emit('actionperformed', {
-          id: playerid,
-          action: 'all-in',
-        });
-        io.in(updatedRoom._id.toString()).emit('allin', { updatedRoom });
-
-        break;
-      case 3:
-        roundData = roomData.turnround.filter(
-          (el) => el.id.toString() === playerid.toString()
-        );
-        if (roundData[0].wallet + roundData[0].pot > roomData.raiseAmount) {
-          raiseAmount = roundData[0].wallet + roundData[0].pot;
-          raisePlayerPosition = roundData[0].position;
-        }
-        allinPlayer.push({
-          id: playerid,
-          amt: roundData[0].wallet + roundData[0].pot,
-          round: roomData.runninground,
-          wallet: roundData[0].wallet,
-        });
-        updatedRoom = await roomModel.findOneAndUpdate(
-          {
-            _id: roomid,
-            'turnround.id': playerid,
-          },
-          {
-            $inc: {
-              'turnround.$.wallet': -roundData[0].wallet,
-              'turnround.$.pot': +roundData[0].wallet,
+              raisePlayerPosition: raisePlayerPosition,
+              raiseAmount: raiseAmount,
+              lastAction: 'all-in',
+              allinPlayers: allinPlayer,
             },
-            'turnround.$.action': true,
-            'turnround.$.actionType': 'all-in',
+            {
+              new: true,
+            }
+          );
+          io.in(updatedRoom._id.toString()).emit('actionperformed', {
+            id: playerid,
+            action: 'all-in',
+          });
+          io.in(updatedRoom._id.toString()).emit('allin', { updatedRoom });
 
-            raisePlayerPosition: raisePlayerPosition,
-            raiseAmount: raiseAmount,
-            lastAction: 'all-in',
-            allinPlayers: allinPlayer,
-          },
-          {
-            new: true,
+          break;
+
+        case 2:
+          roundData = roomData.flopround.filter(
+            (el) => el.id.toString() === playerid.toString()
+          );
+          if (roundData[0].wallet + roundData[0].pot > roomData.raiseAmount) {
+            raiseAmount = roundData[0].wallet + roundData[0].pot;
+            raisePlayerPosition = roundData[0].position;
           }
-        );
-
-        io.in(updatedRoom._id.toString()).emit('actionperformed', {
-          id: playerid,
-          action: 'all-in',
-        });
-        io.in(updatedRoom._id.toString()).emit('allin', { updatedRoom });
-
-        break;
-      case 4:
-        roundData = roomData.riverround.filter(
-          (el) => el.id.toString() === playerid.toString()
-        );
-        if (roundData[0].wallet + roundData[0].pot > roomData.raiseAmount) {
-          raiseAmount = roundData[0].wallet + roundData[0].pot;
-          raisePlayerPosition = roundData[0].position;
-        }
-        allinPlayer.push({
-          id: playerid,
-          amt: roundData[0].wallet + roundData[0].pot,
-          round: roomData.runninground,
-          wallet: roundData[0].wallet,
-        });
-        updatedRoom = await roomModel.findOneAndUpdate(
-          {
-            _id: roomid,
-            'riverround.id': playerid,
-          },
-          {
-            $inc: {
-              'riverround.$.wallet': -roundData[0].wallet,
-              'riverround.$.pot': +roundData[0].wallet,
+          allinPlayer.push({
+            id: playerid,
+            amt: roundData[0].wallet + roundData[0].pot,
+            round: roomData.runninground,
+            wallet: roundData[0].wallet,
+          });
+          updatedRoom = await roomModel.findOneAndUpdate(
+            {
+              _id: roomid,
+              'flopround.id': playerid,
             },
-            'riverround.$.action': true,
-            'riverround.$.actionType': 'all-in',
+            {
+              $inc: {
+                'flopround.$.wallet': -roundData[0].wallet,
+                'flopround.$.pot': +roundData[0].wallet,
+              },
+              'flopround.$.action': true,
+              'flopround.$.actionType': 'all-in',
 
-            raisePlayerPosition: raisePlayerPosition,
-            raiseAmount: raiseAmount,
-            lastAction: 'all-in',
-            allinPlayers: allinPlayer,
-          },
-          {
-            new: true,
+              raisePlayerPosition: raisePlayerPosition,
+              raiseAmount: raiseAmount,
+              lastAction: 'all-in',
+              allinPlayers: allinPlayer,
+            },
+            {
+              new: true,
+            }
+          );
+
+          io.in(updatedRoom._id.toString()).emit('actionperformed', {
+            id: playerid,
+            action: 'all-in',
+          });
+          io.in(updatedRoom._id.toString()).emit('allin', { updatedRoom });
+
+          break;
+        case 3:
+          roundData = roomData.turnround.filter(
+            (el) => el.id.toString() === playerid.toString()
+          );
+          if (roundData[0].wallet + roundData[0].pot > roomData.raiseAmount) {
+            raiseAmount = roundData[0].wallet + roundData[0].pot;
+            raisePlayerPosition = roundData[0].position;
           }
-        );
+          allinPlayer.push({
+            id: playerid,
+            amt: roundData[0].wallet + roundData[0].pot,
+            round: roomData.runninground,
+            wallet: roundData[0].wallet,
+          });
+          updatedRoom = await roomModel.findOneAndUpdate(
+            {
+              _id: roomid,
+              'turnround.id': playerid,
+            },
+            {
+              $inc: {
+                'turnround.$.wallet': -roundData[0].wallet,
+                'turnround.$.pot': +roundData[0].wallet,
+              },
+              'turnround.$.action': true,
+              'turnround.$.actionType': 'all-in',
 
-        io.in(updatedRoom._id.toString()).emit('actionperformed', {
-          id: playerid,
-          action: 'all-in',
-        });
-        io.in(updatedRoom._id.toString()).emit('allin', { updatedRoom });
+              raisePlayerPosition: raisePlayerPosition,
+              raiseAmount: raiseAmount,
+              lastAction: 'all-in',
+              allinPlayers: allinPlayer,
+            },
+            {
+              new: true,
+            }
+          );
 
-        break;
+          io.in(updatedRoom._id.toString()).emit('actionperformed', {
+            id: playerid,
+            action: 'all-in',
+          });
+          io.in(updatedRoom._id.toString()).emit('allin', { updatedRoom });
+
+          break;
+        case 4:
+          roundData = roomData.riverround.filter(
+            (el) => el.id.toString() === playerid.toString()
+          );
+          if (roundData[0].wallet + roundData[0].pot > roomData.raiseAmount) {
+            raiseAmount = roundData[0].wallet + roundData[0].pot;
+            raisePlayerPosition = roundData[0].position;
+          }
+          allinPlayer.push({
+            id: playerid,
+            amt: roundData[0].wallet + roundData[0].pot,
+            round: roomData.runninground,
+            wallet: roundData[0].wallet,
+          });
+          updatedRoom = await roomModel.findOneAndUpdate(
+            {
+              _id: roomid,
+              'riverround.id': playerid,
+            },
+            {
+              $inc: {
+                'riverround.$.wallet': -roundData[0].wallet,
+                'riverround.$.pot': +roundData[0].wallet,
+              },
+              'riverround.$.action': true,
+              'riverround.$.actionType': 'all-in',
+
+              raisePlayerPosition: raisePlayerPosition,
+              raiseAmount: raiseAmount,
+              lastAction: 'all-in',
+              allinPlayers: allinPlayer,
+            },
+            {
+              new: true,
+            }
+          );
+
+          io.in(updatedRoom._id.toString()).emit('actionperformed', {
+            id: playerid,
+            action: 'all-in',
+          });
+          io.in(updatedRoom._id.toString()).emit('allin', { updatedRoom });
+
+          break;
+      }
     }
+  } catch (error) {
+    console.log('LINE NUMBER 4352 in function.js', error);
   }
 };
 
 export const socketDoAllin = async (dta, io, socket) => {
-  let userid = dta.userid;
+  let userid = mongoose.Types.ObjectId(dta.userid);
   let roomid = dta.roomid;
+
+  console.log({ userid, room });
 
   const { isValid } = checkIfEmpty({ roomid, userid });
 
@@ -4367,7 +4403,7 @@ export const socketDoAllin = async (dta, io, socket) => {
           { _id: 1, raiseAmount: 1 }
         )
         .lean();
-
+      console.log({ data });
       if (data !== null) {
         await doAllin(roomid, playerid, io);
       } else {
@@ -5591,7 +5627,9 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
     if (!room.roomid) return;
     let hand = [];
     let amount = 0;
-    let items = await getPurchasedItem(user.userid, user.stats.Level);
+    // let items = await getPurchasedItem(user.userid, user.stats.Level);
+    let items = [];
+
     if (room.table.media !== 'no-media') {
       amount = room.table.media === 'video' ? 400 : 100;
       hand.push({
@@ -6949,26 +6987,35 @@ export const InvitePlayers = async (data, socket, io) => {
       { new: true }
     );
     if (updateRoom) {
-      const res = await axios.get(
-        'https://invite2-lobby-t3e66zpola-ue.a.run.app/',
-        {
-          params: {
-            usid: data.userId,
-            game: data.gameType,
-            tabId: data._id,
-            toInvite: newInvPlayers.join(','),
-          },
-          headers: {
-            'Content-Type': 'application/json',
-            origin: socket.handshake.headers.origin,
-          },
-        }
-      );
-      if (res.data.error === 'no error') {
-        socket.emit('invitationSend');
-      } else {
-        socket.emit('noInvitationSend');
-      }
+      // http://localhost:3000/table?gamecollection=poker&tableid=63a05540685ad21d89ac1e9b
+      const sendMessageToInvitedUsers = [
+        ...newInvPlayers.map((el) => {
+          return {
+            sender: data.userId,
+            receiver: el,
+            message: `<a href='${process.env.CLIENTURL}/table?tableid=${data.tableId}&gamecollection=poker#/'>Click here</a> to play poker with me.`,
+          };
+        }),
+      ];
+
+      const sendNotificationToInvitedUsers = [
+        ...newInvPlayers.map((el) => {
+          return {
+            sender: data.userId,
+            receiver: el,
+            message: `has invited you to play poker.`,
+            url: `${process.env.CLIENTURL}/table?tableid=${data.tableId}&gamecollection=poker#/`,
+          };
+        }),
+      ];
+
+      await MessageModal.insertMany(sendMessageToInvitedUsers);
+      await Notification.insertMany(sendNotificationToInvitedUsers);
+
+      socket.emit('invitationSend', {
+        room: updateRoom,
+      });
+      socket.emit('invitationSend');
     }
   } catch (err) {
     console.log('Error in InvitePlayer Function =>', err.message);
@@ -7302,37 +7349,34 @@ export const finishHandApiCall = async (room, userId) => {
   }
 };
 
+const addUserToGame = (io, socket, gameId, userId) => {
+  // Socket for room
+  let lastSocketData = io.room || [];
+  lastSocketData.push({ gameId, pretimer: false, room: gameId.toString() });
+  io.room = [...new Set(lastSocketData.map((ele) => ele.room))].map((el) => ({
+    room: el,
+    pretimer: false,
+  }));
+  socket.customRoom = gameId;
+
+  // socket for userId
+  lastSocketData = io.users;
+  lastSocketData.push(userId.toString());
+  io.users = [...new Set(lastSocketData)];
+  socket.customId = userId;
+};
+
 // NEW functions
 export const checkForGameTable = async (data, socket, io) => {
   try {
     const { gameId, userId } = data;
-    console.log({ gameId, userId });
     const game = await gameService.getGameById(gameId);
-    console.log({ userId, game });
+
     if (!game || game.finish) {
-      console.log('HERE');
+      console.log('7353 in function.js', JSON.stringify(game));
       return socket.emit('notFound', {
         message: 'Game not found. Either game is finished or not exist',
       });
-    }
-    let lastSocketData = io.room || [];
-    lastSocketData.push({ gameId, pretimer: false, room: gameId.toString() });
-    io.room = [...new Set(lastSocketData.map((ele) => ele.room))].map((el) => ({
-      room: el,
-      pretimer: false,
-    }));
-    socket.customRoom = gameId;
-
-    if (!socket.customId) {
-      socket.customId = userId;
-      console.log('----JOIN USER CUSTOUM ID---', socket.customId);
-    }
-
-    if (!socket.customRoom) {
-      socket.customRoom = gameId;
-      console.log('----ADING USER GAME ID-----', socket.customRoom);
-    } else {
-      console.log('----ADING USER GAME ID-----', socket.customRoom);
     }
 
     const user = await userService.getUserById(userId);
@@ -7347,23 +7391,18 @@ export const checkForGameTable = async (data, socket, io) => {
       return el.userid?.toString() === userId.toString();
     });
 
-    console.log('USER IN THE GAME -------->', { ifUserInGame, user });
-
     // check user
-    if (game.smallBlind > user.wallet && !ifUserInGame) {
+    if (
+      parseFloat(game.smallBlind) > parseFloat(user.wallet) &&
+      !ifUserInGame
+    ) {
       return socket.emit('notEnoughBalance', {
         message: "You don't have enough balance to sit on the table.",
       });
     }
 
-    lastSocketData = io.users;
-    lastSocketData.push(userId.toString());
-    io.users = [...new Set(lastSocketData)];
-
-    // if user is already in the room
     if (ifUserInGame) {
-      console.log('Already in the table');
-      socket.join(gameId);
+      addUserInSocket(io, socket, gameId, userId);
       io.in(gameId).emit('updateGame', { game });
       return;
     }
@@ -7380,12 +7419,11 @@ export const checkForGameTable = async (data, socket, io) => {
     const updatedRoom = await gameService.joinRoomByUserId(game, userId);
     console.log({ updatedRoom });
     if (updatedRoom) {
-      console.log('Add user in the room');
-      socket.join(gameId);
+      addUserInSocket(io, socket, gameId, userId);
       io.in(gameId).emit('updateGame', { game: updatedRoom });
       return;
     }
-    console.log({ updatedRoom, game });
+
     socket.emit('notInvited', { message: 'Your are not invited.' });
   } catch (error) {
     console.log('Error in check for table =>', error);

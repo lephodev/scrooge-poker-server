@@ -1,7 +1,7 @@
-import { Schema, model } from 'mongoose';
+import mongoose from 'mongoose';
 
-const schema = Schema({
-  userId: { type: Schema.Types.ObjectId, ref: 'users' },
+const schema = mongoose.Schema({
+  userId: { type: mongoose.Types.ObjectId, ref: 'users' },
   gameName: { type: String, enum: ['poker', 'blackjack', 'slot'] },
   win: { type: Number, default: 0 },
   loss: { type: Number, default: 0 },
@@ -9,5 +9,5 @@ const schema = Schema({
   totalLossAmount: { type: Number, default: 0 },
 });
 
-const rankModel = model('rank', schema);
+const rankModel = mongoose.model('rank', schema);
 export default rankModel;
