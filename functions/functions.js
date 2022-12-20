@@ -3132,8 +3132,10 @@ export const doLeaveTable = async (data, io, socket) => {
           roomdata.players.filter((ele) => ele.playing).length ||
           data.isWatcher
         ) {
+          console.log('LEAVE API CALL 3135');
           await leaveApiCall(roomdata, userid);
         } else {
+          console.log('doFinishGame CALL 3138');
           await doFinishGame(
             { roomid: roomdata._id, userid: userid },
             io,
@@ -6880,6 +6882,7 @@ export const findLoserAndWinner = async (room) => {
 
 export const finishedTableGame = async (room) => {
   try {
+    console.log('LEAVE API CALL 6885');
     const dd = await leaveApiCall(room);
     if (dd || room.finish) await roomModel.deleteOne({ _id: room._id });
   } catch (err) {
@@ -7040,6 +7043,7 @@ export const doLeaveWatcher = async (data, io, socket) => {
   try {
     const { tableId, userId, gameType } = data;
     const room = await roomModel.findOne({ tableId });
+    console.log('LEAVE API CALL 7046');
     const isCalled = await leaveApiCall(room, userId);
     if (isCalled) {
       const updatedRoom = await roomModel.findOneAndUpdate(
