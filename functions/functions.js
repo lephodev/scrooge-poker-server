@@ -3132,8 +3132,10 @@ export const doLeaveTable = async (data, io, socket) => {
           roomdata.players.filter((ele) => ele.playing).length ||
           data.isWatcher
         ) {
+          console.log('LEAVE API CALL 3135');
           await leaveApiCall(roomdata, userid);
         } else {
+          console.log('doFinishGame CALL 3138');
           await doFinishGame(
             { roomid: roomdata._id, userid: userid },
             io,
@@ -4184,6 +4186,9 @@ export const socketDoCheck = async (dta, io, socket) => {
 export const doAllin = async (roomid, playerid, io) => {
   try {
     const roomData = await roomModel.findOne({ _id: roomid });
+    playerid = convertMongoId(playerid);
+    roomid = convertMongoId(roomid);
+
     let updatedRoom = null;
     let res = true;
     let roundData = null;
@@ -4194,9 +4199,12 @@ export const doAllin = async (roomid, playerid, io) => {
     const filterDta = roomData.players.filter(
       (el) => el.userid.toString() === roomData.timerPlayer.toString()
     );
+
     if (roomData.timerPlayer.toString() === playerid.toString()) {
+      console.log('=================== ALLIN 4209', roomData.timerPlayer);
       switch (roomData.runninground) {
         case 1:
+          console.log('=================== ALLIN 4212');
           roundData = roomData.preflopround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -4211,7 +4219,7 @@ export const doAllin = async (roomid, playerid, io) => {
             wallet: roundData[0].wallet,
             round: roomData.runninground,
           });
-
+          console.log('=================== ALLIN 4228');
           updatedRoom = await roomModel.findOneAndUpdate(
             {
               _id: roomid,
@@ -4243,6 +4251,7 @@ export const doAllin = async (roomid, playerid, io) => {
           break;
 
         case 2:
+          console.log('=================== ALLIN 4260');
           roundData = roomData.flopround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -4287,6 +4296,7 @@ export const doAllin = async (roomid, playerid, io) => {
 
           break;
         case 3:
+          console.log('=================== ALLIN 4305');
           roundData = roomData.turnround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -4331,6 +4341,7 @@ export const doAllin = async (roomid, playerid, io) => {
 
           break;
         case 4:
+          console.log('=================== ALLIN 4350');
           roundData = roomData.riverround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -4382,15 +4393,17 @@ export const doAllin = async (roomid, playerid, io) => {
 };
 
 export const socketDoAllin = async (dta, io, socket) => {
+  console.log('ALLIN 4395');
   let userid = mongoose.Types.ObjectId(dta.userid);
-  let roomid = dta.roomid;
+  let roomid = mongoose.Types.ObjectId(dta.roomid);
 
-  console.log({ userid, room });
+  console.log({ userid, roomid });
 
   const { isValid } = checkIfEmpty({ roomid, userid });
 
   try {
     if (isValid) {
+      console.log('=================== ALLIN 4405');
       roomid = mongoose.Types.ObjectId(roomid);
       let playerid = userid;
       // let amt  = body.amount;
@@ -4405,11 +4418,14 @@ export const socketDoAllin = async (dta, io, socket) => {
         .lean();
       console.log({ data });
       if (data !== null) {
+        console.log('=================== ALLIN 4420');
         await doAllin(roomid, playerid, io);
       } else {
+        console.log('=================== ALLIN 4442');
         socket.emit('actionError', { code: 404, msg: 'Data not found' });
       }
     } else {
+      console.log('=================== ALLIN 4427');
       socket.emit('actionError', { code: 400, msg: 'Bad request' });
     }
   } catch (e) {
@@ -5869,7 +5885,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
                 apikey: API_KEY,
                 permissions: ['ask_join'], // also accepts "ask_join"
               };
-
+              console.log('LINE NUMBER 5883');
               const token = jwt.sign(payload, SECRET_KEY, options);
               const updateRoom = await roomModel.findOneAndUpdate(
                 { _id: isRoomExist._id },
@@ -6866,6 +6882,7 @@ export const findLoserAndWinner = async (room) => {
 
 export const finishedTableGame = async (room) => {
   try {
+    console.log('LEAVE API CALL 6885');
     const dd = await leaveApiCall(room);
     if (dd || room.finish) await roomModel.deleteOne({ _id: room._id });
   } catch (err) {
@@ -7026,6 +7043,7 @@ export const doLeaveWatcher = async (data, io, socket) => {
   try {
     const { tableId, userId, gameType } = data;
     const room = await roomModel.findOne({ tableId });
+    console.log('LEAVE API CALL 7046');
     const isCalled = await leaveApiCall(room, userId);
     if (isCalled) {
       const updatedRoom = await roomModel.findOneAndUpdate(
@@ -7417,7 +7435,7 @@ export const checkForGameTable = async (data, socket, io) => {
 
     // If user is not in the room
     const updatedRoom = await gameService.joinRoomByUserId(game, userId);
-    console.log({ updatedRoom });
+
     if (updatedRoom) {
       addUserInSocket(io, socket, gameId, userId);
       io.in(gameId).emit('updateGame', { game: updatedRoom });
