@@ -5547,10 +5547,12 @@ export const joinRequest = async (data, socket, io) => {
               });
             }
           } else {
+            console.log('ROOM FULL 5550');
             socket.emit('roomFull', 'Room is Already Full');
           }
         }
       } else {
+        console.log('----NOT FOUND 5554----');
         socket.emit('notFound', 'Room not Found');
       }
     } else {
@@ -5619,6 +5621,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
             allowWatcher: room.table.alloWatchers,
           });
         } else {
+          console.log('ROOM FULL 5625');
           return socket.emit('roomFull', 'Room is full');
         }
       }
@@ -5710,6 +5713,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
             isRoomExist.gameType !== 'poker1vs1_Tables' &&
             isRoomExist.players.length >= 10
           ) {
+            console.log('ROOM FULL 5716');
             socket.emit('roomFull', 'Room is full');
           }
         } else {
@@ -6355,9 +6359,11 @@ export const approveJoinRequest = async (data, socket, io) => {
             }
           }
         } else {
+          console.log('ROOM FULL 6362');
           socket.emit('roomFull', 'Room is Already Full');
         }
       } else {
+        console.log('----NOT FOUND 6362----');
         socket.emit('notFound', 'Room not Found');
       }
     } else {
@@ -6399,6 +6405,7 @@ export const rejectJoinRequest = async (data, socket, io) => {
           playerid: data.player.userid,
         });
       } else {
+        console.log('----NOT FOUND 6404----');
         socket.emit('notFound', 'Room not Found');
       }
     } else {
@@ -7303,23 +7310,6 @@ export const finishHandApiCall = async (room, userId) => {
   }
 };
 
-const addUserToGame = (io, socket, gameId, userId) => {
-  // Socket for room
-  let lastSocketData = io.room || [];
-  lastSocketData.push({ gameId, pretimer: false, room: gameId.toString() });
-  io.room = [...new Set(lastSocketData.map((ele) => ele.room))].map((el) => ({
-    room: el,
-    pretimer: false,
-  }));
-  socket.customRoom = gameId;
-
-  // socket for userId
-  lastSocketData = io.users;
-  lastSocketData.push(userId.toString());
-  io.users = [...new Set(lastSocketData)];
-  socket.customId = userId;
-};
-
 // NEW functions
 export const checkForGameTable = async (data, socket, io) => {
   try {
@@ -7327,7 +7317,7 @@ export const checkForGameTable = async (data, socket, io) => {
     const game = await gameService.getGameById(gameId);
 
     if (!game || game.finish) {
-      console.log('7353 in function.js', JSON.stringify(game));
+      console.log('7353 in function.js');
       return socket.emit('notFound', {
         message: 'Game not found. Either game is finished or not exist',
       });

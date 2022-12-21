@@ -54,7 +54,6 @@ let returnSocket = (io) => {
 
     socket.on('checkTable', async (data) => {
       console.log('---------------CHECK TABLE-------------------', { data });
-      console.log('One user connected', data);
       try {
         await checkForGameTable(data, socket, io);
       } catch (err) {
