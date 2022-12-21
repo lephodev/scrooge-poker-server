@@ -11,7 +11,6 @@ const img =
 
 const getGameById = async (id) => {
   const game = await Game.findOne({ _id: converMongoId(id) }).lean();
-  console.log({ game });
   if (game) return { ...game, id: game._id };
   return null;
 };
