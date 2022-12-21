@@ -182,14 +182,12 @@ export const verifycards = (distributedCards, noOfCards) => {
 };
 
 export const preflopPlayerPush = async (players, roomid) => {
-  console.log('Inside preflopPlayerPush', roomid);
   return new Promise((resolve, reject) => {
     let distributedCards = [];
 
     each(
       players,
       async function (elem, next) {
-        console.log({ elem });
         //perform async operation with item
         // let game= req.body._id;
         let checkcards = [];
@@ -217,7 +215,6 @@ export const preflopPlayerPush = async (players, roomid) => {
             checkcards = verifycards(distributedCards, 2);
             checkcards.map((e) => distributedCards.push(e));
           }
-          console.log('ON LINE NUMBER 192');
           const a = await roomModel.updateOne(
             {
               _id: convertMongoId(roomid),
@@ -270,11 +267,9 @@ export const preflopPlayerPush = async (players, roomid) => {
 };
 
 export const preflopround = async (room, io) => {
-  console.log('IN preflopround');
   await updateRoomForNewHand(room._id, io);
   room = await roomModel.findOne(room._id).lean();
   let playingPlayer = room.players.filter((el) => el.playing && el.wallet > 0);
-  console.log({ playingPlayer });
   let positions = room.players.map((pos) => pos.position);
   let isNewLeave = false;
   let i = 0;
@@ -1935,7 +1930,6 @@ export const showdown = async (roomid, io) => {
   console.log('----showdown-----');
   const roomData = await roomModel.findOne({ _id: roomid });
   if (!roomData.isGameRunning) return;
-  console.log('AFTER IF SHOWDOWN');
   let playersHand = [];
   let hands = [];
   let showDownPlayers = [];
@@ -1979,7 +1973,6 @@ export const showdown = async (roomid, io) => {
     totalPot += e.pot;
     showDownPlayers.push(p);
   });
-  console.log({ playerData });
   const updatedRoom = await roomModel.findOneAndUpdate(
     {
       _id: roomid,
@@ -2092,20 +2085,16 @@ export const showdown = async (roomid, io) => {
   };
 
   let x = await getSidePOt(updatedRoom);
-  console.log({ x });
+
   clcHand(x);
   console.log({ hands });
   let showdownData = updatedRoom.showdown;
   let winnerPlayers = [];
   const findWinner = async () => {
-    console.log('------FIND WINNER---');
     hands.forEach((e) => {
       let winner = Hand.winners(e.h);
-      console.log({ winner });
       e.p.forEach((el) => {
-        console.log({ elHand: el.hand });
         if (JSON.stringify(el.hand) == JSON.stringify(winner[0])) {
-          console.log('IS WINNER TRUE');
           let winnerData = showdownData.filter(
             (p) => p.position === el.position
           );
@@ -2117,27 +2106,14 @@ export const showdown = async (roomid, io) => {
           const totalPlayerTablePot = winnerData[0].prevPot;
           console.log({ winnerData, totalPlayerTablePot });
           let winningAmount = e.pot - totalPlayerTablePot;
-          console.log({ winningAmount, e, winnerPlayers });
 
           if (winnerPlayers.length) {
-            console.log('In Winner player');
             let playerExist = winnerPlayers.filter(
               (wp) => wp.position === el.position
             );
             if (playerExist.length) {
-              console.log('In player exists');
               playerExist[0].winningAmount += e.pot;
             } else {
-              console.log('NEW Winner player', {
-                id: winnerData[0].id,
-                name: winnerData[0].name,
-                position: winnerData[0].position,
-                winningAmount: winningAmount,
-                handName: winner[0].name,
-                winnerHand: winnerHand,
-                winnerCards: winnerData[0].cards,
-                communityCards: updatedRoom.communityCard,
-              });
               winnerPlayers.push({
                 id: winnerData[0].id,
                 name: winnerData[0].name,
@@ -2150,16 +2126,6 @@ export const showdown = async (roomid, io) => {
               });
             }
           } else {
-            console.log('ELSE NEW Winner player', {
-              id: winnerData[0].id,
-              name: winnerData[0].name,
-              position: winnerData[0].position,
-              winningAmount: winningAmount,
-              handName: winner[0].name,
-              winnerHand: winnerHand,
-              winnerCards: winnerData[0].cards,
-              communityCards: updatedRoom.communityCard,
-            });
             winnerPlayers.push({
               id: winnerData[0].id,
               name: winnerData[0].name,
@@ -2177,19 +2143,13 @@ export const showdown = async (roomid, io) => {
   };
   await findWinner();
   const handWinner = updatedRoom.handWinner;
-  console.log({ handWinner });
   handWinner.push(winnerPlayers);
-  console.log({ handWinner });
   const upRoomData = await roomModel.findOne({ _id: updatedRoom._id });
   upRoomData.showdown.forEach((player, i) => {
     let action, amt;
     if (player.playing) {
       if (
         winnerPlayers.find((ele) => {
-          console.log({
-            ele: ele.id.toString(),
-            playerId: player.id.toString(),
-          });
           return ele.id.toString() === player.id.toString();
         })
       ) {
@@ -2219,14 +2179,12 @@ export const showdown = async (roomid, io) => {
         amt = player.prevPot;
       }
       player.wallet = showdownData[i].wallet;
-      console.log('Player hands', { amt, action, hands: player.hands });
       player.hands.push({
         action,
         amount: amt,
         date: new Date(),
         isWatcher: false,
       });
-      console.log('Player hands', { hands: player.hands });
     }
   });
   console.log('showdownplayes', JSON.stringify(upRoomData.showdown));
@@ -2372,15 +2330,12 @@ export const updateRoomForNewHand = async (roomid, io) => {
           );
         });
       };
-      console.log(roomData);
       let sitin = roomData.sitin;
       let leavereq = roomData.leavereq;
-      console.log('PLAYER DATA BEFORE ', JSON.stringify(playerData));
       each(
         playerData,
         async function (el, next) {
           try {
-            console.log({ PLAYERRESULT: JSON.stringify(el) });
             let uid;
             if (roomData.runninground === 0) {
               uid = el.userid;
@@ -3071,7 +3026,7 @@ export const doSitIn = async (data, io, socket) => {
 };
 
 export const doLeaveTable = async (data, io, socket) => {
-  console.log('doLeaveTable API called ', data);
+  console.log('doLeaveTable API called ');
   const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
   let roomid;
@@ -3079,7 +3034,6 @@ export const doLeaveTable = async (data, io, socket) => {
   const { isValid } = checkIfEmpty({ tableId, userid });
   try {
     if (isValid) {
-      console.log({ isValid });
       let roomdata = await roomModel
         .findOneAndUpdate(
           {
@@ -3094,18 +3048,10 @@ export const doLeaveTable = async (data, io, socket) => {
         console.log('IN ROOM DATA');
         roomid = roomdata._id;
         if (roomdata.hostId.toString() === userid.toString()) {
-          console.log({
-            hostId: roomdata.hostId.toString(),
-            userid: userid.toString(),
-          });
-          console.log('PLAYER ', JSON.stringify(roomdata.players));
-          console.log('HERE OK ', userid);
           let p = roomdata.players.filter(
             (ele) => ele.userid.toString() !== userid.toString()
           )[0];
-          console.log({
-            p,
-          });
+
           if (p) {
             console.log('In P');
             roomdata.players
@@ -3115,7 +3061,6 @@ export const doLeaveTable = async (data, io, socket) => {
                   p = pl;
                 }
               });
-            console.log({ p });
             roomdata = await roomModel.findOneAndUpdate(
               { _id: tableId },
               { hostId: p.userid },
@@ -3611,7 +3556,6 @@ export const socketDoCall = async (dta, io, socket) => {
           { _id: 1, raiseAmount: 1 }
         )
         .lean();
-      console.log({ data });
       if (data !== null) {
         if (data.raiseAmount == amt) {
           const walletAmt = await getPlayerwallet(roomid, playerid);
@@ -4004,8 +3948,6 @@ export const socketDoRaise = async (dta, io, socket) => {
         )
         .lean();
 
-      console.log({ data });
-
       if (data !== null) {
         if (data.raiseAmount * 2 <= amt) {
           const walletAmt = await getPlayerwallet(roomid, playerid);
@@ -4041,7 +3983,7 @@ export const doCheck = async (roomid, playerid, io) => {
   let res = true;
   let filterData = null;
 
-  console.log('TIMER -------- ', roomData.timerPlayer);
+  console.log('TIMER -------- ');
 
   const filterDta = roomData.players.filter(
     (el) => el.userid.toString() === roomData.timerPlayer.toString()
@@ -4600,10 +4542,8 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     },
   ];
   const handWinner = roomData.handWinner;
-  console.log({ handWinner });
   handWinner.push(winnerPlayer);
-  console.log({ handWinner });
-  console.log('PLAYER JSON BEFORE', JSON.stringify(showDownPlayers));
+
   showDownPlayers.forEach((player, i) => {
     let action, amt;
     if (player.playing) {
@@ -4623,10 +4563,6 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
       });
     }
   });
-  console.log('--------------------------------------------------------');
-  console.log('PLAYER JSON ', JSON.stringify(showDownPlayers));
-  console.log('--------------------------------------------------------');
-  console.log('showDwon =>', JSON.stringify(showDownPlayers));
   const updatedRoom = await roomModel.findOneAndUpdate(
     {
       _id: roomid,
@@ -5017,31 +4953,26 @@ export const reArrangeTables = async (tournamentId, io) => {
         let canPlayMinimum = 9;
         if (tData.rooms.length - updatedDestroyed.destroyedRooms.length >= 9) {
           canPlayMinimum = 9;
-          console.log('canPlayMinimum==>', canPlayMinimum);
         } else if (
           tData.rooms.length - updatedDestroyed.destroyedRooms.length <= 8 &&
           tData.rooms.length - updatedDestroyed.destroyedRooms.length >= 5
         ) {
           canPlayMinimum = 8;
-          console.log('canPlayMinimum==>', canPlayMinimum);
         } else if (
           tData.rooms.length - updatedDestroyed.destroyedRooms.length <= 4 &&
           tData.rooms.length - updatedDestroyed.destroyedRooms.length >= 3
         ) {
           canPlayMinimum = 7;
-          console.log('canPlayMinimum==>', canPlayMinimum);
         } else if (
           tData.rooms.length - updatedDestroyed.destroyedRooms.length ===
           2
         ) {
           canPlayMinimum = 5;
-          console.log('canPlayMinimum==>', canPlayMinimum);
         } else if (
           tData.rooms.length - updatedDestroyed.destroyedRooms.length ===
           1
         ) {
           canPlayMinimum = 2;
-          console.log('canPlayMinimum==>', canPlayMinimum);
         }
 
         fullRooms = allAvilableRoom.filter(
@@ -5080,12 +5011,6 @@ export const reArrangeTables = async (tournamentId, io) => {
         });
         let haveOnespot = blankSpots.filter((el) => el.spots.length === 1);
         let haveMoreThnOne = blankSpots.filter((el) => {
-          console.log(
-            '-----el.spots.length---',
-            el.spots.length,
-            '---(10-canPlayMinimum+1)---',
-            10 - (canPlayMinimum + 1)
-          );
           return el.spots.length > 10 - canPlayMinimum;
         });
         console.log('blankSpots => ', blankSpots);
@@ -7070,12 +6995,12 @@ export const doLeaveWatcher = async (data, io, socket) => {
 };
 
 const createTransactionFromUsersArray = (roomId, users = []) => {
-  console.log({ roomId, users });
+  console.log({ roomId, users: JSON.stringify(users) });
   let transactionObjectsArray = [];
   const rankModelUpdate = [];
 
   users.forEach((el, i) => {
-    console.log('7013', el);
+    console.log('7013', JSON.stringify(el));
     let updatedAmount = el.coinsBeforeJoin;
     const userId = el.uid;
 
@@ -7096,6 +7021,7 @@ const createTransactionFromUsersArray = (roomId, users = []) => {
         totalWin++;
       }
 
+      // Get each transaction last and update wallet amount
       const gameWinOrLoseamount =
         elem.action === 'game-lose' ? -elem.amount : elem.amount;
       const lastAmount = updatedAmount;
@@ -7157,9 +7083,10 @@ export const leaveApiCall = async (room, userId) => {
     } else if (room.runninground === 5) {
       player = room.showdown;
     }
+
     if (
       !userId ||
-      (!player.find((el) =>
+      (!player?.find((el) =>
         el.id
           ? el.id.toString() === userId?.toString()
           : el.userid.toString() === userId?.toString()
@@ -7194,13 +7121,13 @@ export const leaveApiCall = async (room, userId) => {
     });
 
     if (userId) {
-      allUsers = allUsers.filter(
-        (ele) =>
-          (ele.id ? ele.id.toString() : ele.userid.toString()) ===
-          userId.toString()
-      );
+      allUsers = allUsers.filter((ele) => {
+        const elUserId = ele.id ? ele.id.toString() : ele.userid.toString();
+        return elUserId === userId.toString();
+      });
     }
 
+    console.log({ allUsers });
     let users = [];
     console.log({ users });
     allUsers.forEach((item) => {
@@ -7209,7 +7136,9 @@ export const leaveApiCall = async (room, userId) => {
       let uid = item.id ? item.id : item.userid;
       console.log({ uid });
       console.log({ hands });
+      console.log({ runningRound: room.runninground });
       if (room.runninground !== 0 && room.runninground !== 5) {
+        console.log('PUSHING HERE INTO ARRAY');
         hands.push({
           action: 'game-lose',
           amount: item.pot + item.prevPot || 0,
@@ -7224,10 +7153,7 @@ export const leaveApiCall = async (room, userId) => {
 
       users.push({
         uid,
-        hands:
-          url === 'https://leave-tab-v2-posthand-all-t3e66zpola-uc.a.run.app/'
-            ? []
-            : hands,
+        hands: hands,
         coinsBeforeJoin: item.initialCoinBeforeStart,
         gameLeaveAt: new Date(),
         gameJoinedAt: item.gameJoinedAt,
@@ -7236,6 +7162,8 @@ export const leaveApiCall = async (room, userId) => {
           : false,
       });
     });
+
+    console.log('USERS => ', JSON.stringify(users));
 
     let payload = {
       mode:
@@ -7267,7 +7195,7 @@ export const leaveApiCall = async (room, userId) => {
       const response = await Promise.allSettled([
         // Remove user from the room
         roomModel.updateOne(
-          { _id: room._id, 'players.userid': userId },
+          { _id: room._id, 'players.userid': convertMongoId(userId) },
           {
             $pull: {
               players: { userid: userId },
@@ -7280,7 +7208,10 @@ export const leaveApiCall = async (room, userId) => {
         ...userBalancePromise,
         ...rankModelUpdate,
       ]);
-      console.log(response);
+      console.log(
+        'FINAL RESPONSE:',
+        response.map((el) => el.value)
+      );
     } else {
       const response = await Promise.allSettled([
         // Create transaction
@@ -7289,7 +7220,12 @@ export const leaveApiCall = async (room, userId) => {
         ...userBalancePromise,
         ...rankModelUpdate,
       ]);
+      console.log(
+        'FINAL RESPONSE:',
+        response.map((el) => el.value)
+      );
     }
+
     return true;
   } catch (err) {
     console.log('Error in Leave APi call =>', err.message);
