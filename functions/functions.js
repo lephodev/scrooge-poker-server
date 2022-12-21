@@ -35,6 +35,7 @@ const admin = require('firebase-admin');
 import MessageModal from '../models/messageModal';
 import Notification from '../models/notificationModal';
 
+const gameRestartSeconds = 7000;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
 const addUserInSocket = (io, socket, gameId, userId) => {
@@ -2267,7 +2268,7 @@ export const showdown = async (roomid, io) => {
       io.in(upRoom._id.toString()).emit('newhand', {
         updatedRoom: roomUpdate,
       });
-  }, 15000);
+  }, gameRestartSeconds);
 };
 
 export const updateRoomForNewHand = async (roomid, io) => {
@@ -2453,7 +2454,9 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 new: true,
               }
             );
-            // io.in(upRoom._id.toString()).emit('newhand', { updatedRoom: upRoom });
+            // io.in(upRoom._id.toString()).emit('newhand', {
+            //   updatedRoom: upRoom,
+            // });
             resolve();
           } catch (error) {
             console.log('Error in transformedItems', err);
@@ -4644,7 +4647,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
       io.in(updatedRoom._id.toString()).emit('newhand', {
         updatedRoom: roomUpdate,
       });
-  }, 15000);
+  }, gameRestartSeconds);
 };
 
 export const getPlayerwallet = async (roomid, playerid) => {
