@@ -7435,7 +7435,7 @@ export const checkForGameTable = async (data, socket, io) => {
 
     // If user is not in the room
     const updatedRoom = await gameService.joinRoomByUserId(game, userId);
-    console.log({ updatedRoom });
+
     if (updatedRoom) {
       addUserInSocket(io, socket, gameId, userId);
       io.in(gameId).emit('updateGame', { game: updatedRoom });

@@ -262,6 +262,10 @@ let returnSocket = (io) => {
           socket.customRoom // Room id on which user was playing game
         );
 
+        if (!socket.custoumId && !socket.customRoom) {
+          return;
+        }
+
         const lastSockets = io.users;
         console.log({ lastSockets });
         let filteredSockets = lastSockets.filter(
