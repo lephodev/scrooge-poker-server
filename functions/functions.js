@@ -311,15 +311,8 @@ export const preflopround = async (room, io) => {
     console.log('CHECK 308');
     if (room.runninground === 0 && !room.pause) {
       console.log('CHECK 310');
-      let created_on = new Date(room.createdAt);
-      let valid_till = moment(created_on).add(24, 'h').toDate();
-      const curr_datetime = new Date();
-      console.log({ valid_till, curr_datetime });
-      console.log({ playingPlayer: JSON.stringify(playingPlayer) });
-      if (
-        playingPlayer.length > 1 &&
-        valid_till.getTime() > curr_datetime.getTime()
-      ) {
+
+      if (playingPlayer.length > 1) {
         console.log('CHECK 308');
         await roomModel.updateOne(
           {
