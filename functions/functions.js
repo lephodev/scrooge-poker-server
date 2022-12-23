@@ -183,6 +183,7 @@ export const verifycards = (distributedCards, noOfCards) => {
 };
 
 export const preflopPlayerPush = async (players, roomid) => {
+  console.log('PREFLOP PLAYER PUSH');
   return new Promise((resolve, reject) => {
     let distributedCards = [];
 
@@ -271,6 +272,7 @@ export const preflopround = async (room, io) => {
   await updateRoomForNewHand(room._id, io);
   room = await roomModel.findOne(room._id).lean();
   let playingPlayer = room.players.filter((el) => el.playing && el.wallet > 0);
+  console.log({ playingPlayer: JSON.stringify(playingPlayer) });
   let positions = room.players.map((pos) => pos.position);
   let isNewLeave = false;
   let i = 0;
@@ -283,6 +285,7 @@ export const preflopround = async (room, io) => {
     }
   }
   if (isNewLeave) {
+    console.log({ isNewLeave });
     let newPos = [];
     i = 0;
     for (let ele of playingPlayer) {
@@ -305,14 +308,19 @@ export const preflopround = async (room, io) => {
     );
   }
   if (!room.finish && !room.gamestart) {
+    console.log('CHECK 308');
     if (room.runninground === 0 && !room.pause) {
+      console.log('CHECK 310');
       let created_on = new Date(room.createdAt);
       let valid_till = moment(created_on).add(24, 'h').toDate();
       const curr_datetime = new Date();
+      console.log({ valid_till, curr_datetime });
+      console.log({ playingPlayer: JSON.stringify(playingPlayer) });
       if (
         playingPlayer.length > 1 &&
         valid_till.getTime() > curr_datetime.getTime()
       ) {
+        console.log('CHECK 308');
         await roomModel.updateOne(
           {
             _id: room._id,
@@ -456,6 +464,7 @@ export const preflopround = async (room, io) => {
         };
 
         let allinPlayer = room.allinPlayers;
+        console.log({ allinPlayer: JSON.stringify(allinPlayer) });
         while (smallBlindDeducted < 1) {
           let playerAvilable = room.players.filter(
             (el) =>
@@ -704,6 +713,8 @@ export const preflopround = async (room, io) => {
         });
         io.in(room._id.toString()).emit('preflopround', updatedRoom);
       } else {
+        console.log('SHOULD NOT COME HERE ', JSON.stringify(room));
+
         io.in(room._id.toString()).emit('onlyOnePlayingPlayer', {
           msg: 'Game finished, Only one player left',
           roomdata: room,
