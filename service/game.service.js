@@ -2,6 +2,7 @@ import roomModel from '../models/room.js';
 import Game from '../models/room.js';
 import userService from './user.service.js';
 import mongoose from 'mongoose';
+import blackjackRoom from './../models/blackjackRoom.js';
 
 const converMongoId = (id) => mongoose.Types.ObjectId(id);
 
@@ -64,6 +65,9 @@ const pushUserInRoom = async (roomId, userId, position) => {
               gameJoinedAt: new Date(),
               hands: [],
             },
+          },
+          $pull: {
+            leavereq: converMongoId(userId),
           },
         }
       ),

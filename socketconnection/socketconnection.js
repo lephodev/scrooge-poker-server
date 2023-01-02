@@ -12,7 +12,6 @@ import {
   doSitOut,
   doSitIn,
   doLeaveTable,
-  checkRoomForConnectedUser,
   joinRequest,
   joinWatcherRequest,
   approveJoinRequest,
@@ -295,6 +294,7 @@ let returnSocket = (io) => {
             console.log('After three second =>');
             let dd = { ...data };
             console.log({ dd });
+            console.log('USER LIST ', JSON.stringify(io.users));
             console.log(
               'RESULT ',
               io.users.find((ele) => ele?.toString() === dd?.userId?.toString())

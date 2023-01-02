@@ -5,24 +5,18 @@ import bcrypt from 'bcryptjs';
 import pathDirectory from 'path';
 import transactionModel from '../models/transaction';
 import roomModel from '../models/room';
-import tournamentConfModel from '../models/tournamentConfig';
 import mongoose from 'mongoose';
 import tournamentModel from '../models/tournament';
 import roomHistoryModel from '../models/roomHistory';
 import userModel from '../landing-server/models/user.model';
 import each from 'sync-each';
-import moment from 'moment';
 import axios from 'axios';
 import {
   addWatcher,
   deductAmount,
-  finishedGame,
   finishHandUpdate,
-  updateGamebyTableId,
   getDoc,
   removeInvToPlayers,
-  returnWatcherBetAmount,
-  changeAdmin,
   getPurchasedItem,
   updateInGameStatus,
 } from '../firestore/dbFetch';
@@ -271,6 +265,7 @@ export const preflopPlayerPush = async (players, roomid) => {
 export const preflopround = async (room, io) => {
   await updateRoomForNewHand(room._id, io);
   room = await roomModel.findOne(room._id).lean();
+  console.log({ playerPlaying: JSON.stringify(room.players) });
   let playingPlayer = room.players.filter((el) => el.playing && el.wallet > 0);
   console.log({ playingPlayer: JSON.stringify(playingPlayer) });
   let positions = room.players.map((pos) => pos.position);
@@ -313,7 +308,7 @@ export const preflopround = async (room, io) => {
       console.log('CHECK 310');
 
       if (playingPlayer.length > 1) {
-        console.log('CHECK 308');
+        console.log('CHECK 316');
         await roomModel.updateOne(
           {
             _id: room._id,
@@ -2276,10 +2271,11 @@ export const showdown = async (roomid, io) => {
 };
 
 export const updateRoomForNewHand = async (roomid, io) => {
+  console.log('im update room for new hand ', roomid);
   return new Promise(async (resolve, reject) => {
     try {
       const roomData = await roomModel
-        .findOne({ _id: roomid })
+        .findOne({ _id: convertMongoId(roomid) })
         .populate('tournament');
       let newHandPlayer = [];
       let buyin = roomData.buyin;
@@ -2307,14 +2303,18 @@ export const updateRoomForNewHand = async (roomid, io) => {
           break;
       }
 
+      console.log('PLAYER DATA LINE NO. 2306 ', JSON.stringify(playerData));
+
       const anyNewPlayer = async (playerData, plrs) => {
         return new Promise((resolve, reject) => {
           let data = playerData;
-
+          console.log('function.js:2313');
           each(
             plrs,
             function (x, next) {
               try {
+                console.log('2315 x value -- ', JSON.stringify(x));
+                console.log('2316 data value ', JSON.stringify(data));
                 if (roomData.runninground > 0) {
                   const playerexist = data.find(
                     (el) => el.userid.toString() === x.userid.toString()
@@ -2337,16 +2337,23 @@ export const updateRoomForNewHand = async (roomid, io) => {
       };
       let sitin = roomData.sitin;
       let leavereq = roomData.leavereq;
+
+      console.log('2341 LEAVE AND SITIN request ', {
+        sitin: JSON.stringify(roomData.sitin),
+        leavereq: JSON.stringify(roomData.leavereq),
+      });
+
       each(
         playerData,
         async function (el, next) {
           try {
-            let uid;
-            if (roomData.runninground === 0) {
-              uid = el.userid;
-            } else {
-              uid = el.id;
-            }
+            console.log('SINGLE USER DATA ', JSON.stringify(el));
+            let uid = el.userid || el.id;
+            // if (roomData.runninground === 0) {
+            //   uid = el.userid || el.userid;
+            // } else {
+            //   uid = el.id || el.userid;
+            // }
             // let hands = el.hands.filter(
             //   (hand) =>
             //     hand.action !== 'game-lose' && hand.action !== 'game-win'
@@ -2386,12 +2393,34 @@ export const updateRoomForNewHand = async (roomid, io) => {
               (el) => el.toString() === uid.toString()
             );
             if (haveleave.length) {
+              console.log();
               leavereq = leavereq.filter(
                 (el) => el.toString() !== uid.toString()
               );
             } else {
+              console.log(
+                '2393 function.js ',
+                JSON.stringify({
+                  userid: uid,
+                  name: el.name,
+                  photoURI: el.photoURI,
+                  wallet: el.wallet + buyinchips,
+                  position: el.position,
+                  timebank: el.timebank,
+                  playing: el.playing,
+                  missedSmallBlind: el.missedSmallBlind,
+                  missedBigBlind: el.missedBigBlind,
+                  forceBigBlind: el.forceBigBlind,
+                  initialCoinBeforeStart: el.initialCoinBeforeStart,
+                  gameJoinedAt: el.gameJoinedAt,
+                  hands: stripeBuy,
+                  meetingToken: el.meetingToken,
+                  items: el.items,
+                })
+              );
               newHandPlayer.push({
                 userid: uid,
+                id: uid,
                 name: el.name,
                 photoURI: el.photoURI,
                 wallet: el.wallet + buyinchips,
@@ -2416,7 +2445,12 @@ export const updateRoomForNewHand = async (roomid, io) => {
         },
         async function (err, transformedItems) {
           //Success callback
+          console.log('function.js 2436', transformedItems, err);
           try {
+            console.log('2440 function.js -- ', {
+              newHandPlayer: JSON.stringify(newHandPlayer),
+              players: JSON.stringify(roomData.players),
+            });
             newHandPlayer = await anyNewPlayer(newHandPlayer, roomData.players);
             const upRoom = await roomModel.findOneAndUpdate(
               {
@@ -3051,6 +3085,7 @@ export const doLeaveTable = async (data, io, socket) => {
           { new: true }
         )
         .lean();
+      console.log({ roomdata });
       if (roomdata) {
         console.log('IN ROOM DATA');
         roomid = roomdata._id;
@@ -3109,17 +3144,18 @@ export const doLeaveTable = async (data, io, socket) => {
           io.in(updatedData._id.toString()).emit('playerleft', {
             msg: `${playerdata[0].name} has left the game`,
           });
-      } else {
-        console.log('IN THE ELSE BLOCK');
-        let roomdata = await roomModel
-          .findOne({
-            _id: tableId,
-          })
-          .lean();
-        // if (roomdata && !roomdata.players.find((el) => el.userid === userid)) {
-        //   updateInGameStatus(userid);
-        // }
       }
+      //  else {
+      //   console.log('IN THE ELSE BLOCK');
+      //   let roomdata = await roomModel
+      //     .findOne({
+      //       _id: tableId,
+      //     })
+      //     .lean();
+      //   if (roomdata && !roomdata.players.find((el) => el.userid === userid)) {
+      //     // updateInGameStatus(userid);
+      //   }
+      // }
     } else {
       console.log('BEFORE ERROR ACTION');
       if (socket) socket.emit('actionError', { code: 400, msg: 'Bad request' });
@@ -6428,7 +6464,7 @@ export const startPreflopRound = async (data, socket, io) => {
   try {
     console.log('INSIDE PREFOLP ROUND', data);
     let room = await gameService.getGameById(data.tableId);
-    console.log({ room });
+    console.log({ room: JSON.stringify(room) });
     if (room && room.players.length === 1) {
       return socket.emit('OnlyOne', room);
     }
@@ -7143,7 +7179,6 @@ export const leaveApiCall = async (room, userId) => {
 
     console.log({ allUsers });
     let users = [];
-    console.log({ users });
     allUsers.forEach((item) => {
       console.log({ item });
       let hands = item.hands ? [...item.hands] : [];
@@ -7197,6 +7232,7 @@ export const leaveApiCall = async (room, userId) => {
       users
     );
     const userBalancePromise = users.map((el) => {
+      console.log(`Updated amount for user ${el.uid} is ${el.newBalance}`);
       return userModel.updateOne(
         {
           _id: convertMongoId(el.uid),

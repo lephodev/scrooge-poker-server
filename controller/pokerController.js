@@ -44,7 +44,7 @@ export const createTable = async (req, res) => {
       return res.status(403).send({ message: 'You are already in a game.' });
     }
 
-    console.log({ minchips });
+    console.log({ minchips, maxchips });
     const invitetedPlayerUserId = invitedUsers.map((el) => el.value);
     const roomData = await roomModel.create({
       gameName,
@@ -125,8 +125,6 @@ export const getAllUsers = async (req, res) => {
       _id: { $ne: req.user._id },
       isRegistrationComplete: true,
     }).select('_id username');
-
-    console.log({ allUsers });
 
     return res.status(200).send({ allUsers });
   } catch (error) {
