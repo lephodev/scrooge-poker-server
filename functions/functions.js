@@ -5,7 +5,6 @@ import bcrypt from 'bcryptjs';
 import pathDirectory from 'path';
 import transactionModel from '../models/transaction';
 import roomModel from '../models/room';
-import tournamentConfModel from '../models/tournamentConfig';
 import mongoose from 'mongoose';
 import tournamentModel from '../models/tournament';
 import roomHistoryModel from '../models/roomHistory';
