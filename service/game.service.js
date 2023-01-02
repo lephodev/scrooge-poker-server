@@ -66,6 +66,9 @@ const pushUserInRoom = async (roomId, userId, position) => {
               hands: [],
             },
           },
+          $pull: {
+            leavereq: converMongoId(userId),
+          },
         }
       ),
     ]);
