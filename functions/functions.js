@@ -852,13 +852,15 @@ export const prefloptimer = async (roomid, io) => {
                   }
                 );
                 console.log('Error in line number 850 timer');
-                io.in(updatedRoom._id.toString()).emit('timer', {
-                  id: intervalPlayer[0].id,
-                  playerchance: j,
-                  timerPlayer: i,
-                  runninground: 1,
-                  maxtimer: tx,
-                });
+                if (updatedRoom) {
+                  io.in(updatedRoom._id.toString()).emit('timer', {
+                    id: intervalPlayer[0].id,
+                    playerchance: j,
+                    timerPlayer: i,
+                    runninground: 1,
+                    maxtimer: tx,
+                  });
+                }
               } else {
                 const updatedRoom = await roomModel.findOneAndUpdate(
                   {
