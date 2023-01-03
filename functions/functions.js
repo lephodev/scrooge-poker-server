@@ -765,10 +765,13 @@ export const prefloptimer = async (roomid, io) => {
           );
           let playerinterval = setInterval(async () => {
             const data = await roomModel.findOne({ _id: roomid });
+            console.log('IN INTERVAL ROOM ', JSON.stringify(data));
             let preflopData = data.preflopround;
-
+            console.log({ preflopData: JSON.stringify(preflopData) });
             let filteredData = preflopData.filter((e) => e.position === i);
+            console.log({ filteredData: JSON.stringify(filteredData) });
             let intervalPlayer = filteredData;
+            console.log({ intervalPlayer });
             if (j <= 0) {
               if (intervalPlayer[0].timebank > 1) {
                 j = intervalPlayer[0].timebank;
@@ -785,6 +788,12 @@ export const prefloptimer = async (roomid, io) => {
                 // timer(i,maxPosition,intervalPlayer[0].timebank);
               } else {
                 clearInterval(playerinterval);
+                console.log({
+                  raiseAmount: data.raiseAmount,
+                  pot: intervalPlayer[0].pot,
+                  datalastAction: data.lastAction,
+                  plLength: data.players.length,
+                });
                 if (
                   (data.raiseAmount === intervalPlayer[0].pot ||
                     data.lastAction === 'check') &&
@@ -798,6 +807,7 @@ export const prefloptimer = async (roomid, io) => {
                     intervalPlayer[0].id,
                     io
                   );
+                  console.log('Coming in line 809');
                   io.in(data._id.toString()).emit('automaticFold', {
                     msg: `${intervalPlayer[0].name} has automatically folded`,
                   });
@@ -808,14 +818,15 @@ export const prefloptimer = async (roomid, io) => {
                 }
               }
             } else if (
-              filteredData[0].fold ||
-              filteredData[0].action ||
-              filteredData[0].wallet === 0 ||
-              !filteredData[0].playing
+              filteredData &&
+              (filteredData[0]?.fold ||
+                filteredData[0]?.action ||
+                filteredData[0]?.wallet === 0 ||
+                !filteredData[0]?.playing)
             ) {
               clearInterval(playerinterval);
               timer(++i, maxPosition);
-            } else {
+            } else if (data.isGameRunning) {
               // filteredData[0].playerchance = j;
               j--;
               if (j === 120 && !data.displayTimer) {
@@ -882,6 +893,11 @@ export const prefloptimer = async (roomid, io) => {
                   maxtimer: tx,
                 });
               }
+            } else {
+              clearInterval(playerinterval);
+              io.in(data._id.toString()).emit('updateGame', {
+                game: data,
+              });
             }
           }, 1000);
         }
@@ -1143,14 +1159,15 @@ export const flopTimer = async (roomid, io) => {
               }
               // timer(++i,maxPosition);
             } else if (
-              filteredData[0].fold ||
-              filteredData[0].action ||
-              filteredData[0].wallet === 0 ||
-              !filteredData[0].playing
+              filteredData &&
+              (filteredData[0]?.fold ||
+                filteredData[0]?.action ||
+                filteredData[0]?.wallet === 0 ||
+                !filteredData[0]?.playing)
             ) {
               clearInterval(playerinterval);
               timer(++i, maxPosition);
-            } else {
+            } else if (data.isGameRunning) {
               j--;
 
               if (j === 120 && !data.displayTimer) {
@@ -1214,6 +1231,11 @@ export const flopTimer = async (roomid, io) => {
                   maxtimer: tx,
                 });
               }
+            } else {
+              clearInterval(playerinterval);
+              io.in(data._id.toString()).emit('updateGame', {
+                game: data,
+              });
             }
           }, 1000);
         }
@@ -1475,14 +1497,15 @@ export const turnTimer = async (roomid, io) => {
               }
               // timer(++i,maxPosition);
             } else if (
-              filteredData[0].fold ||
-              filteredData[0].action ||
-              filteredData[0].wallet === 0 ||
-              !filteredData[0].playing
+              filteredData &&
+              (filteredData[0]?.fold ||
+                filteredData[0]?.action ||
+                filteredData[0]?.wallet === 0 ||
+                !filteredData[0]?.playing)
             ) {
               clearInterval(playerinterval);
               timer(++i, maxPosition);
-            } else {
+            } else if (data.isGameRunning) {
               j--;
 
               if (j === 120 && !data.displayTimer) {
@@ -1546,6 +1569,11 @@ export const turnTimer = async (roomid, io) => {
                   maxtimer: tx,
                 });
               }
+            } else {
+              clearInterval(playerinterval);
+              io.in(data._id.toString()).emit('updateGame', {
+                game: data,
+              });
             }
           }, 1000);
         }
@@ -1802,14 +1830,15 @@ export const riverTimer = async (roomid, io) => {
               }
               // timer(++i,maxPosition);
             } else if (
-              filteredData[0].fold ||
-              filteredData[0].action ||
-              filteredData[0].wallet === 0 ||
-              !filteredData[0].playing
+              filteredData &&
+              (filteredData[0]?.fold ||
+                filteredData[0]?.action ||
+                filteredData[0]?.wallet === 0 ||
+                !filteredData[0]?.playing)
             ) {
               clearInterval(playerinterval);
               timer(++i, maxPosition);
-            } else {
+            } else if (data.isGameRunning) {
               j--;
 
               if (j === 120 && !data.displayTimer) {
@@ -1873,6 +1902,11 @@ export const riverTimer = async (roomid, io) => {
                   maxtimer: tx,
                 });
               }
+            } else {
+              clearInterval(playerinterval);
+              io.in(data._id.toString()).emit('updateGame', {
+                game: data,
+              });
             }
           }, 1000);
         }
