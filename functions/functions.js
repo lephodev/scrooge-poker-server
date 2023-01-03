@@ -771,6 +771,7 @@ export const prefloptimer = async (roomid, io) => {
                 j = intervalPlayer[0].timebank;
                 t = 'time_bank';
                 tx = intervalPlayer[0].timebank;
+                console.log('Error in line number 774 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -846,6 +847,7 @@ export const prefloptimer = async (roomid, io) => {
                     new: true,
                   }
                 );
+                console.log('Error in line number 850 timer');
                 io.in(updatedRoom._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1101,6 +1103,7 @@ export const flopTimer = async (roomid, io) => {
                 j = intervalPlayer[0].timebank;
                 t = 'time_bank';
                 tx = intervalPlayer[0].timebank;
+                console.log('Error in line number 1106 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1175,6 +1178,7 @@ export const flopTimer = async (roomid, io) => {
                     new: true,
                   }
                 );
+                console.log('Error in line number 1181 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1195,6 +1199,7 @@ export const flopTimer = async (roomid, io) => {
                     new: true,
                   }
                 );
+                console.log('Error in line number 1202 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1430,6 +1435,7 @@ export const turnTimer = async (roomid, io) => {
                 j = intervalPlayer[0].timebank;
                 t = 'time_bank';
                 tx = intervalPlayer[0].timebank;
+                console.log('Error in line number 1438 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1504,6 +1510,7 @@ export const turnTimer = async (roomid, io) => {
                     new: true,
                   }
                 );
+                console.log('Error in line number 1513 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1524,6 +1531,7 @@ export const turnTimer = async (roomid, io) => {
                     new: true,
                   }
                 );
+                console.log('Error in line number 1534 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1754,6 +1762,7 @@ export const riverTimer = async (roomid, io) => {
                 j = intervalPlayer[0].timebank;
                 t = 'time_bank';
                 tx = intervalPlayer[0].timebank;
+                console.log('Error in line number 1765 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1828,6 +1837,7 @@ export const riverTimer = async (roomid, io) => {
                     new: true,
                   }
                 );
+                console.log('Error in line number 1840 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1848,6 +1858,7 @@ export const riverTimer = async (roomid, io) => {
                     new: true,
                   }
                 );
+                console.log('Error in line number 1861 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -7231,6 +7242,7 @@ export const leaveApiCall = async (room, userId) => {
       room._id,
       users
     );
+
     const userBalancePromise = users.map((el) => {
       console.log(`Updated amount for user ${el.uid} is ${el.newBalance}`);
       return userModel.updateOne(
@@ -7259,8 +7271,8 @@ export const leaveApiCall = async (room, userId) => {
         ...rankModelUpdate,
       ]);
       console.log(
-        'FINAL RESPONSE:',
-        response.map((el) => el.value)
+        'FINAL RESPONSE:1',
+        JSON.stringify(response.map((el) => el.value))
       );
     } else {
       const response = await Promise.allSettled([
@@ -7271,8 +7283,8 @@ export const leaveApiCall = async (room, userId) => {
         ...rankModelUpdate,
       ]);
       console.log(
-        'FINAL RESPONSE:',
-        response.map((el) => el.value)
+        'FINAL RESPONSE:2',
+        JSON.stringify(response.map((el) => el.value))
       );
     }
 
