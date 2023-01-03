@@ -7442,7 +7442,16 @@ export const checkForGameTable = async (data, socket, io) => {
 
     if (ifUserInGame) {
       addUserInSocket(io, socket, gameId, userId);
-      io.in(gameId).emit('updateGame', { game });
+      const gameUpdatedData = await roomModel.findOneAndUpdate(
+        {
+          _id: convertMongoId(gameId),
+          'players.userid': convertMongoId(userId),
+        },
+        {
+          'players.$.playing': true,
+        }
+      );
+      io.in(gameId).emit('updateGame', { game: gameUpdatedData });
       return;
     }
 
