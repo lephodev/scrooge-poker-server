@@ -694,7 +694,7 @@ export const preflopround = async (room, io) => {
         // if (bigBlindDeducted || smallBlindDeducted) {
         //   await roomModel.updateOne({ _id: room._id }, {bigBlindPosition,smallBlindPosition,pot:+bigBlindAmt+smallBlindAmt});
         // }
-
+        console.log('LINE 697 before going in preflop ', { _id: room._id });
         prefloptimer(room._id, io);
         let updatedRoom = await roomModel.findOne({
           _id: room._id,
@@ -730,8 +730,11 @@ export const preflopround = async (room, io) => {
 
 export const prefloptimer = async (roomid, io) => {
   const roomData = await roomModel.findOne({ _id: roomid });
+  console.log({ roomData: JSON.stringify(roomData) });
   let totalPlayer = roomData.preflopround.length + roomData.eleminated.length;
+  console.log({ totalPlayer: JSON.stringify(totalPlayer) });
   const timer = async (i, maxPosition) => {
+    console.log('IN TIMER ', { i, maxPosition });
     let j = roomData.timer;
     let t = 'timer';
     let tx = roomData.timer;
@@ -833,7 +836,8 @@ export const prefloptimer = async (roomid, io) => {
                   msg: tablemsg,
                 });
               }
-
+              console.log({ roomid });
+              console.log({ intervalPlayer: JSON.stringify(intervalPlayer) });
               if (t === 'timer') {
                 const updatedRoom = await roomModel.findOneAndUpdate(
                   {
