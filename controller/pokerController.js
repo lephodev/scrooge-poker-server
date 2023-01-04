@@ -44,7 +44,8 @@ export const createTable = async (req, res) => {
       return res.status(403).send({ message: 'You are already in a game.' });
     }
 
-    console.log({ minchips, maxchips });
+    const bigBlind = minchips * 2;
+    console.log({ minchips, maxchips, bigBlind });
     const invitetedPlayerUserId = invitedUsers.map((el) => el.value);
     const roomData = await roomModel.create({
       gameName,
@@ -52,7 +53,7 @@ export const createTable = async (req, res) => {
       invPlayers: invitetedPlayerUserId,
       public: isPublic,
       smallBlind: minchips,
-      bigblind: maxchips,
+      bigBlind,
       timer,
       hostId: userData._id,
       players: [
@@ -73,6 +74,8 @@ export const createTable = async (req, res) => {
         },
       ],
     });
+
+    console.log({ roomData });
 
     if (Array.isArray(invitetedPlayerUserId) && invitetedPlayerUserId.length) {
       const sendMessageToInvitedUsers = [
