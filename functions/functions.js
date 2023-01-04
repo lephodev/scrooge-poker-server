@@ -33,6 +33,7 @@ const gameRestartSeconds = 7000;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
 const addUserInSocket = (io, socket, gameId, userId) => {
+  console.log('Socket room BEFORE ', io.room);
   let lastSocketData = io.room || [];
   // Add room
   lastSocketData.push({ gameId, pretimer: false, room: gameId.toString() });
@@ -42,16 +43,17 @@ const addUserInSocket = (io, socket, gameId, userId) => {
       pretimer: false,
     })
   );
-
+  console.log('Socket room After ', io.room);
   // Add users
   lastSocketData = io.users;
+  console.log('Socket Users BEFORE ', io.users);
   lastSocketData.push(userId.toString());
   io.users = [...new Set(lastSocketData)];
-
+  console.log('Socket Users After ', io.users);
   // Add user id and room id in socket
   socket.customId = userId.toString();
   socket.customRoom = gameId.toString();
-
+  console.log({ customId: socket.customId, customRoom: socket.customRoom });
   // JOIN USER IN GAME ROOM
   socket.join(gameId);
 };
@@ -265,9 +267,7 @@ export const preflopPlayerPush = async (players, roomid) => {
 export const preflopround = async (room, io) => {
   await updateRoomForNewHand(room._id, io);
   room = await roomModel.findOne(room._id).lean();
-  console.log({ playerPlaying: JSON.stringify(room.players) });
   let playingPlayer = room.players.filter((el) => el.playing && el.wallet > 0);
-  console.log({ playingPlayer: JSON.stringify(playingPlayer) });
   let positions = room.players.map((pos) => pos.position);
   let isNewLeave = false;
   let i = 0;
@@ -280,7 +280,6 @@ export const preflopround = async (room, io) => {
     }
   }
   if (isNewLeave) {
-    console.log({ isNewLeave });
     let newPos = [];
     i = 0;
     for (let ele of playingPlayer) {
@@ -730,11 +729,8 @@ export const preflopround = async (room, io) => {
 
 export const prefloptimer = async (roomid, io) => {
   const roomData = await roomModel.findOne({ _id: roomid });
-  console.log({ roomData: JSON.stringify(roomData) });
   let totalPlayer = roomData.preflopround.length + roomData.eleminated.length;
-  console.log({ totalPlayer: JSON.stringify(totalPlayer) });
   const timer = async (i, maxPosition) => {
-    console.log('IN TIMER ', { i, maxPosition });
     let j = roomData.timer;
     let t = 'timer';
     let tx = roomData.timer;
@@ -765,19 +761,14 @@ export const prefloptimer = async (roomid, io) => {
           );
           let playerinterval = setInterval(async () => {
             const data = await roomModel.findOne({ _id: roomid });
-            console.log('IN INTERVAL ROOM ', JSON.stringify(data));
             let preflopData = data.preflopround;
-            console.log({ preflopData: JSON.stringify(preflopData) });
             let filteredData = preflopData.filter((e) => e.position === i);
-            console.log({ filteredData: JSON.stringify(filteredData) });
             let intervalPlayer = filteredData;
-            console.log({ intervalPlayer });
             if (j <= 0) {
               if (intervalPlayer[0].timebank > 1) {
                 j = intervalPlayer[0].timebank;
                 t = 'time_bank';
                 tx = intervalPlayer[0].timebank;
-                console.log('Error in line number 774 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -788,12 +779,6 @@ export const prefloptimer = async (roomid, io) => {
                 // timer(i,maxPosition,intervalPlayer[0].timebank);
               } else {
                 clearInterval(playerinterval);
-                console.log({
-                  raiseAmount: data.raiseAmount,
-                  pot: intervalPlayer[0].pot,
-                  datalastAction: data.lastAction,
-                  plLength: data.players.length,
-                });
                 if (
                   (data.raiseAmount === intervalPlayer[0].pot ||
                     data.lastAction === 'check') &&
@@ -807,7 +792,6 @@ export const prefloptimer = async (roomid, io) => {
                     intervalPlayer[0].id,
                     io
                   );
-                  console.log('Coming in line 809');
                   io.in(data._id.toString()).emit('automaticFold', {
                     msg: `${intervalPlayer[0].name} has automatically folded`,
                   });
@@ -847,8 +831,6 @@ export const prefloptimer = async (roomid, io) => {
                   msg: tablemsg,
                 });
               }
-              console.log({ roomid });
-              console.log({ intervalPlayer: JSON.stringify(intervalPlayer) });
               if (t === 'timer') {
                 const updatedRoom = await roomModel.findOneAndUpdate(
                   {
@@ -862,7 +844,6 @@ export const prefloptimer = async (roomid, io) => {
                     new: true,
                   }
                 );
-                console.log('Error in line number 850 timer');
                 if (updatedRoom) {
                   io.in(updatedRoom._id.toString()).emit('timer', {
                     id: intervalPlayer[0].id,
@@ -1125,7 +1106,6 @@ export const flopTimer = async (roomid, io) => {
                 j = intervalPlayer[0].timebank;
                 t = 'time_bank';
                 tx = intervalPlayer[0].timebank;
-                console.log('Error in line number 1106 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1201,7 +1181,6 @@ export const flopTimer = async (roomid, io) => {
                     new: true,
                   }
                 );
-                console.log('Error in line number 1181 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1222,7 +1201,6 @@ export const flopTimer = async (roomid, io) => {
                     new: true,
                   }
                 );
-                console.log('Error in line number 1202 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1463,7 +1441,6 @@ export const turnTimer = async (roomid, io) => {
                 j = intervalPlayer[0].timebank;
                 t = 'time_bank';
                 tx = intervalPlayer[0].timebank;
-                console.log('Error in line number 1438 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1539,7 +1516,6 @@ export const turnTimer = async (roomid, io) => {
                     new: true,
                   }
                 );
-                console.log('Error in line number 1513 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1560,7 +1536,6 @@ export const turnTimer = async (roomid, io) => {
                     new: true,
                   }
                 );
-                console.log('Error in line number 1534 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1796,7 +1771,6 @@ export const riverTimer = async (roomid, io) => {
                 j = intervalPlayer[0].timebank;
                 t = 'time_bank';
                 tx = intervalPlayer[0].timebank;
-                console.log('Error in line number 1765 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1872,7 +1846,6 @@ export const riverTimer = async (roomid, io) => {
                     new: true,
                   }
                 );
-                console.log('Error in line number 1840 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1893,7 +1866,6 @@ export const riverTimer = async (roomid, io) => {
                     new: true,
                   }
                 );
-                console.log('Error in line number 1861 timer');
                 io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1987,7 +1959,6 @@ export const showdown = async (roomid, io) => {
   let totalPot = roomData.pot;
   let playerData = roomData.riverround;
   playerData.forEach((e) => {
-    console.log(e);
     let actionType = null;
     if (e.fold === true) {
       actionType = 'fold';
@@ -2204,7 +2175,6 @@ export const showdown = async (roomid, io) => {
           return ele.id.toString() === player.id.toString();
         })
       ) {
-        console.log('---Game Win---');
         action = 'game-win';
         const winnerObj = winnerPlayers.find(
           (ele) => ele.id.toString() === player.id.toString()
@@ -2225,7 +2195,6 @@ export const showdown = async (roomid, io) => {
           amt = winnerObj.winningAmount;
         }
       } else {
-        console.log('---Game Lose---');
         action = 'game-lose';
         amt = player.prevPot;
       }
@@ -2238,7 +2207,6 @@ export const showdown = async (roomid, io) => {
       });
     }
   });
-  console.log('showdownplayes', JSON.stringify(upRoomData.showdown));
   const upRoom = await roomModel.findOneAndUpdate(
     {
       _id: roomid,
@@ -2322,7 +2290,6 @@ export const showdown = async (roomid, io) => {
 };
 
 export const updateRoomForNewHand = async (roomid, io) => {
-  console.log('im update room for new hand ', roomid);
   return new Promise(async (resolve, reject) => {
     try {
       const roomData = await roomModel
@@ -2354,18 +2321,13 @@ export const updateRoomForNewHand = async (roomid, io) => {
           break;
       }
 
-      console.log('PLAYER DATA LINE NO. 2306 ', JSON.stringify(playerData));
-
       const anyNewPlayer = async (playerData, plrs) => {
         return new Promise((resolve, reject) => {
           let data = playerData;
-          console.log('function.js:2313');
           each(
             plrs,
             function (x, next) {
               try {
-                console.log('2315 x value -- ', JSON.stringify(x));
-                console.log('2316 data value ', JSON.stringify(data));
                 if (roomData.runninground > 0) {
                   const playerexist = data.find(
                     (el) => el.userid.toString() === x.userid.toString()
@@ -2389,16 +2351,10 @@ export const updateRoomForNewHand = async (roomid, io) => {
       let sitin = roomData.sitin;
       let leavereq = roomData.leavereq;
 
-      console.log('2341 LEAVE AND SITIN request ', {
-        sitin: JSON.stringify(roomData.sitin),
-        leavereq: JSON.stringify(roomData.leavereq),
-      });
-
       each(
         playerData,
         async function (el, next) {
           try {
-            console.log('SINGLE USER DATA ', JSON.stringify(el));
             let uid = el.userid || el.id;
             // if (roomData.runninground === 0) {
             //   uid = el.userid || el.userid;
@@ -2444,31 +2400,10 @@ export const updateRoomForNewHand = async (roomid, io) => {
               (el) => el.toString() === uid.toString()
             );
             if (haveleave.length) {
-              console.log();
               leavereq = leavereq.filter(
                 (el) => el.toString() !== uid.toString()
               );
             } else {
-              console.log(
-                '2393 function.js ',
-                JSON.stringify({
-                  userid: uid,
-                  name: el.name,
-                  photoURI: el.photoURI,
-                  wallet: el.wallet + buyinchips,
-                  position: el.position,
-                  timebank: el.timebank,
-                  playing: el.playing,
-                  missedSmallBlind: el.missedSmallBlind,
-                  missedBigBlind: el.missedBigBlind,
-                  forceBigBlind: el.forceBigBlind,
-                  initialCoinBeforeStart: el.initialCoinBeforeStart,
-                  gameJoinedAt: el.gameJoinedAt,
-                  hands: stripeBuy,
-                  meetingToken: el.meetingToken,
-                  items: el.items,
-                })
-              );
               newHandPlayer.push({
                 userid: uid,
                 id: uid,
@@ -2496,12 +2431,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
         },
         async function (err, transformedItems) {
           //Success callback
-          console.log('function.js 2436', transformedItems, err);
           try {
-            console.log('2440 function.js -- ', {
-              newHandPlayer: JSON.stringify(newHandPlayer),
-              players: JSON.stringify(roomData.players),
-            });
             newHandPlayer = await anyNewPlayer(newHandPlayer, roomData.players);
             const upRoom = await roomModel.findOneAndUpdate(
               {
@@ -2754,7 +2684,6 @@ export const doSitOut = async (data, io, socket) => {
   let playingPlayer = [];
   let res = true;
   try {
-    console.log({ isValid });
     if (isValid) {
       const roomData = await roomModel
         .findOne({
@@ -2763,7 +2692,6 @@ export const doSitOut = async (data, io, socket) => {
         })
         .lean();
       if (roomData) {
-        console.log('IN FOLD', { userid });
         let lastAction = 'fold';
         if (roomData && roomData.lastAction === 'check') {
           lastAction = 'check';
@@ -3208,7 +3136,6 @@ export const doLeaveTable = async (data, io, socket) => {
       //   }
       // }
     } else {
-      console.log('BEFORE ERROR ACTION');
       if (socket) socket.emit('actionError', { code: 400, msg: 'Bad request' });
     }
   } catch (e) {
@@ -3640,7 +3567,6 @@ export const socketDoCall = async (dta, io, socket) => {
       roomid = mongoose.Types.ObjectId(roomid);
       let playerid = mongoose.Types.ObjectId(userid);
       let amt = dta.amount;
-      console.log({ roomid, playerid, amt });
       const data = await roomModel
         .findOne(
           {
@@ -3653,33 +3579,27 @@ export const socketDoCall = async (dta, io, socket) => {
       if (data !== null) {
         if (data.raiseAmount == amt) {
           const walletAmt = await getPlayerwallet(roomid, playerid);
-          console.log({ walletAmt });
           if (walletAmt >= amt) {
             await doCall(roomid, playerid, io, amt);
           } else {
-            console.log('actionError 0');
             socket.emit('actionError', {
               code: 400,
               msg: 'Insufficient chips',
             });
           }
         } else {
-          console.log('actionError 1');
           socket.emit('actionError', {
             code: 400,
             msg: `Call amount must be ${data.raiseAmount}`,
           });
         }
       } else {
-        console.log('actionError 2');
         socket.emit('actionError', { code: 404, msg: 'Data not found' });
       }
     } else {
-      console.log('actionError 3');
       socket.emit('actionError', { code: 400, msg: 'Bad request' });
     }
   } catch (e) {
-    console.log('actionError 4');
     console.log('error : ', e);
     socket.emit('actionError', { code: 444, msg: 'Some error has occured.' });
   }
@@ -4030,8 +3950,6 @@ export const socketDoRaise = async (dta, io, socket) => {
       let playerid = userid;
       let amt = dta.amount;
 
-      console.log({ playerid, amt, roomid });
-
       const data = await roomModel
         .findOne(
           {
@@ -4076,8 +3994,6 @@ export const doCheck = async (roomid, playerid, io) => {
   let updatedRoom = null;
   let res = true;
   let filterData = null;
-
-  console.log('TIMER -------- ');
 
   const filterDta = roomData.players.filter(
     (el) => el.userid.toString() === roomData.timerPlayer.toString()
@@ -4202,15 +4118,12 @@ export const socketDoCheck = async (dta, io, socket) => {
           { _id: 1, raiseAmount: 1, lastAction: 1 }
         )
         .lean();
-      console.log({ data });
       if (data !== null) {
         await doCheck(roomid, playerid, io);
       } else {
-        console.log('DATA IS NULL IN ELSE BLOCK');
         socket.emit('actionError', { code: 404, msg: 'Data not found' });
       }
     } else {
-      console.log('DATA IS NULL IN BAD REQUEST');
       socket.emit('actionError', { code: 400, msg: 'Bad request' });
     }
   } catch (e) {
@@ -4432,8 +4345,6 @@ export const socketDoAllin = async (dta, io, socket) => {
   console.log('ALLIN 4395');
   let userid = mongoose.Types.ObjectId(dta.userid);
   let roomid = mongoose.Types.ObjectId(dta.roomid);
-
-  console.log({ userid, roomid });
 
   const { isValid } = checkIfEmpty({ roomid, userid });
 
@@ -5107,11 +5018,7 @@ export const reArrangeTables = async (tournamentId, io) => {
         let haveMoreThnOne = blankSpots.filter((el) => {
           return el.spots.length > 10 - canPlayMinimum;
         });
-        console.log('blankSpots => ', blankSpots);
-        console.log('mostBlnkRoom => ', mostBlnkRoom);
-        console.log('haveOnespot=> ', haveOnespot);
-        console.log('haveMoreThnOne => ', haveMoreThnOne);
-        console.log('totalEliminated => ', totalEliminated);
+
         fullRooms.forEach((el) => {
           console.log(
             'full rooms id ==> ',
@@ -5120,26 +5027,15 @@ export const reArrangeTables = async (tournamentId, io) => {
             el.players.length
           );
         });
-        console.log('total full rooms ==> ', fullRooms.length);
-        console.log('total not full rooms ==> ', haveBlankSpots.length);
 
         // let mxLength = 10
         // if (fullRooms.length === 0 ) {
         //     mxLength = canPlayMinimum+1;
-        // }
-        console.log(
-          '------totalEliminated-mostBlnkRoom.totalSpots-------',
-          totalEliminated - mostBlnkRoom.totalSpots
-        );
-        console.log(
-          '------10-mostBlnkRoom.totalSpots-------',
-          10 - mostBlnkRoom.totalSpots
-        );
+
         if (
           totalEliminated - mostBlnkRoom.totalSpots >=
           10 - mostBlnkRoom.totalSpots
         ) {
-          console.log('this table must be destroyed ==> ', mostBlnkRoom);
           let leftBlankTables1 = haveMoreThnOne.filter(
             (el) => el.roomid !== mostBlnkRoom.roomid
           );
@@ -5403,24 +5299,11 @@ export const destroyTable = async (mostBlnkRoom, leftBlankTables, io) => {
         next();
       },
       function (err, transformedItems) {
-        //Success callback
-        // console.log(
-        //   "after check all playerin avilable spot",
-        //   "dPlayers",
-        //   dPlayers,
-        //   "leftBlankTables",
-        //   leftBlankTables
-        // );
         each(
           dPlayers,
           async function (player, next) {
             if (dPlayers.length) {
               const sit = async (player, i) => {
-                // console.log("find position => ", i);
-                // console.log(
-                //   "leftBlankTables inside sit fun ==>",
-                //   leftBlankTables
-                // );
                 let havePosition = leftBlankTables.filter((el) =>
                   el.spots.includes(i)
                 );
@@ -5496,15 +5379,6 @@ export const destroyTable = async (mostBlnkRoom, leftBlankTables, io) => {
                   let otherleftTable = leftBlankTables.filter(
                     (el) => !el.spots.includes(player.position)
                   );
-                  // console.log(
-                  //   "player sit done on position ==>",
-                  //   player.position
-                  // );
-                  // console.log('find position => ', player.position+i)
-                  // console.log('otherleftTable=>', otherleftTable);
-                  // console.log("left players ==> ", dPlayers);
-                  // console.log('havePosition=>', havePosition);
-                  // console.log('leftBlankTables==>', leftBlankTables)
                 } else {
                   if (i < 9) {
                     await sit(player, ++i);
@@ -5641,12 +5515,10 @@ export const joinRequest = async (data, socket, io) => {
               });
             }
           } else {
-            console.log('ROOM FULL 5550');
             socket.emit('roomFull', 'Room is Already Full');
           }
         }
       } else {
-        console.log('----NOT FOUND 5554----');
         socket.emit('notFound', 'Room not Found');
       }
     } else {
@@ -5715,7 +5587,6 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
             allowWatcher: room.table.alloWatchers,
           });
         } else {
-          console.log('ROOM FULL 5625');
           return socket.emit('roomFull', 'Room is full');
         }
       }
@@ -7425,6 +7296,8 @@ export const checkForGameTable = async (data, socket, io) => {
         message: 'You are not authorized',
       });
     }
+
+    console.log('USER WALLET ', user.wallet);
 
     const ifUserInGame = game.players.find((el) => {
       return el.userid?.toString() === userId.toString();
