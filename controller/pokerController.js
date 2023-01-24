@@ -1,18 +1,18 @@
-import mongoose from 'mongoose';
-import User from '../landing-server/models/user.model.js';
-import Message from '../models/messageModal.js';
-import Notification from '../models/notificationModal.js';
-import gameService from '../service/game.service.js';
-import roomModel from './../models/room.js';
+import mongoose from "mongoose";
+import User from "../landing-server/models/user.model.js";
+import Message from "../models/messageModal.js";
+import Notification from "../models/notificationModal.js";
+import gameService from "../service/game.service.js";
+import roomModel from "./../models/room.js";
 
 const img =
-  'https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg';
+  "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
 
 export const getDocument = async (req, res) => {
   try {
     const { coll, id } = req.params;
 
-    if (coll === 'users' && id) {
+    if (coll === "users" && id) {
       const userData = await User.findOne({ _id: mongoose.Types.ObjectId(id) });
       return res.status(200).send({ data: userData ?? {} });
     }
@@ -20,7 +20,7 @@ export const getDocument = async (req, res) => {
     return res.status(200).send({ data: {} });
   } catch (error) {
     console.log(error);
-    res.status(500).send({ message: 'Internal server error' });
+    res.status(500).send({ message: "Internal server error" });
   }
 };
 
@@ -33,19 +33,37 @@ export const createTable = async (req, res) => {
       maxchips,
       autohand,
       invitedUsers,
+      sitInAmount,
     } = req.body;
     const userData = req.user;
-    const { username, wallet, email, _id, avatar } = userData;
+    const { username, wallet, email, _id, avatar, profile } = userData;
     const timer = 15;
 
     const checkInGame = await gameService.checkIfUserInGame(userData._id);
 
     if (checkInGame) {
-      return res.status(403).send({ message: 'You are already in a game.' });
+      return res.status(403).send({ message: "You are already in a game." });
+    }
+
+    if (!sitInAmount) {
+      return res.status(403).send({ message: "Sit in amount is required" });
+    }
+
+    if (sitInAmount < 100) {
+      return res
+        .status(403)
+        .send({ message: "Minimum 100 coins need for sit in amount" });
+    }
+
+    if (sitInAmount > wallet) {
+      return res.status(403).send({ message: "You don't have enough balance" });
+    }
+
+    if (checkInGame) {
+      return res.status(403).send({ message: "You are already in a game." });
     }
 
     const bigBlind = minchips * 2;
-    console.log({ minchips, maxchips, bigBlind });
     const invitetedPlayerUserId = invitedUsers.map((el) => el.value);
     const roomData = await roomModel.create({
       gameName,
@@ -61,21 +79,21 @@ export const createTable = async (req, res) => {
           name: username,
           userid: _id,
           id: _id,
-          photoURI: avatar || img,
-          wallet: wallet,
+          photoURI: avatar ? avatar : profile ? profile : img,
+          wallet: sitInAmount,
           position: 0,
           missedSmallBlind: false,
           missedBigBlind: false,
           forceBigBlind: false,
           playing: true,
-          initialCoinBeforeStart: wallet,
+          initialCoinBeforeStart: sitInAmount,
           gameJoinedAt: new Date(),
           hands: [],
         },
       ],
     });
 
-    console.log({ roomData });
+    await User.updateOne({ _id }, { wallet: wallet - sitInAmount });
 
     if (Array.isArray(invitetedPlayerUserId) && invitetedPlayerUserId.length) {
       const sendMessageToInvitedUsers = [
@@ -106,7 +124,7 @@ export const createTable = async (req, res) => {
     res.status(200).send({ roomData });
   } catch (error) {
     console.log(error);
-    res.status(500).send({ message: 'Internal server error' });
+    res.status(500).send({ message: "Internal server error" });
   }
 };
 
@@ -114,11 +132,11 @@ export const getAllGame = async (req, res) => {
   try {
     const getAllRunningRoom = await roomModel
       .find({ public: true })
-      .populate('players.userid');
+      .populate("players.userid");
     return res.status(200).send({ rooms: getAllRunningRoom || [] });
   } catch (error) {
     console.log(error);
-    res.status(500).send({ message: 'Internal server error' });
+    res.status(500).send({ message: "Internal server error" });
   }
 };
 
@@ -127,11 +145,11 @@ export const getAllUsers = async (req, res) => {
     const allUsers = await User.find({
       _id: { $ne: req.user._id },
       isRegistrationComplete: true,
-    }).select('_id username');
+    }).select("_id username");
 
     return res.status(200).send({ allUsers });
   } catch (error) {
     console.log(error);
-    res.status(500).send({ message: 'Internal server error' });
+    res.status(500).send({ message: "Internal server error" });
   }
 };
