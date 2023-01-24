@@ -1,14 +1,14 @@
-import roomModel from '../models/room.js';
-import Game from '../models/room.js';
-import userService from './user.service.js';
-import mongoose from 'mongoose';
-import blackjackRoom from './../models/blackjackRoom.js';
+import roomModel from "../models/room.js";
+import Game from "../models/room.js";
+import userService from "./user.service.js";
+import mongoose from "mongoose";
+import blackjackRoom from "./../models/blackjackRoom.js";
 
 const converMongoId = (id) => mongoose.Types.ObjectId(id);
 
 const maxPlayer = 10;
 const img =
-  'https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg';
+  "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
 
 const getGameById = async (id) => {
   const game = await Game.findOne({ _id: converMongoId(id) }).lean();
@@ -42,7 +42,7 @@ const findAvailablePosition = async (playerList) => {
 const pushUserInRoom = async (roomId, userId, position) => {
   try {
     const userData = await userService.getUserById(userId);
-    const { username, wallet, email, _id, avatar } = userData;
+    const { username, wallet, email, _id, avatar, profile } = userData;
 
     await Promise.allSettled([
       userService.updateUserWallet(_id),
@@ -54,7 +54,7 @@ const pushUserInRoom = async (roomId, userId, position) => {
               name: username,
               userid: _id,
               id: _id,
-              photoURI: avatar || img,
+              photoURI: avatar ? avatar : profile ? profile : img,
               wallet: wallet,
               position,
               missedSmallBlind: false,
@@ -111,12 +111,12 @@ const joinRoomByUserId = async (game, userId) => {
 
 // leave roomId empty if you want exclude any room to come in search
 // Because in check game function we want to exclude it from there
-const checkIfUserInGame = async (userId, roomId = '') => {
+const checkIfUserInGame = async (userId, roomId = "") => {
   try {
-    let query = { 'players.userid': converMongoId(userId) };
+    let query = { "players.userid": converMongoId(userId) };
 
     if (roomId) {
-      query['_id'] = { $ne: converMongoId(roomId) };
+      query["_id"] = { $ne: converMongoId(roomId) };
     }
 
     console.log({ query });
