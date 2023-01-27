@@ -1,23 +1,23 @@
 //imports
-import express from 'express';
-import http from 'http';
-import { PORT } from './config/keys';
-import { mongoConnect } from './config/mongo';
-import cors from 'cors';
-import passport, { authenticate } from 'passport';
-import socket from 'socket.io';
-import roomModel from './models/room';
-import { doLeaveTable, doLeaveWatcher } from './functions/functions';
-import { updateInGameStatus } from './firestore/dbFetch';
-import jwtStrategy from './landing-server/config/jwtstragety';
+import express from "express";
+import http from "http";
+import { PORT } from "./config/keys";
+import { mongoConnect } from "./config/mongo";
+import cors from "cors";
+import passport, { authenticate } from "passport";
+import socket from "socket.io";
+import roomModel from "./models/room";
+import { doLeaveTable, doLeaveWatcher } from "./functions/functions";
+import { updateInGameStatus } from "./firestore/dbFetch";
+import jwtStrategy from "./landing-server/config/jwtstragety";
 import {
   successHandler,
   errorHandler as morganErrorHandler,
-} from './landing-server/config/morgan.js';
-import pokerRoute from './routes/pokerRoutes.js';
-import auth from './landing-server/middlewares/auth.js';
-import mongoose from 'mongoose';
-import User from './landing-server/models/user.model';
+} from "./landing-server/config/morgan.js";
+import pokerRoute from "./routes/pokerRoutes.js";
+import auth from "./landing-server/middlewares/auth.js";
+import mongoose from "mongoose";
+import User from "./landing-server/models/user.model";
 
 let app = express();
 const server = http.createServer(app);
@@ -25,13 +25,13 @@ const io = socket(server, {
   pingInterval: 10000,
   pingTimeout: 5000,
 });
-const whitelist = ['http://localhost:3000', 'https://poker.scrooge.casino'];
+const whitelist = ["http://localhost:3000", "https://poker.scrooge.casino"];
 const corsOptions = {
   origin: function (origin, callback) {
     if (whitelist.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      callback('Not allowed by CORS');
+      callback("Not allowed by CORS");
     }
   },
 };
@@ -48,16 +48,16 @@ mongoConnect();
 // Auth functions
 // jwt authentication
 app.use(passport.initialize());
-passport.use('jwt', jwtStrategy);
+passport.use("jwt", jwtStrategy);
 
-if (process.env.ENVIROMENT !== 'test') {
+if (process.env.ENVIROMENT !== "test") {
   app.use(successHandler);
   app.use(morganErrorHandler);
 }
 
-require('./socketconnection/socketconnection')(io);
+require("./socketconnection/socketconnection")(io);
 
-app.get('/checkTableExist/:tableId', async (req, res) => {
+app.get("/checkTableExist/:tableId", async (req, res) => {
   try {
     const { tableId } = req.params;
     const room = await roomModel.findOne({
@@ -66,20 +66,20 @@ app.get('/checkTableExist/:tableId', async (req, res) => {
     if (room) {
       res.status(200).send({
         success: true,
-        error: 'no-error',
+        error: "no-error",
       });
     } else {
       res.status(404).send({
         success: false,
-        error: 'Table not found',
+        error: "Table not found",
       });
     }
   } catch (error) {
-    console.log('Error in Poker game server =>', error);
+    console.log("Error in Poker game server =>", error);
   }
 });
 
-app.get('/rescueTable/:tableId', async (req, res) => {
+app.get("/rescueTable/:tableId", async (req, res) => {
   try {
     const { tableId } = req.params;
     const room = await roomModel.findOne({
@@ -121,7 +121,7 @@ app.get('/rescueTable/:tableId', async (req, res) => {
         let payload = {
           gameColl: room.gameType,
           tableId: room.tableId,
-          buyIn: room.gameType === 'pokerTournament_Tables' ? room.maxchips : 0,
+          buyIn: room.gameType === "pokerTournament_Tables" ? room.maxchips : 0,
           playerCount: player.length,
           users: users,
           adminUid: room.hostId,
@@ -129,30 +129,30 @@ app.get('/rescueTable/:tableId', async (req, res) => {
         res.status(200).send({
           stuckTable: payload,
           success: true,
-          error: 'no-error',
+          error: "no-error",
         });
       } else {
         res.status(404).send({
           success: false,
-          error: 'Table exist and its running in game',
+          error: "Table exist and its running in game",
         });
       }
     } else {
       res.status(404).send({
         success: false,
-        error: 'Table not Found',
+        error: "Table not Found",
       });
     }
   } catch (error) {
-    console.log('Error in rescueTable api', error);
+    console.log("Error in rescueTable api", error);
     res.status(500).send({
       success: false,
-      error: 'Internal server error',
+      error: "Internal server error",
     });
   }
 });
 
-app.get('/deleteStuckTable/:tableId', async (req, res) => {
+app.get("/deleteStuckTable/:tableId", async (req, res) => {
   try {
     const { tableId } = req.params;
     const room = await roomModel.deleteOne({
@@ -161,20 +161,20 @@ app.get('/deleteStuckTable/:tableId', async (req, res) => {
     if (room) {
       res.status(200).send({
         success: true,
-        error: 'no-error',
+        error: "no-error",
       });
     } else {
       res.status(404).send({
         success: false,
-        error: 'Table not found',
+        error: "Table not found",
       });
     }
   } catch (error) {
-    console.log('Error in Poker game delete table api =>', error);
+    console.log("Error in Poker game delete table api =>", error);
   }
 });
 
-app.get('/leaveGame/:tableId/:userId', async (req, res) => {
+app.get("/leaveGame/:tableId/:userId", async (req, res) => {
   try {
     let { tableId, userId } = req.params;
     tableId = mongoose.Types.ObjectId(tableId);
@@ -209,15 +209,15 @@ app.get('/leaveGame/:tableId/:userId', async (req, res) => {
       }
     }
   } catch (error) {
-    console.log('Error in checkUserInGame api', error);
+    console.log("Error in checkUserInGame api", error);
     res.status(500).send({
       success: false,
-      error: 'Internal server error',
+      error: "Internal server error",
     });
   }
 });
 
-app.get('/checkUserInGame/:userId', async (req, res) => {
+app.get("/checkUserInGame/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
     const room = await roomModel.findOne({
@@ -237,7 +237,7 @@ app.get('/checkUserInGame/:userId', async (req, res) => {
     ) {
       res.status(200).send({
         success: false,
-        gameStatus: 'InGame',
+        gameStatus: "InGame",
         link: `${req.baseUrl}/poker/index.html?tableid=${room._id}&gameCollection=${room.gameType}#/`,
         leaveTableUrl: `https://poker-server-t3e66zpola-uc.a.run.app/leaveGame/${room._id}/${userId}`,
       });
@@ -245,22 +245,22 @@ app.get('/checkUserInGame/:userId', async (req, res) => {
       updateInGameStatus(userId);
       res.status(200).send({
         success: true,
-        gameStatus: 'online',
+        gameStatus: "online",
       });
     }
   } catch (error) {
-    console.log('Error in checkUserInGame api', error);
+    console.log("Error in checkUserInGame api", error);
     res.status(500).send({
       success: false,
-      error: 'Internal server error',
+      error: "Internal server error",
     });
   }
 });
 
-app.get('/getUserForInvite/:tableId', async (req, res) => {
+app.get("/getUserForInvite/:tableId", async (req, res) => {
   try {
     if (!req.params.tableId) {
-      return res.status(400).send({ msg: 'Table id not found.' });
+      return res.status(400).send({ msg: "Table id not found." });
     }
 
     const roomData = await roomModel.findOne({
@@ -268,7 +268,7 @@ app.get('/getUserForInvite/:tableId', async (req, res) => {
     });
 
     if (!roomData) {
-      return res.status(403).send({ msg: 'Table not found.' });
+      return res.status(403).send({ msg: "Table not found." });
     }
 
     const { leavereq, invPlayers, players } = roomData;
@@ -283,11 +283,13 @@ app.get('/getUserForInvite/:tableId', async (req, res) => {
     return res.status(200).send({ data: allUsers });
   } catch (error) {
     console.log(error);
-    return res.status(500).send({ msg: 'Internal server error' });
+    return res.status(500).send({ msg: "Internal server error" });
   }
 });
 
-app.use('/poker', auth(), pokerRoute);
+app.use("/poker", auth(), pokerRoute);
+
+app.use("*", (req, res) => res.status(404).send({ message: "Api not found" }));
 
 //server
 server.listen(PORT, () => console.log(`server running on port ${PORT}`));

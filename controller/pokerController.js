@@ -153,3 +153,23 @@ export const getAllUsers = async (req, res) => {
     res.status(500).send({ message: "Internal server error" });
   }
 };
+
+export const checkIfUserInTable = async (req, res) => {
+  try {
+    const user = req.user;
+    const tableId = req.params.tableId;
+    const checkTable = await roomModel.find({
+      _id: mongoose.Types.ObjectId(tableId),
+      "players.id": user.id,
+    });
+
+    if (!checkTable) {
+      return res.status(200).send({ inTable: false });
+    }
+
+    return res.status(200).send({ inTable: true });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+};
