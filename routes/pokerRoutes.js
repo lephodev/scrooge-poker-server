@@ -19,12 +19,13 @@ router.get("/getAllUsers", getAllUsers);
 router.get("/checkUserInTable/:tableId", auth(), checkIfUserInTable);
 router.get("/check-auth", auth(), async (req, res) => {
   try {
-    if (!checkTokenExists) {
-      return res.status(500).send({ message: "Token not exists." });
-    }
+    // if (!checkTokenExists) {
+    //   return res.status(500).send({ message: "Token not exists." });
+    // }
 
     res.status(200).send({ user: req.user });
   } catch (error) {
+    console.log(error);
     res.status(500).send({ message: "Internal server error" });
   }
 });
