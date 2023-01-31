@@ -1,5 +1,4 @@
 import roomModel from "../models/room.js";
-import Game from "../models/room.js";
 import userService from "./user.service.js";
 import mongoose from "mongoose";
 import blackjackRoom from "./../models/blackjackRoom.js";
@@ -11,7 +10,7 @@ const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
 
 const getGameById = async (id) => {
-  const game = await Game.findOne({ _id: converMongoId(id) }).lean();
+  const game = await roomModel.findOne({ _id: converMongoId(id) }).lean();
   if (game) return { ...game, id: game._id };
   return null;
 };
@@ -120,7 +119,7 @@ const checkIfUserInGame = async (userId, roomId = "") => {
     }
 
     console.log({ query });
-    const checkRoom = await Game.findOne(query);
+    const checkRoom = await roomModel.findOne(query);
 
     if (checkRoom) {
       return true;
@@ -133,10 +132,50 @@ const checkIfUserInGame = async (userId, roomId = "") => {
   }
 };
 
+const playerTentativeActionSelection = async (game, userId, actionType) => {
+  console.log("gameJivannnna", actionType, userId);
+  try {
+    const { runninground, id } = game;
+
+    switch (runninground) {
+      case 1:
+        await roomModel.updateOne(
+          { _id: id, "preflopround.id": mongoose.Types.ObjectId(userId) },
+          { "preflopround.$.tentativeAction": actionType }
+        );
+        break;
+      case 2:
+        await roomModel.updateOne(
+          { _id: id, "flopround.id": mongoose.Types.ObjectId(userId) },
+          { "flopround.$.tentativeAction": actionType }
+        );
+        break;
+      case 3:
+        await roomModel.updateOne(
+          { _id: id, "turnround.id": mongoose.Types.ObjectId(userId) },
+          { "turnround.$.tentativeAction": actionType }
+        );
+        break;
+      case 4:
+        await roomModel.updateOne(
+          { _id: id, "riverround.id": mongoose.Types.ObjectId(userId) },
+          { "riverround.$.tentativeAction": actionType }
+        );
+        break;
+      default:
+        return "";
+    }
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.log("Error in playerTentativeActionSelection", error);
+  }
+};
+
 const gameService = {
   getGameById,
   joinRoomByUserId,
   checkIfUserInGame,
+  playerTentativeActionSelection,
 };
 
 export default gameService;
