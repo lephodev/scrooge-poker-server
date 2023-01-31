@@ -28,6 +28,7 @@ var Hand = require("pokersolver").Hand;
 const admin = require("firebase-admin");
 import MessageModal from "../models/messageModal";
 import Notification from "../models/notificationModal";
+import { log } from "console";
 
 const gameRestartSeconds = 7000;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
@@ -3151,6 +3152,7 @@ export const doFold = async (roomid, playerid, io) => {
   let playingPlayer = [];
   let res = true;
   let filterData = null;
+
   let lastAction = "fold";
   if (roomData.lastAction === "check") {
     lastAction = "check";
@@ -3169,6 +3171,7 @@ export const doFold = async (roomid, playerid, io) => {
           {
             "preflopround.$.fold": true,
             lastAction: lastAction,
+            "preflopround.$.tentativeAction": null,
           },
           {
             new: true,
@@ -3220,6 +3223,7 @@ export const doFold = async (roomid, playerid, io) => {
           },
           {
             "flopround.$.fold": true,
+            "flopround.$.tentativeAction": null,
             lastAction: lastAction,
           },
           {
@@ -3273,6 +3277,7 @@ export const doFold = async (roomid, playerid, io) => {
           },
           {
             "turnround.$.fold": true,
+            "turnround.$.tentativeAction": null,
             lastAction: lastAction,
           },
           {
@@ -3325,6 +3330,7 @@ export const doFold = async (roomid, playerid, io) => {
           },
           {
             "riverround.$.fold": true,
+            "riverround.$.tentativeAction": null,
             lastAction: lastAction,
           },
           {
@@ -3439,6 +3445,7 @@ export const doCall = async (roomid, playerid, io, amt) => {
             },
             "preflopround.$.action": true,
             "preflopround.$.actionType": "call",
+            "preflopround.$.tentativeAction": null,
             lastAction: "call",
           },
           {
@@ -3473,6 +3480,7 @@ export const doCall = async (roomid, playerid, io, amt) => {
             "flopround.$.action": true,
             "flopround.$.actionType": "call",
             lastAction: "call",
+            "flopround.$.tentativeAction": null,
           },
           {
             new: true,
@@ -3505,6 +3513,7 @@ export const doCall = async (roomid, playerid, io, amt) => {
             "turnround.$.action": true,
             "turnround.$.actionType": "call",
             lastAction: "call",
+            "turnround.$.tentativeAction": null,
           },
           {
             new: true,
@@ -3538,6 +3547,7 @@ export const doCall = async (roomid, playerid, io, amt) => {
             "riverround.$.action": true,
             "riverround.$.actionType": "call",
             lastAction: "call",
+            "riverround.$.tentativeAction": null,
           },
           {
             new: true,
@@ -3783,6 +3793,7 @@ export const doRaise = async (roomid, playerid, io, amt) => {
   let filterData = null;
   let newRaiseAmt = null;
   let roundData = null;
+  let p;
 
   const filterDta = roomData.players.filter(
     (el) => el.userid.toString() === roomData.timerPlayer.toString()
@@ -3796,7 +3807,17 @@ export const doRaise = async (roomid, playerid, io, amt) => {
         );
 
         amt = amt - roundData[0].pot;
-
+        p = roomData?.preflopround;
+        p.forEach((e) => {
+          if (
+            e.tentativeAction &&
+            (e.tentativeAction.startsWith("call ") ||
+              e.tentativeAction.startsWith("check"))
+          ) {
+            e.tentativeAction = null;
+          }
+        });
+        await roomModel.updateOne({ _id: roomid }, { preflopround: p });
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
@@ -3809,7 +3830,7 @@ export const doRaise = async (roomid, playerid, io, amt) => {
             },
             "preflopround.$.action": true,
             "preflopround.$.actionType": "raise",
-
+            "preflopround.$.tentativeAction": null,
             raisePlayerPosition: roundData[0].position,
             raiseAmount: amt + roundData[0].pot,
             lastAction: "raise",
@@ -3832,6 +3853,17 @@ export const doRaise = async (roomid, playerid, io, amt) => {
           (el) => el.id.toString() === playerid.toString()
         );
         amt = amt - roundData[0].pot;
+        p = roomData.flopround;
+        p.forEach((e) => {
+          if (
+            e.tentativeAction &&
+            (e.tentativeAction.startsWith("call ") ||
+              e.tentativeAction.startsWith("check"))
+          ) {
+            e.tentativeAction = null;
+          }
+        });
+        await roomModel.updateOne({ _id: roomid }, { flopround: p });
 
         updatedRoom = await roomModel.findOneAndUpdate(
           {
@@ -3845,7 +3877,7 @@ export const doRaise = async (roomid, playerid, io, amt) => {
             },
             "flopround.$.action": true,
             "flopround.$.actionType": "raise",
-
+            "flopround.$.tentativeAction": null,
             raisePlayerPosition: roundData[0].position,
             raiseAmount: amt + roundData[0].pot,
             lastAction: "raise",
@@ -3867,7 +3899,17 @@ export const doRaise = async (roomid, playerid, io, amt) => {
           (el) => el.id.toString() === playerid.toString()
         );
         amt = amt - roundData[0].pot;
-
+        p = roomData.turnround;
+        p.forEach((e) => {
+          if (
+            e.tentativeAction &&
+            (e.tentativeAction.startsWith("call ") ||
+              e.tentativeAction.startsWith("check"))
+          ) {
+            e.tentativeAction = null;
+          }
+        });
+        await roomModel.updateOne({ _id: roomid }, { turnround: p });
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
@@ -3880,7 +3922,7 @@ export const doRaise = async (roomid, playerid, io, amt) => {
             },
             "turnround.$.action": true,
             "turnround.$.actionType": "raise",
-
+            "turnround.$.tentativeAction": null,
             raisePlayerPosition: roundData[0].position,
             raiseAmount: amt + roundData[0].pot,
             lastAction: "raise",
@@ -3903,6 +3945,17 @@ export const doRaise = async (roomid, playerid, io, amt) => {
           (el) => el.id.toString() === playerid.toString()
         );
         amt = amt - roundData[0].pot;
+        p = roomData.turnround;
+        p.forEach((e) => {
+          if (
+            e.tentativeAction &&
+            (e.tentativeAction.startsWith("call ") ||
+              e.tentativeAction.startsWith("check"))
+          ) {
+            e.tentativeAction = null;
+          }
+        });
+        await roomModel.updateOne({ _id: roomid }, { riverround: p });
 
         updatedRoom = await roomModel.findOneAndUpdate(
           {
@@ -3916,7 +3969,7 @@ export const doRaise = async (roomid, playerid, io, amt) => {
             },
             "riverround.$.action": true,
             "riverround.$.actionType": "raise",
-
+            "riverround.$.tentativeAction": null,
             raisePlayerPosition: roundData[0].position,
             raiseAmount: amt + roundData[0].pot,
             lastAction: "raise",
@@ -4008,6 +4061,7 @@ export const doCheck = async (roomid, playerid, io) => {
           },
           {
             "preflopround.$.action": true,
+            "preflopround.$.tentativeAction": null,
             "preflopround.$.actionType": "check",
             lastAction: "check",
           },
@@ -4034,6 +4088,7 @@ export const doCheck = async (roomid, playerid, io) => {
             "flopround.$.action": true,
             "flopround.$.actionType": "check",
             lastAction: "check",
+            "flopround.$.tentativeAction": null,
           },
           {
             new: true,
@@ -4057,6 +4112,7 @@ export const doCheck = async (roomid, playerid, io) => {
             "turnround.$.action": true,
             "turnround.$.actionType": "check",
             lastAction: "check",
+            "turnround.$.tentativeAction": null,
           },
           {
             new: true,
@@ -4081,6 +4137,7 @@ export const doCheck = async (roomid, playerid, io) => {
             "riverround.$.action": true,
             "riverround.$.actionType": "check",
             lastAction: "check",
+            "riverround.$.tentativeAction": null,
           },
           {
             new: true,
@@ -4180,6 +4237,7 @@ export const doAllin = async (roomid, playerid, io) => {
               },
               "preflopround.$.action": true,
               "preflopround.$.actionType": "all-in",
+              "preflopround.$.tentativeAction": null,
 
               raisePlayerPosition: raisePlayerPosition,
               raiseAmount: raiseAmount,
@@ -4225,6 +4283,7 @@ export const doAllin = async (roomid, playerid, io) => {
               },
               "flopround.$.action": true,
               "flopround.$.actionType": "all-in",
+              "flopround.$.tentativeAction": null,
 
               raisePlayerPosition: raisePlayerPosition,
               raiseAmount: raiseAmount,
@@ -4267,6 +4326,7 @@ export const doAllin = async (roomid, playerid, io) => {
               $inc: {
                 "turnround.$.wallet": -roundData[0].wallet,
                 "turnround.$.pot": +roundData[0].wallet,
+                "turnround.$.tentativeAction": null,
               },
               "turnround.$.action": true,
               "turnround.$.actionType": "all-in",
@@ -4314,6 +4374,7 @@ export const doAllin = async (roomid, playerid, io) => {
                 "riverround.$.pot": +roundData[0].wallet,
               },
               "riverround.$.action": true,
+              "riverround.$.tentativeAction": null,
               "riverround.$.actionType": "all-in",
 
               raisePlayerPosition: raisePlayerPosition,
@@ -7348,5 +7409,27 @@ export const checkForGameTable = async (data, socket, io) => {
   } catch (error) {
     console.log("Error in check for table =>", error);
     socket.emit("socketError", error.message);
+  }
+};
+
+// playerTentativeAction
+export const playerTentativeAction = async (data, socket, io) => {
+  try {
+    const { userId, gameId, playerAction } = data;
+    const game = await gameService.getGameById(gameId);
+    if (game) {
+      await gameService.playerTentativeActionSelection(
+        game,
+        userId,
+        playerAction
+      );
+      const updatedGame = await gameService.getGameById(gameId);
+      // console.log("updatedGameupdatedGame", updatedGame);
+      io.in(gameId).emit("updateGame", { game: updatedGame });
+    } else {
+      socket.emit("actionError", { msg: "No game found" });
+    }
+  } catch (error) {
+    console.log("Error in playerTentativeAction", error);
   }
 };

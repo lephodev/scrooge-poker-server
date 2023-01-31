@@ -23,9 +23,10 @@ import {
   leaveAndJoinWatcher,
   InvitePlayers,
   doLeaveWatcher,
-} from '../functions/functions';
-import mongoose from 'mongoose';
-import roomModel from '../models/room';
+  playerTentativeAction,
+} from "../functions/functions";
+import mongoose from "mongoose";
+import roomModel from "../models/room";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
@@ -35,65 +36,65 @@ let returnSocket = (io) => {
   const socketToRoom = {};
   io.users = [];
   io.room = [];
-  io.on('connection', async (socket) => {
+  io.on("connection", async (socket) => {
     try {
-      console.log('One user Connected');
+      console.log("One user Connected");
     } catch (e) {
-      console.log('error in connect block', e);
+      console.log("error in connect block", e);
     }
 
-    socket.on('room', (roomData) => {
-      console.log('inside room socket ', roomData);
-      console.log('join socket roomData ==>', roomData);
-      console.log('room connected', typeof roomData.roomid, roomData.roomid);
+    socket.on("room", (roomData) => {
+      console.log("inside room socket ", roomData);
+      console.log("join socket roomData ==>", roomData);
+      console.log("room connected", typeof roomData.roomid, roomData.roomid);
       socket.join(roomData.roomid);
 
-      socket.emit('welcome', { msg: 'hello welcome to socket.io' });
+      socket.emit("welcome", { msg: "hello welcome to socket.io" });
     });
 
-    socket.on('checkTable', async (data) => {
-      console.log('---------------CHECK TABLE-------------------', { data });
+    socket.on("checkTable", async (data) => {
+      console.log("---------------CHECK TABLE-------------------", { data });
       try {
         await checkForGameTable(data, socket, io);
       } catch (err) {
-        console.log('Error in checkTable =>', err.message);
+        console.log("Error in checkTable =>", err.message);
       }
     });
-    socket.on('joinGame', async (data) => {
+    socket.on("joinGame", async (data) => {
       await joinRequest(data, socket, io);
     });
 
-    socket.on('leaveWatcherJoinPlayer', async (data) => {
+    socket.on("leaveWatcherJoinPlayer", async (data) => {
       await doLeaveWatcher(data, io, socket);
       await joinRequest(data, socket, io);
     });
 
-    socket.on('joinWatcher', async (data) => {
+    socket.on("joinWatcher", async (data) => {
       await joinWatcherRequest(data, socket, io);
     });
 
-    socket.on('newBet', async (data) => {
+    socket.on("newBet", async (data) => {
       await handleNewBet(data, socket, io);
     });
 
-    socket.on('acceptBet', async (data) => {
+    socket.on("acceptBet", async (data) => {
       await acceptBet(data, socket, io);
     });
 
-    socket.on('approveRequest', async (data) => {
+    socket.on("approveRequest", async (data) => {
       await approveJoinRequest(data, socket, io);
     });
 
-    socket.on('cancelRequest', async (data) => {
+    socket.on("cancelRequest", async (data) => {
       await rejectJoinRequest(data, socket, io);
     });
 
-    socket.on('startPreflopRound', async (data) => {
-      console.log('startPreflopRound - ', { data });
+    socket.on("startPreflopRound", async (data) => {
+      console.log("startPreflopRound - ", { data });
       await startPreflopRound(data, socket, io);
     });
 
-    socket.on('dofold', async (data) => {
+    socket.on("dofold", async (data) => {
       let room = await roomModel.findOne({
         _id: convertMongoId(data.roomid),
       });
@@ -101,7 +102,7 @@ let returnSocket = (io) => {
       await socketDoFold(data, io, socket);
     });
 
-    socket.on('docall', async (data) => {
+    socket.on("docall", async (data) => {
       let room = await roomModel.findOne({
         _id: data.roomid,
       });
@@ -109,7 +110,7 @@ let returnSocket = (io) => {
       await socketDoCall(data, io, socket);
     });
 
-    socket.on('dobet', async (data) => {
+    socket.on("dobet", async (data) => {
       let room = await roomModel.findOne({
         _id: convertMongoId(data.roomid),
       });
@@ -117,7 +118,7 @@ let returnSocket = (io) => {
       await socketDoBet(data, io, socket);
     });
 
-    socket.on('doraise', async (data) => {
+    socket.on("doraise", async (data) => {
       let room = await roomModel.findOne({
         _id: data.roomid,
       });
@@ -125,7 +126,7 @@ let returnSocket = (io) => {
       await socketDoRaise(data, io, socket);
     });
 
-    socket.on('docheck', async (data) => {
+    socket.on("docheck", async (data) => {
       let room = await roomModel.findOne({
         _id: convertMongoId(data.roomid),
       });
@@ -133,8 +134,8 @@ let returnSocket = (io) => {
       await socketDoCheck(data, io, socket);
     });
 
-    socket.on('doallin', async (data) => {
-      console.log('INSIDE ALL IN');
+    socket.on("doallin", async (data) => {
+      console.log("INSIDE ALL IN");
       let room = await roomModel.findOne({
         _id: data.roomid,
       });
@@ -142,7 +143,7 @@ let returnSocket = (io) => {
       await socketDoAllin(data, io, socket);
     });
 
-    socket.on('dopausegame', async (data) => {
+    socket.on("dopausegame", async (data) => {
       let room = await roomModel.findOne({
         _id: data.roomid,
       });
@@ -150,7 +151,7 @@ let returnSocket = (io) => {
       await doPauseGame(data, io, socket);
     });
 
-    socket.on('dofinishgame', async (data) => {
+    socket.on("dofinishgame", async (data) => {
       let room = await roomModel.findOne({
         _id: convertMongoId(data.roomid),
       });
@@ -158,7 +159,7 @@ let returnSocket = (io) => {
       await doFinishGame(data, io, socket);
     });
 
-    socket.on('doresumegame', async (data) => {
+    socket.on("doresumegame", async (data) => {
       let room = await roomModel.findOne({
         _id: data.roomid,
       });
@@ -166,15 +167,15 @@ let returnSocket = (io) => {
       await doResumeGame(data, io, socket);
     });
 
-    socket.on('dositout', async (data) => {
+    socket.on("dositout", async (data) => {
       await doSitOut(data, io, socket);
     });
 
-    socket.on('dositin', async (data) => {
+    socket.on("dositin", async (data) => {
       await doSitIn(data, io, socket);
     });
 
-    socket.on('doleavetable', async (data) => {
+    socket.on("doleavetable", async (data) => {
       if (data.isWatcher) {
         await doLeaveWatcher(data, io, socket);
       } else {
@@ -182,27 +183,27 @@ let returnSocket = (io) => {
       }
     });
 
-    socket.on('leaveJoinWatcher', async (data) => {
+    socket.on("leaveJoinWatcher", async (data) => {
       await leaveAndJoinWatcher(data, io, socket);
     });
 
-    socket.on('typing', async (data) => {
+    socket.on("typing", async (data) => {
       console.log(data);
-      socket.to(data.roomid).emit('usrtyping', { usr: data.user });
+      socket.to(data.roomid).emit("usrtyping", { usr: data.user });
     });
 
-    socket.on('msg_send', async (data) => {
+    socket.on("msg_send", async (data) => {
       console.log(data);
-      socket.to(data.roomid).emit('user_message', {
+      socket.to(data.roomid).emit("user_message", {
         usr: data.user,
         msg: data.msg,
         name: data.name,
       });
     });
 
-    socket.on('join room', (data) => {
-      console.log('join room is here');
-      console.log('for video=>', data);
+    socket.on("join room", (data) => {
+      console.log("join room is here");
+      console.log("for video=>", data);
       if (users[data.roomid]) {
         const length = users[data.roomid].length;
         // if (length === 25) {
@@ -217,12 +218,12 @@ let returnSocket = (io) => {
       const usersInThisRoom = users[data.roomid].filter(
         (el) => el.socketid !== socket.id
       );
-      console.log('all user emit => ', usersInThisRoom);
-      socket.emit('all users', usersInThisRoom);
+      console.log("all user emit => ", usersInThisRoom);
+      socket.emit("all users", usersInThisRoom);
     });
 
     // BuyIn socket
-    socket.on('addCoins', async (data) => {
+    socket.on("addCoins", async (data) => {
       await addBuyIn(
         data.amt,
         data.userId,
@@ -235,26 +236,26 @@ let returnSocket = (io) => {
       );
     });
 
-    socket.on('sending signal', (payload) => {
-      io.to(payload.userToSignal).emit('user joined', {
+    socket.on("sending signal", (payload) => {
+      io.to(payload.userToSignal).emit("user joined", {
         signal: payload.signal,
         callerID: payload.callerID,
         userid: payload.userid,
       });
     });
 
-    socket.on('returning signal', (payload) => {
-      io.to(payload.callerID).emit('receiving returned signal', {
+    socket.on("returning signal", (payload) => {
+      io.to(payload.callerID).emit("receiving returned signal", {
         signal: payload.signal,
         id: socket.id,
         userid: payload.userid,
       });
     });
 
-    socket.on('disconnect', async () => {
+    socket.on("disconnect", async () => {
       try {
         console.log(
-          'disconnected',
+          "disconnected",
           socket.id,
           socket.customId, // userid of player who leaves the game
           socket.customRoom // Room id on which user was playing game
@@ -276,7 +277,7 @@ let returnSocket = (io) => {
         );
         console.log({ filteredSockets, filteredRoom });
         if (filteredSockets.length > 0 && filteredRoom.length > 0) {
-          console.log('IN THE IF');
+          console.log("IN THE IF");
           let indexUser = lastSockets.indexOf(socket.customId);
           if (indexUser !== -1) lastSockets.splice(indexUser, 1);
 
@@ -287,25 +288,25 @@ let returnSocket = (io) => {
             userId: socket.customId,
             tableId: socket.customRoom,
           };
-          console.log('data =>', data);
+          console.log("data =>", data);
 
           setTimeout(async () => {
-            console.log('Player join in game again');
-            console.log('After three second =>');
+            console.log("Player join in game again");
+            console.log("After three second =>");
             let dd = { ...data };
             console.log({ dd });
-            console.log('USER LIST ', JSON.stringify(io.users));
+            console.log("USER LIST ", JSON.stringify(io.users));
             console.log(
-              'RESULT ',
+              "RESULT ",
               io.users.find((ele) => ele?.toString() === dd?.userId?.toString())
             );
             if (
               io.users.find((ele) => ele?.toString() === dd?.userId?.toString())
             ) {
-              console.log('USER JOINS THE ROOM AGAIN');
+              console.log("USER JOINS THE ROOM AGAIN");
               return;
             } else {
-              console.log('dd =>', dd);
+              console.log("dd =>", dd);
               await doLeaveTable(dd, io, socket);
             }
           }, 120000);
@@ -319,26 +320,31 @@ let returnSocket = (io) => {
           users[roomID] = room;
         }
       } catch (e) {
-        console.log('error in disconnect block', e);
+        console.log("error in disconnect block", e);
       }
-      console.log('Player gone!');
+      console.log("Player gone!");
     });
 
-    socket.on('chatMessage', (data) => {
-      io.in(data.tableId.toString()).emit('newMessage', data);
-      console.log('Emitted');
+    socket.on("chatMessage", (data) => {
+      io.in(data.tableId.toString()).emit("newMessage", data);
+      console.log("Emitted");
     });
 
-    socket.on('invPlayers', async (data) => {
+    socket.on("invPlayers", async (data) => {
       InvitePlayers(data, socket, io);
     });
 
-    socket.on('giftItem', async (data) => {
-      io.in(data.tableId).emit('newItem', data);
+    socket.on("giftItem", async (data) => {
+      io.in(data.tableId).emit("newItem", data);
     });
 
-    socket.on('clearData', async (data) => {
+    socket.on("clearData", async (data) => {
       if (data.tableId) doFinishGame(data, io, socket);
+    });
+
+    socket.on("playerTentativeAction", async (data) => {
+      console.log("playerTentativeAction", data);
+      await playerTentativeAction(data, socket, io);
     });
   });
 };
