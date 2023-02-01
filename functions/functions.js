@@ -7338,8 +7338,9 @@ export const finishHandApiCall = async (room, userId) => {
 
 // NEW functions
 export const checkForGameTable = async (data, socket, io) => {
+  console.log("datadatadata", data);
   try {
-    const { gameId, userId } = data;
+    const { gameId, userId, sitInAmount } = data;
     const game = await gameService.getGameById(gameId);
 
     if (!game || game.finish) {
@@ -7397,7 +7398,12 @@ export const checkForGameTable = async (data, socket, io) => {
     }
 
     // If user is not in the room
-    const updatedRoom = await gameService.joinRoomByUserId(game, userId);
+    const updatedRoom = await gameService.joinRoomByUserId(
+      game,
+      userId,
+      sitInAmount
+    );
+    console.log({ updatedRoom });
 
     if (updatedRoom) {
       addUserInSocket(io, socket, gameId, userId);

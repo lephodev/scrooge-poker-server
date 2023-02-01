@@ -5,6 +5,7 @@ import {
   getAllGame,
   getAllUsers,
   checkIfUserInTable,
+  getTablePlayers,
 } from "../controller/pokerController.js";
 import Token from "../landing-server/models/Token.model.js";
 import { validateCreateTable } from "../validation/poker.validation.js";
@@ -17,6 +18,8 @@ router.post("/createTable", validateCreateTable, createTable);
 router.get("/rooms", getAllGame);
 router.get("/getAllUsers", getAllUsers);
 router.get("/checkUserInTable/:tableId", auth(), checkIfUserInTable);
+router.get("/getTablePlayers/:tableId", auth(), getTablePlayers);
+
 router.get("/check-auth", auth(), async (req, res) => {
   try {
     // if (!checkTokenExists) {
