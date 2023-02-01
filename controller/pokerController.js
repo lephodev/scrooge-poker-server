@@ -5,6 +5,8 @@ import Notification from "../models/notificationModal.js";
 import gameService from "../service/game.service.js";
 import roomModel from "./../models/room.js";
 
+const convertMongoId = (id) => mongoose.Types.ObjectId(id);
+
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
 
@@ -193,5 +195,65 @@ export const getTablePlayers = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).send({ message: "Internal server error" });
+  }
+};
+
+export const refillWallet = async (req, res) => {
+  try {
+    const user = req.user;
+    let { tableId, amount } = req.body;
+    console.log("req.bod", req.body, user);
+
+    if (!tableId || !amount) {
+      return res.status(403).send({ msg: "Invalid data" });
+    }
+
+    amount = parseInt(amount);
+
+    if (amount > user.wallet) {
+      return res
+        .status(403)
+        .send({ msg: "You dont have balance in your wallet" });
+    }
+
+    await roomModel.updateOne(
+      {
+        $and: [
+          { _id: tableId },
+          { players: { $elemMatch: { id: mongoose.Types.ObjectId(user.id) } } },
+        ],
+      },
+      {
+        $inc: {
+          "players.$.wallet": amount,
+          "players.$.initialCoinBeforeStart": amount,
+        },
+      }
+    );
+
+    const roomData = await roomModel.findOne({
+      $and: [
+        { _id: tableId },
+        {
+          players: { $elemMatch: { userid: mongoose.Types.ObjectId(user.id) } },
+        },
+      ],
+    });
+
+    // if (roomData) {
+    //   io.in(tableId).emit("updateRoom", roomData);
+    // }
+
+    console.log({ roomData });
+
+    await User.updateOne(
+      { _id: mongoose.Types.ObjectId(user.id) },
+      { $inc: { wallet: -amount } }
+    );
+
+    res.status(200).send({ msg: "Success", roomData });
+  } catch (error) {
+    res.status(500).send({ msg: "Internel server error" });
+    console.log(error);
   }
 };
