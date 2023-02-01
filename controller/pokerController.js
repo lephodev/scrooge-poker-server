@@ -158,16 +158,38 @@ export const checkIfUserInTable = async (req, res) => {
   try {
     const user = req.user;
     const tableId = req.params.tableId;
-    const checkTable = await roomModel.find({
+    const checkTable = await roomModel.findOne({
       _id: mongoose.Types.ObjectId(tableId),
-      "players.id": user.id,
+      "players.id": mongoose.Types.ObjectId(user.id),
     });
 
+    console.log("checkTable", checkTable);
     if (!checkTable) {
       return res.status(200).send({ inTable: false });
     }
 
-    return res.status(200).send({ inTable: true });
+    return res.status(200).send({ inTable: true, players: checkTable.players });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+};
+
+export const getTablePlayers = async (req, res) => {
+  console.log("abbavv", req.params.tableId);
+  try {
+    const user = req.user;
+    const tableId = req.params.tableId;
+
+    const roomData = await roomModel.find({
+      _id: mongoose.Types.ObjectId(tableId),
+      "players.id": user.id,
+    });
+    if (!roomData) {
+      return res.status(403).send({ message: "Room not found" });
+    }
+
+    res.status(200).send({ players: roomData.players });
   } catch (error) {
     console.log(error);
     res.status(500).send({ message: "Internal server error" });

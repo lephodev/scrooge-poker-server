@@ -38,7 +38,7 @@ const findAvailablePosition = async (playerList) => {
   });
 };
 
-const pushUserInRoom = async (roomId, userId, position) => {
+const pushUserInRoom = async (roomId, userId, position, sitInAmount) => {
   try {
     const userData = await userService.getUserById(userId);
     const { username, wallet, email, _id, avatar, profile } = userData;
@@ -54,7 +54,7 @@ const pushUserInRoom = async (roomId, userId, position) => {
               userid: _id,
               id: _id,
               photoURI: avatar ? avatar : profile ? profile : img,
-              wallet: wallet,
+              wallet: sitInAmount,
               position,
               missedSmallBlind: false,
               missedBigBlind: false,
@@ -80,7 +80,7 @@ const pushUserInRoom = async (roomId, userId, position) => {
   }
 };
 
-const joinRoomByUserId = async (game, userId) => {
+const joinRoomByUserId = async (game, userId, sitInAmount) => {
   // if public table -
   // check empty slot for table else return slot full,
   // join user in game if there is empty slot
@@ -89,7 +89,12 @@ const joinRoomByUserId = async (game, userId) => {
     if (!availblePosition.isFound) {
       return null;
     }
-    const room = pushUserInRoom(game._id, userId, availblePosition.i);
+    const room = pushUserInRoom(
+      game._id,
+      userId,
+      availblePosition.i,
+      sitInAmount
+    );
     return room;
     // else check invite array for private tables
     // join user in game if there is empty slot else return slot full
