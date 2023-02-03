@@ -7439,3 +7439,7 @@ export const playerTentativeAction = async (data, socket, io) => {
     console.log("Error in playerTentativeAction", error);
   }
 };
+
+export const ChatUser = () => {
+  console.log("getChat");
+};
