@@ -7439,3 +7439,74 @@ export const playerTentativeAction = async (data, socket, io) => {
     console.log("Error in playerTentativeAction", error);
   }
 };
+
+export const UpdateRoomChat = async (data, socket, io) => {
+  try {
+    console.log("I am chat user", data);
+    const { tableId, message, userId } = data;
+    let room = await roomModel.find({ _id: tableId });
+    if (room) {
+      const user = await userModel.findOne({ _id: userId });
+
+      const { firstName, lastName, profile } = user || {};
+      await roomModel.findOneAndUpdate(
+        { _id: tableId },
+        {
+          $push: {
+            chats: {
+              message: message,
+              userId: userId,
+              firstName: firstName,
+              lastName: lastName,
+              profile,
+              date: new Date().toLocaleTimeString(),
+              seenBy: [],
+            },
+          },
+        }
+      );
+      let room = await roomModel.findOne({ _id: tableId });
+
+      io.in(tableId).emit("updateChat", { chat: room?.chats });
+    } else {
+      io.in(tableId).emit("updateChat", { chat: [] });
+    }
+
+    console.log("room : ----- >", room);
+  } catch (error) {
+    console.log("Error in updateRoomChat", error);
+  }
+};
+
+export const updateSeenBy = async (data, socket, io) => {
+  console.log("update chat is read ", data);
+  try {
+    const { userId, tableId } = data;
+    let room = await roomModel.findOne({ _id: tableId });
+    console.log("room", room);
+    let filterdChats = room.chats.map((chat) => {
+      if (chat.userId !== userId && chat.seenBy.indexOf(userId) < 0) {
+        chat.seenBy.push(userId);
+      }
+      return chat;
+    });
+    // console.log(filterdChats);
+    await roomModel.updateOne(
+      { _id: tableId },
+      { $set: { chats: filterdChats } }
+    );
+  } catch (err) {
+    console.log("error in updateChatIsRead", err);
+  }
+};
+
+export const emitTyping = (data, socket, io) => {
+  try {
+    console.log("typing socket is called");
+    const { tableId, userId, typing } = data;
+    console.log(typing);
+    io.in(tableId).emit("typingOnChat", { crrTypingUserId: userId, typing });
+  } catch (err) {
+    console.log("error in emit typing", err);
+  }
+};
