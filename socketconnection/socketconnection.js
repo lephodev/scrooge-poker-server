@@ -24,6 +24,9 @@ import {
   InvitePlayers,
   doLeaveWatcher,
   playerTentativeAction,
+  UpdateRoomChat,
+  updateSeenBy,
+  emitTyping,
 } from "../functions/functions";
 import mongoose from "mongoose";
 import roomModel from "../models/room";
@@ -325,8 +328,9 @@ let returnSocket = (io) => {
       console.log("Player gone!");
     });
 
-    socket.on("chatMessage", (data) => {
+    socket.on("chatMessage", async (data) => {
       io.in(data.tableId.toString()).emit("newMessage", data);
+      await UpdateRoomChat(data, socket, io);
       console.log("Emitted");
     });
 
@@ -345,6 +349,23 @@ let returnSocket = (io) => {
     socket.on("playerTentativeAction", async (data) => {
       console.log("playerTentativeAction", data);
       await playerTentativeAction(data, socket, io);
+    });
+
+    socket.on("updateChatIsRead", async (data) => {
+      // console.log("updateChatIsRead", data);
+      await updateSeenBy(data, socket, io);
+    });
+
+    socket.on("updateChatIsReadWhileChatHistoryOpen", async (data) => {
+      // console.log("updateChatIsRead", data);
+      if (data.openChatHistory) {
+        await updateSeenBy(data, socket, io);
+      }
+    });
+
+    socket.on("typingOnChat", async (data) => {
+      console.log("typing on chat", data);
+      await emitTyping(data, socket, io);
     });
   });
 };

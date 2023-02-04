@@ -64,6 +64,7 @@ const roomSchema = new Schema({
   gameType: { type: String },
   invPlayers: [],
   watchers: [],
+  chats: [],
   public: { type: Boolean, default: false },
   allowWatcher: { type: Boolean, default: false },
   meetingId: { type: String },
