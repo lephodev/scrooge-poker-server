@@ -71,12 +71,14 @@ const userSchema = mongoose.Schema(
       type: Number,
       default: 0,
     },
+    tournaments: { type: Array, default: [] },
     termsAccept: {
       type: Boolean,
       default: false,
     },
     profile: { type: String },
   },
+
   {
     timestamps: true,
   }
