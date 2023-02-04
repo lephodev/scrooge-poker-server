@@ -15,6 +15,8 @@ import {
   errorHandler as morganErrorHandler,
 } from "./landing-server/config/morgan.js";
 import pokerRoute from "./routes/pokerRoutes.js";
+import tournamentRoute from "./routes/tournamentRoutes.js";
+
 import auth from "./landing-server/middlewares/auth.js";
 import mongoose from "mongoose";
 import User from "./landing-server/models/user.model";
@@ -288,6 +290,7 @@ app.get("/getUserForInvite/:tableId", async (req, res) => {
 });
 
 app.use("/poker", auth(), pokerRoute);
+app.use("/tournament", auth(), tournamentRoute);
 
 app.use("*", (req, res) => res.status(404).send({ message: "Api not found" }));
 
