@@ -2665,6 +2665,13 @@
     "object-assign" "^4"
     "vary" "^1"
 
+"cron@^2.2.0":
+  "integrity" "sha512-GPiI3OgMv83XRtEUc2gUdaLvJhO3XbLN288layOBkDTupg0RK5IECNGpkykIMHg+muVR2bxt29b0xvCAcBrjYQ=="
+  "resolved" "https://registry.npmjs.org/cron/-/cron-2.2.0.tgz"
+  "version" "2.2.0"
+  dependencies:
+    "luxon" "^3.2.1"
+
 "cron@1.8.2":
   "integrity" "sha512-Gk2c4y6xKEO8FSAUTklqtfSr7oTq0CiPQeLBG5Fl0qoXpZyMcj1SG59YL+hqq04bu6/IuEA7lMkYDAplQNKkyg=="
   "resolved" "https://registry.npmjs.org/cron/-/cron-1.8.2.tgz"
@@ -4213,6 +4220,11 @@
     "lodash.clonedeep" "^4.5.0"
     "lru-cache" "~4.0.0"
 
+"luxon@^3.2.1":
+  "integrity" "sha512-QrwPArQCNLAKGO/C+ZIilgIuDnEnKx5QYODdDtbFaxzsbZcc/a7WFq7MhsVYgRlwawLtvOUESTlfJ+hc/USqPg=="
+  "resolved" "https://registry.npmjs.org/luxon/-/luxon-3.2.1.tgz"
+  "version" "3.2.1"
+
 "make-dir@^2.0.0", "make-dir@^2.1.0":
   "integrity" "sha512-LS9X+dc8KLxXCb8dni79fLIIUA5VyZoyjSMCwTluaXA0o27cCK0bhXkpgw+sTXVpPy/lSO57ilRixqk0vDmtRA=="
   "resolved" "https://registry.npmjs.org/make-dir/-/make-dir-2.1.0.tgz"
@@ -4315,9 +4327,9 @@
   "version" "1.0.3"
 
 "moment-timezone@^0.5.x":
-  "integrity" "sha512-Z8QNyuQHQAmWucp8Knmgei8YNo28aLjJq6Ma+jy1ZSpSk5nyfRT8xgUbSQvD2+2UajISfenndwvFuH3NGS+nvA=="
-  "resolved" "https://registry.npmjs.org/moment-timezone/-/moment-timezone-0.5.32.tgz"
-  "version" "0.5.32"
+  "integrity" "sha512-tWfmNkRYmBkPJz5mr9GVDn9vRlVZOTe6yqY92rFxiOdWXbjaR0+9LwQnZGGuNR63X456NqmEkbskte8tWL5ePg=="
+  "resolved" "https://registry.npmjs.org/moment-timezone/-/moment-timezone-0.5.40.tgz"
+  "version" "0.5.40"
   dependencies:
     "moment" ">= 2.9.0"
 
@@ -4451,6 +4463,13 @@
   "integrity" "sha1-ICl+idhvb2QA8lDZ9Pa0wZRfzTU= sha512-3DWDqAtIiPSkBXZyYEjwebfK56nrlQfRGt642fu8RPaL+ePu750+HCMHxjJCG3iEHq/0aeMvX6KIzlv7nuhfrA=="
   "resolved" "https://registry.npmjs.org/netmask/-/netmask-1.0.6.tgz"
   "version" "1.0.6"
+
+"node-cron@^3.0.2":
+  "integrity" "sha512-iP8l0yGlNpE0e6q1o185yOApANRe47UPbLf4YxfbiNHt/RU5eBcGB/e0oudruheSf+LQeDMezqC5BVAb5wwRcQ=="
+  "resolved" "https://registry.npmjs.org/node-cron/-/node-cron-3.0.2.tgz"
+  "version" "3.0.2"
+  dependencies:
+    "uuid" "8.3.2"
 
 "node-environment-flags@^1.0.5":
   "integrity" "sha512-5Evy2epuL+6TM0lCQGpFIj6KwiEsGh1SrHUhTbNX+sLbBtjidPZFAnVK9y5yU1+h//RitLbRHTIMyxQPtxMdHw=="
@@ -5961,7 +5980,7 @@
   "resolved" "https://registry.npmjs.org/uuid/-/uuid-3.4.0.tgz"
   "version" "3.4.0"
 
-"uuid@^8.0.0", "uuid@^8.3.2":
+"uuid@^8.0.0", "uuid@^8.3.2", "uuid@8.3.2":
   "integrity" "sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg=="
   "resolved" "https://registry.npmjs.org/uuid/-/uuid-8.3.2.tgz"
   "version" "8.3.2"
