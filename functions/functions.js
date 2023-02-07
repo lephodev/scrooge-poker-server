@@ -33,6 +33,8 @@ import User from "../landing-server/models/user.model";
 
 const gameRestartSeconds = 7000;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
+const img =
+  "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
 
 const addUserInSocket = (io, socket, gameId, userId) => {
   console.log("Socket room BEFORE ", io.room);
