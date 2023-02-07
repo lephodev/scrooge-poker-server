@@ -29,6 +29,7 @@ const admin = require("firebase-admin");
 import MessageModal from "../models/messageModal";
 import Notification from "../models/notificationModal";
 import { log } from "console";
+import User from "../landing-server/models/user.model";
 
 const gameRestartSeconds = 7000;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
@@ -7508,5 +7509,140 @@ export const emitTyping = (data, socket, io) => {
     io.in(tableId).emit("typingOnChat", { crrTypingUserId: userId, typing });
   } catch (err) {
     console.log("error in emit typing", err);
+  }
+};
+
+export const JoinTournament = async (data, socket, io) => {
+  try {
+    const { userId, tournamentId } = data;
+    const checkTable = await roomModel.findOne({
+      tournament: mongoose.Types.ObjectId(tournamentId),
+      "players.id": mongoose.Types.ObjectId(userId),
+    });
+    if (!checkTable) {
+      await Tournament(userId, tournamentId, socket);
+
+      return socket.emit("alreadyInTournament", {
+        message: "You joined in game.",
+        code: 200,
+      });
+    } else {
+      return socket.emit("alreadyInTournament", {
+        message: "You are already in game.",
+        code: 400,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const Tournament = async (userId, tournamentId, socket) => {
+  const userData = await User.findById(userId).lean();
+  let checkTournament = await tournamentModel
+    .findOne({ _id: tournamentId })
+    .lean();
+  if (checkTournament) {
+    if (checkTournament.havePlayers < 10000) {
+      await pushPlayerInRoom(checkTournament, userData, tournamentId, socket);
+    }
+  }
+};
+
+const pushPlayerInRoom = async (
+  checkTournament,
+  userData,
+  tournamentId,
+  socket
+) => {
+  // console.log("checkTournamentin PushPlayer", checkTournament);
+  let roomId;
+  const { username, wallet, _id, avatar, profile } = userData;
+  let lastRoom = null;
+  if (checkTournament?.rooms?.length) {
+    lastRoom = await roomModel
+      .findById(checkTournament.rooms[checkTournament.rooms.length - 1])
+      .lean();
+  }
+  if (checkTournament?.rooms?.length && lastRoom?.players?.length < 10) {
+    console.log("push player to ==>", lastRoom._id);
+    roomId = lastRoom._id;
+    let players = lastRoom.players;
+    players.push({
+      name: username,
+      userid: _id,
+      id: _id,
+      photoURI: avatar ? avatar : profile ? profile : img,
+      wallet: wallet,
+      position: players.length,
+      missedSmallBlind: false,
+      missedBigBlind: false,
+      forceBigBlind: false,
+      playing: true,
+      initialCoinBeforeStart: 100,
+      gameJoinedAt: new Date(),
+      hands: [],
+
+      // timebank: tournamentconfig.emergencyTimer,
+    });
+
+    const payload = {
+      players: players,
+      tournament: tournamentId,
+    };
+
+    const updatedRoom = await roomModel.findOneAndUpdate(
+      { _id: roomId },
+      payload,
+      { new: true }
+    );
+    const updatedTournament = await tournamentModel.findOneAndUpdate(
+      { _id: tournamentId },
+      { $inc: { havePlayers: 1 } },
+      { new: true }
+    );
+    await User.findOneAndUpdate(
+      { _id: userData._id },
+      { $push: { tournaments: { tournamentId, roomId } } },
+      { upsert: true, new: true }
+    );
+  } else {
+    const payload = {
+      players: [
+        {
+          name: username,
+          userid: _id,
+          id: _id,
+          photoURI: avatar ? avatar : profile ? profile : img,
+          wallet: wallet,
+          position: 0,
+          missedSmallBlind: false,
+          missedBigBlind: false,
+          forceBigBlind: false,
+          playing: true,
+          initialCoinBeforeStart: 100,
+          gameJoinedAt: new Date(),
+          hands: [],
+        },
+      ],
+      tournament: tournamentId,
+    };
+
+    const roomData = new roomModel(payload);
+    const savedroom = await roomData.save();
+    roomId = savedroom._id;
+
+    await tournamentModel.findOneAndUpdate(
+      { _id: tournamentId },
+      { $inc: { havePlayers: 1 }, $push: { rooms: roomId } },
+      { upsert: true, new: true }
+    );
+    const getAllTournament = await tournamentModel.find({}).populate("rooms");
+    socket.emit("updatePlayerList", getAllTournament);
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: userData._id },
+      { $push: { tournaments: { tournamentId, roomId } } },
+      { upsert: true, new: true }
+    );
   }
 };
