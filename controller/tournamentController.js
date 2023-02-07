@@ -5,9 +5,9 @@ import mongoose from "mongoose";
 
 var cron = require("node-cron");
 
-cron.schedule("* * * * *", () => {
-  activateTournament();
-});
+// cron.schedule("* * * * *", () => {
+//   activateTournament();
+// });
 
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
@@ -23,36 +23,36 @@ export const getAllGame = async (req, res) => {
   }
 };
 
-export const JoinTournament = async (req, res) => {
-  try {
-    // console.log("Body", req.body);
-    const { _id } = req.user;
-    const { tournamentId } = req.body;
-    const userData = await User.findById(_id).lean();
-    // console.log("userData", userData);
-    const checkTable = await roomModel.findOne({
-      tournament: mongoose.Types.ObjectId(tournamentId),
-      "players.id": mongoose.Types.ObjectId(_id),
-    });
+// export const JoinTournament = async (req, res) => {
+//   try {
+//     // console.log("Body", req.body);
+//     const { _id } = req.user;
+//     const { tournamentId } = req.body;
+//     const userData = await User.findById(_id).lean();
+//     // console.log("userData", userData);
+//     const checkTable = await roomModel.findOne({
+//       tournament: mongoose.Types.ObjectId(tournamentId),
+//       "players.id": mongoose.Types.ObjectId(_id),
+//     });
 
-    console.log("checkTable", checkTable);
-    if (!checkTable) {
-      await Tournament(_id, tournamentId);
-      res.send({
-        status: 200,
-        msg: "You have successfully joined upcoming tournament.",
-      });
-    } else {
-      res.send({
-        status: 400,
-        msg: "You are already in tournament.",
-      });
-    }
-  } catch (error) {
-    console.log(error);
-    res.status(500).send({ message: "Internal server error" });
-  }
-};
+//     console.log("checkTable", checkTable);
+//     if (!checkTable) {
+//       await Tournament(_id, tournamentId);
+//       res.send({
+//         status: 200,
+//         msg: "You have successfully joined upcoming tournament.",
+//       });
+//     } else {
+//       res.send({
+//         status: 400,
+//         msg: "You are already in tournament.",
+//       });
+//     }
+//   } catch (error) {
+//     console.log(error);
+//     res.status(500).send({ message: "Internal server error" });
+//   }
+// };
 
 const Tournament = async (userId, tournamentId) => {
   const userData = await User.findById(userId).lean();
@@ -187,6 +187,17 @@ export const enterRoom = async (req, res) => {
   }
 };
 
-export const activateTournament = () => {
+export const activateTournament = async () => {
   console.log("activatedTournament");
+  const checkTournament = await tournamentModel
+    .findOne({
+      startDate: "Sat Mar 11 2023 19:47:04 GMT+0530 (India Standard Time)",
+    })
+    .populate("rooms")
+    .lean();
+
+  if (checkTournament) {
+  }
+
+  console.log("checkTournament", checkTournament);
 };

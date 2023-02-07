@@ -27,6 +27,7 @@ import {
   UpdateRoomChat,
   updateSeenBy,
   emitTyping,
+  JoinTournament,
 } from "../functions/functions";
 import mongoose from "mongoose";
 import roomModel from "../models/room";
@@ -366,6 +367,10 @@ let returnSocket = (io) => {
     socket.on("typingOnChat", async (data) => {
       console.log("typing on chat", data);
       await emitTyping(data, socket, io);
+    });
+
+    socket.on("joinTournament", async (data) => {
+      await JoinTournament(data, socket, io);
     });
   });
 };
