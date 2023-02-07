@@ -119,7 +119,7 @@ const joinRoomByUserId = async (game, userId, sitInAmount) => {
 // Because in check game function we want to exclude it from there
 const checkIfUserInGame = async (userId, roomId = '') => {
   try {
-    let query = { 'players.userid': converMongoId(userId) }
+    let query = { tournament: null, "players.userid": converMongoId(userId) };
 
     if (roomId) {
       query['_id'] = { $ne: converMongoId(roomId) }
