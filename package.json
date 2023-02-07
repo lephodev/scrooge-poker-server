@@ -13,6 +13,7 @@
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.4",
     "cors": "^2.8.5",
+    "cron": "^2.2.0",
     "crypto-js": "^4.0.0",
     "debug": "~2.6.9",
     "dotenv": "^10.0.0",
@@ -37,6 +38,7 @@
     "shortid": "^2.2.15",
     "socket.io": "^4.0.1",
     "sync-each": "^1.0.1",
+    "twilio": "^3.84.1",
     "uuid": "^8.3.2",
     "validator": "^13.7.0",
     "winston": "^3.8.2"

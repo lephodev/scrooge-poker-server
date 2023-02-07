@@ -20,6 +20,7 @@ import tournamentRoute from "./routes/tournamentRoutes.js";
 import auth from "./landing-server/middlewares/auth.js";
 import mongoose from "mongoose";
 import User from "./landing-server/models/user.model";
+import returnCron from "./cron/cron";
 
 let app = express();
 const server = http.createServer(app);
@@ -27,6 +28,7 @@ const io = socket(server, {
   pingInterval: 10000,
   pingTimeout: 5000,
 });
+returnCron()
 const whitelist = ["http://localhost:3000", "https://poker.scrooge.casino"];
 const corsOptions = {
   origin: function (origin, callback) {
