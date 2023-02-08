@@ -44,7 +44,7 @@ const pushUserInRoom = async (roomId, userId, position, sitInAmount) => {
     const { username, wallet, email, _id, avatar, profile } = userData;
 
     await Promise.allSettled([
-      userService.updateUserWallet(_id),
+      // userService.updateUserWallet(_id),
       roomModel.updateOne(
         { _id: roomId },
         {
@@ -106,7 +106,12 @@ const joinRoomByUserId = async (game, userId, sitInAmount) => {
     if (!availblePosition.isFound) {
       return null;
     }
-    const room = pushUserInRoom(game._id, userId, availblePosition.i);
+    const room = pushUserInRoom(
+      game._id,
+      userId,
+      availblePosition.i,
+      sitInAmount
+    );
     return room;
   } else {
     return null;
