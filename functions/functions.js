@@ -3624,7 +3624,7 @@ export const doBet = async (roomid, playerid, io, amt) => {
   let res = true;
   let filterData = null;
   let roundData = null;
-
+  let p;
   const filterDta = roomData.players.filter(
     (el) => el.userid.toString() === roomData.timerPlayer.toString()
   );
@@ -3636,7 +3636,25 @@ export const doBet = async (roomid, playerid, io, amt) => {
           (el) => el.id.toString() === playerid.toString()
         );
         amt = amt - roundData[0].pot;
-
+        p = roomData.flopround;
+        p.forEach((e) => {
+          if (
+            e.tentativeAction &&
+            (e.tentativeAction.startsWith("call ") ||
+              e.tentativeAction === "check")
+          ) {
+            e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
+          }
+        });
+        await roomModel.updateOne({ _id: roomid }, { flopround: p });
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
@@ -3649,7 +3667,7 @@ export const doBet = async (roomid, playerid, io, amt) => {
             },
             "flopround.$.action": true,
             "flopround.$.actionType": "bet",
-
+            "flopround.$.tentativeAction": null,
             raisePlayerPosition: filterDta[0].position,
             raiseAmount: amt + roundData[0].pot,
             lastAction: "bet",
@@ -3671,6 +3689,25 @@ export const doBet = async (roomid, playerid, io, amt) => {
           (el) => el.id.toString() === playerid.toString()
         );
         amt = amt - roundData[0].pot;
+        p = roomData.turnround;
+        p.forEach((e) => {
+          if (
+            e.tentativeAction &&
+            (e.tentativeAction.startsWith("call ") ||
+              e.tentativeAction === "check")
+          ) {
+            e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
+          }
+        });
+        await roomModel.updateOne({ _id: roomid }, { turnround: p });
 
         updatedRoom = await roomModel.findOneAndUpdate(
           {
@@ -3682,6 +3719,7 @@ export const doBet = async (roomid, playerid, io, amt) => {
               "turnround.$.wallet": -amt,
               "turnround.$.pot": +amt,
             },
+            "turnround.$.tentativeAction": null,
             "turnround.$.action": true,
             "turnround.$.actionType": "bet",
 
@@ -3707,6 +3745,25 @@ export const doBet = async (roomid, playerid, io, amt) => {
           (el) => el.id.toString() === playerid.toString()
         );
         amt = amt - roundData[0].pot;
+        p = roomData.riverround;
+        p.forEach((e) => {
+          if (
+            e.tentativeAction &&
+            (e.tentativeAction.startsWith("call ") ||
+              e.tentativeAction === "check")
+          ) {
+            e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
+          }
+        });
+        await roomModel.updateOne({ _id: roomid }, { riverround: p });
 
         updatedRoom = await roomModel.findOneAndUpdate(
           {
@@ -3718,6 +3775,7 @@ export const doBet = async (roomid, playerid, io, amt) => {
               "riverround.$.wallet": -amt,
               "riverround.$.pot": +amt,
             },
+            "riverround.$.tentativeAction": null,
             "riverround.$.action": true,
             "riverround.$.actionType": "bet",
 
@@ -3819,6 +3877,14 @@ export const doRaise = async (roomid, playerid, io, amt) => {
               e.tentativeAction.startsWith("check"))
           ) {
             e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
           }
         });
         await roomModel.updateOne({ _id: roomid }, { preflopround: p });
@@ -3865,6 +3931,14 @@ export const doRaise = async (roomid, playerid, io, amt) => {
               e.tentativeAction.startsWith("check"))
           ) {
             e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
           }
         });
         await roomModel.updateOne({ _id: roomid }, { flopround: p });
@@ -3911,6 +3985,14 @@ export const doRaise = async (roomid, playerid, io, amt) => {
               e.tentativeAction.startsWith("check"))
           ) {
             e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
           }
         });
         await roomModel.updateOne({ _id: roomid }, { turnround: p });
@@ -3957,6 +4039,14 @@ export const doRaise = async (roomid, playerid, io, amt) => {
               e.tentativeAction.startsWith("check"))
           ) {
             e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
           }
         });
         await roomModel.updateOne({ _id: roomid }, { riverround: p });
@@ -7421,15 +7511,17 @@ export const checkForGameTable = async (data, socket, io) => {
       userId,
       sitInAmount
     );
-    console.log("updateRoom", typeof updatedRoom);
-    if (typeof updatedRoom === Object && updatedRoom) {
+    console.log("updateRoom", Object.keys(updatedRoom));
+    if (Object.keys(updatedRoom).length > 0) {
       addUserInSocket(io, socket, gameId, userId);
       io.in(gameId).emit("updateGame", { game: updatedRoom });
       return;
-    } else if (updatedRoom === "Table is Full") {
+    }
+    // if (updatedRoom===) {
+    //   socket.emit("tablefull", { message: "This table is full." });
+    // }
+    else {
       socket.emit("tablefull", { message: "This table is full." });
-    } else {
-      socket.emit("notInvited", { message: "Your are not invited." });
     }
   } catch (error) {
     console.log("Error in check for table =>", error);
