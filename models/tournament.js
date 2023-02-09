@@ -4,7 +4,7 @@ const Schema = mongoose.Schema;
 const tournamentSchema = new Schema({
   name: { type: String, required: true },
   levels: { type: Object, required: true },
-  startDate: { type: String, required: true },
+  startDate: { type: Date, required: true },
   active: { type: Boolean, required: true, default: false },
   isFinished: { type: Boolean, default: false },
   havePlayers: { type: Number, default: 0 },
