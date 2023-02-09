@@ -81,6 +81,7 @@ const pushUserInRoom = async (roomId, userId, position, sitInAmount) => {
 };
 
 const joinRoomByUserId = async (game, userId, sitInAmount) => {
+  console.log("user joind");
   // if public table -
   // check empty slot for table else return slot full,
   // join user in game if there is empty slot
@@ -113,6 +114,9 @@ const joinRoomByUserId = async (game, userId, sitInAmount) => {
       sitInAmount
     );
     return room;
+  } else if (game.public && game.players.length >= 9) {
+    console.log("Table is Fully", game.players.length);
+    return "Table is Full";
   } else {
     return null;
   }
