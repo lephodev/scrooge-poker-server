@@ -7747,7 +7747,7 @@ export const activateTournament = async (io) => {
   console.log("activatedTournament");
   const checkTournament = await tournamentModel
     .findOne({
-      startDate: "Sat Feb 25 2023 19:29:55 GMT+0530 (India Standard Time)",
+      startDate: "2023-02-08T10:28:00.000+00:00",
     })
     .populate("rooms")
     .lean();
@@ -7777,7 +7777,7 @@ export const activateTournament = async (io) => {
       }
     );
   } else {
-    msg = "Tournament not found.";
+    console.log("Tournament not found");
   }
 
   //console.log("checkTournament", checkTournament);
