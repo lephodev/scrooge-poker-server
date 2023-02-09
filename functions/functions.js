@@ -2729,7 +2729,7 @@ export const doSitOut = async (data, io, socket) => {
 
             io.in(updatedData._id.toString()).emit("notification", {
               id: userid,
-              action: "SitOut",
+              action: "Stood up",
               msg: "",
             });
             if (socket) socket.emit("sitInOut", { updatedRoom: updatedData });
@@ -2783,7 +2783,7 @@ export const doSitOut = async (data, io, socket) => {
             }
             io.in(updatedData._id.toString()).emit("notification", {
               id: userid,
-              action: "SitOut",
+              action: "Stood up",
             });
             if (socket) {
               socket.emit("sitInOut", { updatedRoom: updatedData });
@@ -2838,7 +2838,7 @@ export const doSitOut = async (data, io, socket) => {
             }
             io.in(updatedData._id.toString()).emit("notification", {
               id: userid,
-              action: "SitOut",
+              action: "Stood up",
             });
             if (socket) {
               socket.emit("sitInOut", { updatedRoom: updatedData });
@@ -2893,7 +2893,7 @@ export const doSitOut = async (data, io, socket) => {
             }
             io.in(updatedData._id.toString()).emit("notification", {
               id: userid,
-              action: "SitOut",
+              action: "Stood up",
             });
             if (socket) {
               socket.emit("sitInOut", { updatedRoom: updatedData });
@@ -2948,7 +2948,7 @@ export const doSitOut = async (data, io, socket) => {
             }
             io.in(updatedData._id.toString()).emit("notification", {
               id: userid,
-              action: "SitOut",
+              action: "Stood up",
             });
             if (socket) {
               socket.emit("sitInOut", { updatedRoom: updatedData });
@@ -2976,7 +2976,7 @@ export const doSitOut = async (data, io, socket) => {
 
             io.in(updatedData._id.toString()).emit("notification", {
               id: userid,
-              action: "SitOut",
+              action: "Stood up",
             });
             if (socket) socket.emit("sitInOut", { updatedRoom: updatedData });
             break;
@@ -3039,7 +3039,7 @@ export const doSitIn = async (data, io, socket) => {
       if (socket) socket.emit("sitInOut", { updatedRoom: updatedData });
       io.in(updatedData._id.toString()).emit("notification", {
         id: userid,
-        action: "SitIn",
+        action: "Sat down",
       });
     } else {
       socket.emit("actionError", { code: 400, msg: "Bad request" });
