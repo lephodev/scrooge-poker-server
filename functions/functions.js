@@ -3877,6 +3877,14 @@ export const doRaise = async (roomid, playerid, io, amt) => {
               e.tentativeAction.startsWith("check"))
           ) {
             e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
           }
         });
         await roomModel.updateOne({ _id: roomid }, { preflopround: p });
@@ -3923,6 +3931,14 @@ export const doRaise = async (roomid, playerid, io, amt) => {
               e.tentativeAction.startsWith("check"))
           ) {
             e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
           }
         });
         await roomModel.updateOne({ _id: roomid }, { flopround: p });
@@ -3969,6 +3985,14 @@ export const doRaise = async (roomid, playerid, io, amt) => {
               e.tentativeAction.startsWith("check"))
           ) {
             e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
           }
         });
         await roomModel.updateOne({ _id: roomid }, { turnround: p });
@@ -4015,6 +4039,14 @@ export const doRaise = async (roomid, playerid, io, amt) => {
               e.tentativeAction.startsWith("check"))
           ) {
             e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
           }
         });
         await roomModel.updateOne({ _id: roomid }, { riverround: p });
