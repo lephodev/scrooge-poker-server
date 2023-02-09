@@ -7057,9 +7057,19 @@ const createTransactionFromUsersArray = (roomId, users = []) => {
       }
 
       // Get each transaction last and update wallet amount
+      console.log(
+        "update amount: ------------------------------------------------>",
+        updatedAmount
+      );
       const gameWinOrLoseamount =
         elem.action === "game-lose" ? -elem.amount : elem.amount;
       const lastAmount = updatedAmount;
+
+      console.log(
+        "win or lose amount: -----------------------------",
+        gameWinOrLoseamount
+      );
+
       updatedAmount = updatedAmount + gameWinOrLoseamount;
       return {
         userId,
@@ -7093,7 +7103,7 @@ const createTransactionFromUsersArray = (roomId, users = []) => {
         )
       );
     }
-
+    console.log("updatedAmount =====>", updatedAmount);
     transactionObjectsArray = [...transactionObjectsArray, ...handsTransaction];
     users[i].newBalance = updatedAmount;
   });
@@ -7149,11 +7159,11 @@ export const leaveApiCall = async (room, userId) => {
 
     let allUsers = player.concat(room.watchers).concat(room.sitOut);
 
-    console.log({
-      allUsers: JSON.stringify(allUsers),
-      userId,
-      runningRound: room.runninground,
-    });
+    // console.log({
+    //   allUsers: JSON.stringify(allUsers),
+    //   userId,
+    //   runningRound: room.runninground,
+    // });
 
     if (userId) {
       allUsers = allUsers.filter((ele) => {
@@ -7162,7 +7172,7 @@ export const leaveApiCall = async (room, userId) => {
       });
     }
 
-    console.log({ allUsers });
+    // console.log({ allUsers });
     let users = [];
     allUsers.forEach((item) => {
       console.log({ item });
@@ -7197,7 +7207,7 @@ export const leaveApiCall = async (room, userId) => {
       });
     });
 
-    console.log("USERS => ", JSON.stringify(users));
+    // console.log("USERS => ", JSON.stringify(users));
 
     let payload = {
       mode:
@@ -7212,10 +7222,14 @@ export const leaveApiCall = async (room, userId) => {
       adminUid: room.hostId,
     };
 
+    // console.log("users1====>", users);
+
     const [transactions, rankModelUpdate] = createTransactionFromUsersArray(
       room._id,
       users
     );
+
+    // console.log("users2====>", users);
 
     const userBalancePromise = users.map((el) => {
       console.log(`Updated amount for user ${el.uid} is ${el.newBalance}`);
@@ -7223,7 +7237,7 @@ export const leaveApiCall = async (room, userId) => {
         {
           _id: convertMongoId(el.uid),
         },
-        { $inc: { wallet: el.newBalance } }
+        { $set: { wallet: el.newBalance } }
       );
     });
 
@@ -7256,10 +7270,10 @@ export const leaveApiCall = async (room, userId) => {
         ...userBalancePromise,
         ...rankModelUpdate,
       ]);
-      console.log(
-        "FINAL RESPONSE:2",
-        JSON.stringify(response.map((el) => el.value))
-      );
+      // console.log(
+      //   "FINAL RESPONSE:2",
+      //   JSON.stringify(response.map((el) => el.value))
+      // );
     }
 
     return true;
