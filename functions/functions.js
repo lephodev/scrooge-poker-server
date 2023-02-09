@@ -3869,12 +3869,12 @@ export const doRaise = async (roomid, playerid, io, amt) => {
         );
 
         amt = amt - roundData[0].pot;
-        p = roomData?.preflopround;
+        p = roomData.preflopround;
         p.forEach((e) => {
           if (
             e.tentativeAction &&
             (e.tentativeAction.startsWith("call ") ||
-              e.tentativeAction.startsWith("check"))
+              e.tentativeAction === "check")
           ) {
             e.tentativeAction = null;
           } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
@@ -3928,7 +3928,7 @@ export const doRaise = async (roomid, playerid, io, amt) => {
           if (
             e.tentativeAction &&
             (e.tentativeAction.startsWith("call ") ||
-              e.tentativeAction.startsWith("check"))
+              e.tentativeAction === "check")
           ) {
             e.tentativeAction = null;
           } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
@@ -3982,7 +3982,7 @@ export const doRaise = async (roomid, playerid, io, amt) => {
           if (
             e.tentativeAction &&
             (e.tentativeAction.startsWith("call ") ||
-              e.tentativeAction.startsWith("check"))
+              e.tentativeAction === "check")
           ) {
             e.tentativeAction = null;
           } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
@@ -4036,7 +4036,7 @@ export const doRaise = async (roomid, playerid, io, amt) => {
           if (
             e.tentativeAction &&
             (e.tentativeAction.startsWith("call ") ||
-              e.tentativeAction.startsWith("check"))
+              e.tentativeAction === "check")
           ) {
             e.tentativeAction = null;
           } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
