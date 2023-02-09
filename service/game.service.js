@@ -5,7 +5,7 @@ import blackjackRoom from "./../models/blackjackRoom.js";
 
 const converMongoId = (id) => mongoose.Types.ObjectId(id);
 
-const maxPlayer = 10;
+const maxPlayer = 9;
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
 
@@ -84,7 +84,7 @@ const joinRoomByUserId = async (game, userId, sitInAmount) => {
   // if public table -
   // check empty slot for table else return slot full,
   // join user in game if there is empty slot
-  if (game.public && game.players.length < 10) {
+  if (game.public && game.players.length < 9) {
     const availblePosition = await findAvailablePosition(game.players);
     if (!availblePosition.isFound) {
       return null;
@@ -100,7 +100,7 @@ const joinRoomByUserId = async (game, userId, sitInAmount) => {
     // join user in game if there is empty slot else return slot full
   } else if (
     game.invPlayers.find((uId) => uId.toString() === userId.toString()) &&
-    game.players.length < 10
+    game.players.length < 9
   ) {
     const availblePosition = await findAvailablePosition(game.players);
     if (!availblePosition.isFound) {
