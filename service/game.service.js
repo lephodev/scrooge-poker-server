@@ -115,8 +115,7 @@ const joinRoomByUserId = async (game, userId, sitInAmount) => {
     );
     return room;
   } else if (game.public && game.players.length >= 9) {
-    console.log("Table is Fully", game.players.length);
-    return "Table is Full";
+    return null;
   } else {
     return null;
   }

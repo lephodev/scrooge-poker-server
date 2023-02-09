@@ -7407,15 +7407,17 @@ export const checkForGameTable = async (data, socket, io) => {
       userId,
       sitInAmount
     );
-    console.log("updateRoom", typeof updatedRoom);
-    if (typeof updatedRoom === Object && updatedRoom) {
+    console.log("updateRoom", Object.keys(updatedRoom));
+    if (Object.keys(updatedRoom).length > 0) {
       addUserInSocket(io, socket, gameId, userId);
       io.in(gameId).emit("updateGame", { game: updatedRoom });
       return;
-    } else if (updatedRoom === "Table is Full") {
+    }
+    // if (updatedRoom===) {
+    //   socket.emit("tablefull", { message: "This table is full." });
+    // }
+    else {
       socket.emit("tablefull", { message: "This table is full." });
-    } else {
-      socket.emit("notInvited", { message: "Your are not invited." });
     }
   } catch (error) {
     console.log("Error in check for table =>", error);
