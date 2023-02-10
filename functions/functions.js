@@ -29,9 +29,12 @@ const admin = require("firebase-admin");
 import MessageModal from "../models/messageModal";
 import Notification from "../models/notificationModal";
 import { log } from "console";
+import User from "../landing-server/models/user.model";
 
 const gameRestartSeconds = 7000;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
+const img =
+  "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
 
 const addUserInSocket = (io, socket, gameId, userId) => {
   console.log("Socket room BEFORE ", io.room);
@@ -266,6 +269,7 @@ export const preflopPlayerPush = async (players, roomid) => {
 };
 
 export const preflopround = async (room, io) => {
+  console.log("io", io);
   await updateRoomForNewHand(room._id, io);
   room = await roomModel.findOne(room._id).lean();
   let playingPlayer = room.players.filter((el) => el.playing && el.wallet > 0);
@@ -3620,7 +3624,7 @@ export const doBet = async (roomid, playerid, io, amt) => {
   let res = true;
   let filterData = null;
   let roundData = null;
-
+  let p;
   const filterDta = roomData.players.filter(
     (el) => el.userid.toString() === roomData.timerPlayer.toString()
   );
@@ -3632,7 +3636,25 @@ export const doBet = async (roomid, playerid, io, amt) => {
           (el) => el.id.toString() === playerid.toString()
         );
         amt = amt - roundData[0].pot;
-
+        p = roomData.flopround;
+        p.forEach((e) => {
+          if (
+            e.tentativeAction &&
+            (e.tentativeAction.startsWith("call ") ||
+              e.tentativeAction === "check")
+          ) {
+            e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
+          }
+        });
+        await roomModel.updateOne({ _id: roomid }, { flopround: p });
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
@@ -3645,7 +3667,7 @@ export const doBet = async (roomid, playerid, io, amt) => {
             },
             "flopround.$.action": true,
             "flopround.$.actionType": "bet",
-
+            "flopround.$.tentativeAction": null,
             raisePlayerPosition: filterDta[0].position,
             raiseAmount: amt + roundData[0].pot,
             lastAction: "bet",
@@ -3667,6 +3689,25 @@ export const doBet = async (roomid, playerid, io, amt) => {
           (el) => el.id.toString() === playerid.toString()
         );
         amt = amt - roundData[0].pot;
+        p = roomData.turnround;
+        p.forEach((e) => {
+          if (
+            e.tentativeAction &&
+            (e.tentativeAction.startsWith("call ") ||
+              e.tentativeAction === "check")
+          ) {
+            e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
+          }
+        });
+        await roomModel.updateOne({ _id: roomid }, { turnround: p });
 
         updatedRoom = await roomModel.findOneAndUpdate(
           {
@@ -3678,6 +3719,7 @@ export const doBet = async (roomid, playerid, io, amt) => {
               "turnround.$.wallet": -amt,
               "turnround.$.pot": +amt,
             },
+            "turnround.$.tentativeAction": null,
             "turnround.$.action": true,
             "turnround.$.actionType": "bet",
 
@@ -3703,6 +3745,25 @@ export const doBet = async (roomid, playerid, io, amt) => {
           (el) => el.id.toString() === playerid.toString()
         );
         amt = amt - roundData[0].pot;
+        p = roomData.riverround;
+        p.forEach((e) => {
+          if (
+            e.tentativeAction &&
+            (e.tentativeAction.startsWith("call ") ||
+              e.tentativeAction === "check")
+          ) {
+            e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
+          }
+        });
+        await roomModel.updateOne({ _id: roomid }, { riverround: p });
 
         updatedRoom = await roomModel.findOneAndUpdate(
           {
@@ -3714,6 +3775,7 @@ export const doBet = async (roomid, playerid, io, amt) => {
               "riverround.$.wallet": -amt,
               "riverround.$.pot": +amt,
             },
+            "riverround.$.tentativeAction": null,
             "riverround.$.action": true,
             "riverround.$.actionType": "bet",
 
@@ -3807,14 +3869,22 @@ export const doRaise = async (roomid, playerid, io, amt) => {
         );
 
         amt = amt - roundData[0].pot;
-        p = roomData?.preflopround;
+        p = roomData.preflopround;
         p.forEach((e) => {
           if (
             e.tentativeAction &&
             (e.tentativeAction.startsWith("call ") ||
-              e.tentativeAction.startsWith("check"))
+              e.tentativeAction === "check")
           ) {
             e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
           }
         });
         await roomModel.updateOne({ _id: roomid }, { preflopround: p });
@@ -3858,9 +3928,17 @@ export const doRaise = async (roomid, playerid, io, amt) => {
           if (
             e.tentativeAction &&
             (e.tentativeAction.startsWith("call ") ||
-              e.tentativeAction.startsWith("check"))
+              e.tentativeAction === "check")
           ) {
             e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
           }
         });
         await roomModel.updateOne({ _id: roomid }, { flopround: p });
@@ -3904,9 +3982,17 @@ export const doRaise = async (roomid, playerid, io, amt) => {
           if (
             e.tentativeAction &&
             (e.tentativeAction.startsWith("call ") ||
-              e.tentativeAction.startsWith("check"))
+              e.tentativeAction === "check")
           ) {
             e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
           }
         });
         await roomModel.updateOne({ _id: roomid }, { turnround: p });
@@ -3950,9 +4036,17 @@ export const doRaise = async (roomid, playerid, io, amt) => {
           if (
             e.tentativeAction &&
             (e.tentativeAction.startsWith("call ") ||
-              e.tentativeAction.startsWith("check"))
+              e.tentativeAction === "check")
           ) {
             e.tentativeAction = null;
+          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
+            e.tentativeAction = "fold";
+          } else if (
+            e.tentativeAction &&
+            e.tentativeAction === "callAny" &&
+            amt >= e.wallet
+          ) {
+            e.tentativeAction = "allin";
           }
         });
         await roomModel.updateOne({ _id: roomid }, { riverround: p });
@@ -5042,7 +5136,7 @@ export const reArrangeTables = async (tournamentId, io) => {
 
         fullRooms = allAvilableRoom.filter(
           (el) =>
-            el.players.length <= 10 && el.players.length >= canPlayMinimum + 1
+            el.players.length <= 9 && el.players.length >= canPlayMinimum + 1
         );
 
         fullRooms.sort(function (a, b) {
@@ -5055,7 +5149,7 @@ export const reArrangeTables = async (tournamentId, io) => {
         //     fullRooms = allAvilableRoom.filter(el=>el.players.length === (canPlayMinimum+1));
         // }
         haveBlankSpots = allAvilableRoom.filter(
-          (el) => el.players.length < 10 && el.players.length > 0
+          (el) => el.players.length < 9 && el.players.length > 0
         );
         // console.log('fullRooms =>',fullRooms);
         // console.log('haveBlankSpots =>',haveBlankSpots);
@@ -5076,7 +5170,7 @@ export const reArrangeTables = async (tournamentId, io) => {
         });
         let haveOnespot = blankSpots.filter((el) => el.spots.length === 1);
         let haveMoreThnOne = blankSpots.filter((el) => {
-          return el.spots.length > 10 - canPlayMinimum;
+          return el.spots.length > 9 - canPlayMinimum;
         });
 
         fullRooms.forEach((el) => {
@@ -5094,7 +5188,7 @@ export const reArrangeTables = async (tournamentId, io) => {
 
         if (
           totalEliminated - mostBlnkRoom.totalSpots >=
-          10 - mostBlnkRoom.totalSpots
+          9 - mostBlnkRoom.totalSpots
         ) {
           let leftBlankTables1 = haveMoreThnOne.filter(
             (el) => el.roomid !== mostBlnkRoom.roomid
@@ -5103,7 +5197,7 @@ export const reArrangeTables = async (tournamentId, io) => {
             (el) => el.roomid !== mostBlnkRoom.roomid
           );
           let leftBlankTables3 = blankSpots.filter(
-            (el) => el.spots.length === 10 - canPlayMinimum
+            (el) => el.spots.length === 9 - canPlayMinimum
           );
           let leftBlankTables4 = leftBlankTables1.concat(leftBlankTables2);
           let leftBlankTables = leftBlankTables4.concat(leftBlankTables3);
@@ -5180,7 +5274,7 @@ export const fillSpot = async (room, fullRooms, canPlayMinimum, io) => {
       fullRooms,
       async function (froom, next) {
         if (
-          room.spots.length > 10 - canPlayMinimum &&
+          room.spots.length > 9 - canPlayMinimum &&
           i < room.spots.length - 1
         ) {
           let froomPlayers = froom.players;
@@ -5501,7 +5595,7 @@ export const findAvailablePosition = async (playerList) => {
     try {
       let i = 0;
       let isFound = false;
-      while (i < 10 && !isFound) {
+      while (i < 9 && !isFound) {
         let have = playerList.filter((el) => el.position === i);
         if (!have.length) {
           isFound = true;
@@ -5534,7 +5628,7 @@ export const joinRequest = async (data, socket, io) => {
         if (isExist.length) {
           socket.emit("alreadyJoin", "");
         } else {
-          if (room.players.length < 10) {
+          if (room.players.length < 9) {
             let ischecked = false;
             let amt;
             if (
@@ -5638,7 +5732,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
       if (
         (isRoomExist.gameType === "poker1vs1_Tables" &&
           isRoomExist.players.length === 2) ||
-        isRoomExist.players.length >= 10
+        isRoomExist.players.length >= 9
       ) {
         if (isRoomExist.allowWatcher) {
           return socket.emit("newWatcher", {
@@ -5654,7 +5748,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
         if (room.table.public) {
           if (
             isRoomExist.gameType !== "poker1vs1_Tables" &&
-            isRoomExist.players.length < 10 &&
+            isRoomExist.players.length < 9 &&
             !isRoomExist.players.find((ele) => ele.userid === user.userid)
           ) {
             user.isAdmin = false;
@@ -5727,7 +5821,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
           } else if (
             !room.invPlayers.find((ele) => ele === user.userid) &&
             isRoomExist.gameType !== "poker1vs1_Tables" &&
-            isRoomExist.players.length < 10
+            isRoomExist.players.length < 9
           ) {
             socket.emit("newUser", {
               _id: room.roomid,
@@ -5736,7 +5830,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
             });
           } else if (
             isRoomExist.gameType !== "poker1vs1_Tables" &&
-            isRoomExist.players.length >= 10
+            isRoomExist.players.length >= 9
           ) {
             console.log("ROOM FULL 5716");
             socket.emit("roomFull", "Room is full");
@@ -5882,7 +5976,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
         if (room.table.public) {
           if (
             isRoomExist.gameType !== "poker1vs1_Tables" &&
-            isRoomExist.players.length < 10 &&
+            isRoomExist.players.length < 9 &&
             !room.players.find((ele) => ele === user.userid)
           ) {
             user.isAdmin = false;
@@ -6291,7 +6385,7 @@ export const approveJoinRequest = async (data, socket, io) => {
             isWatcher: false,
           });
         }
-        if (room.players.length < 10) {
+        if (room.players.length < 9) {
           let joinPlayer = room.joinRequests.filter(
             (e) => e.userid.toString() === data.player.userid.toString()
           );
@@ -7403,15 +7497,18 @@ export const checkForGameTable = async (data, socket, io) => {
       userId,
       sitInAmount
     );
-    console.log({ updatedRoom });
-
-    if (updatedRoom) {
+    console.log("updateRoom", Object.keys(updatedRoom));
+    if (Object.keys(updatedRoom).length > 0) {
       addUserInSocket(io, socket, gameId, userId);
       io.in(gameId).emit("updateGame", { game: updatedRoom });
       return;
     }
-
-    socket.emit("notInvited", { message: "Your are not invited." });
+    // if (updatedRoom===) {
+    //   socket.emit("tablefull", { message: "This table is full." });
+    // }
+    else {
+      socket.emit("tablefull", { message: "This table is full." });
+    }
   } catch (error) {
     console.log("Error in check for table =>", error);
     socket.emit("socketError", error.message);
@@ -7509,4 +7606,178 @@ export const emitTyping = (data, socket, io) => {
   } catch (err) {
     console.log("error in emit typing", err);
   }
+};
+
+export const JoinTournament = async (data, socket, io) => {
+  try {
+    const { userId, tournamentId } = data;
+    const checkTable = await roomModel.findOne({
+      tournament: mongoose.Types.ObjectId(tournamentId),
+      "players.id": mongoose.Types.ObjectId(userId),
+    });
+    if (!checkTable) {
+      await Tournament(userId, tournamentId, socket);
+
+      return socket.emit("alreadyInTournament", {
+        message: "You joined in game.",
+        code: 200,
+      });
+    } else {
+      return socket.emit("alreadyInTournament", {
+        message: "You are already in game.",
+        code: 400,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const Tournament = async (userId, tournamentId, socket) => {
+  const userData = await User.findById(userId).lean();
+  let checkTournament = await tournamentModel
+    .findOne({ _id: tournamentId })
+    .lean();
+  if (checkTournament) {
+    if (checkTournament.havePlayers < 10000) {
+      await pushPlayerInRoom(checkTournament, userData, tournamentId, socket);
+    }
+  }
+};
+
+const pushPlayerInRoom = async (
+  checkTournament,
+  userData,
+  tournamentId,
+  socket
+) => {
+  // console.log("checkTournamentin PushPlayer", checkTournament);
+  let roomId;
+  const { username, wallet, _id, avatar, profile } = userData;
+  let lastRoom = null;
+  if (checkTournament?.rooms?.length) {
+    lastRoom = await roomModel
+      .findById(checkTournament.rooms[checkTournament.rooms.length - 1])
+      .lean();
+  }
+  if (checkTournament?.rooms?.length && lastRoom?.players?.length < 9) {
+    console.log("push player to ==>", lastRoom._id);
+    roomId = lastRoom._id;
+    let players = lastRoom.players;
+    players.push({
+      name: username,
+      userid: _id,
+      id: _id,
+      photoURI: avatar ? avatar : profile ? profile : img,
+      wallet: wallet,
+      position: players.length,
+      missedSmallBlind: false,
+      missedBigBlind: false,
+      forceBigBlind: false,
+      playing: true,
+      initialCoinBeforeStart: 100,
+      gameJoinedAt: new Date(),
+      hands: [],
+
+      // timebank: tournamentconfig.emergencyTimer,
+    });
+
+    const payload = {
+      players: players,
+      tournament: tournamentId,
+    };
+
+    const updatedRoom = await roomModel.findOneAndUpdate(
+      { _id: roomId },
+      payload,
+      { new: true }
+    );
+    const updatedTournament = await tournamentModel.findOneAndUpdate(
+      { _id: tournamentId },
+      { $inc: { havePlayers: 1 } },
+      { new: true }
+    );
+    await User.findOneAndUpdate(
+      { _id: userData._id },
+      { $push: { tournaments: { tournamentId, roomId } } },
+      { upsert: true, new: true }
+    );
+  } else {
+    const payload = {
+      players: [
+        {
+          name: username,
+          userid: _id,
+          id: _id,
+          photoURI: avatar ? avatar : profile ? profile : img,
+          wallet: wallet,
+          position: 0,
+          missedSmallBlind: false,
+          missedBigBlind: false,
+          forceBigBlind: false,
+          playing: true,
+          initialCoinBeforeStart: 100,
+          gameJoinedAt: new Date(),
+          hands: [],
+        },
+      ],
+      tournament: tournamentId,
+    };
+
+    const roomData = new roomModel(payload);
+    const savedroom = await roomData.save();
+    roomId = savedroom._id;
+
+    await tournamentModel.findOneAndUpdate(
+      { _id: tournamentId },
+      { $inc: { havePlayers: 1 }, $push: { rooms: roomId } },
+      { upsert: true, new: true }
+    );
+    const getAllTournament = await tournamentModel.find({}).populate("rooms");
+    socket.emit("updatePlayerList", getAllTournament);
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: userData._id },
+      { $push: { tournaments: { tournamentId, roomId } } },
+      { upsert: true, new: true }
+    );
+  }
+};
+
+export const activateTournament = async (io) => {
+  console.log("activatedTournament");
+  const checkTournament = await tournamentModel
+    .findOne({
+      startDate: "2023-02-08T10:28:00.000+00:00",
+    })
+    .populate("rooms")
+    .lean();
+
+  if (checkTournament) {
+    //preflopround()
+    each(
+      checkTournament.rooms,
+      async function (room, next) {
+        console.log("room", room);
+        await preflopround(room, io);
+        next();
+      },
+      async function (err, transformedItems) {
+        let rearrangeInterval = setInterval(async () => {
+          const updatedtournament = await tournamentModel
+            .findOne({ _id: checkTournament._id })
+            .lean();
+          if (updatedtournament.havePlayers > 1) {
+            await reArrangeTables(checkTournament._id, io);
+          } else {
+            clearInterval(rearrangeInterval);
+            console.log("We got tournament winner.");
+          }
+        }, 120000);
+        startLevelInterval(checkTournament._id);
+      }
+    );
+  } else {
+    console.log("Tournament not found");
+  }
+  //console.log("checkTournament", checkTournament);
 };

@@ -7,7 +7,11 @@ import cors from "cors";
 import passport, { authenticate } from "passport";
 import socket from "socket.io";
 import roomModel from "./models/room";
-import { doLeaveTable, doLeaveWatcher } from "./functions/functions";
+import {
+  activateTournament,
+  doLeaveTable,
+  doLeaveWatcher,
+} from "./functions/functions";
 import { updateInGameStatus } from "./firestore/dbFetch";
 import jwtStrategy from "./landing-server/config/jwtstragety";
 import {
@@ -20,7 +24,10 @@ import tournamentRoute from "./routes/tournamentRoutes.js";
 import auth from "./landing-server/middlewares/auth.js";
 import mongoose from "mongoose";
 import User from "./landing-server/models/user.model";
-import returnCron from "./cron/cron";
+//import returnCron from "./cron/cron";
+import { CronJob } from "cron";
+import tournamentModel from "./models/tournament";
+import { log } from "console";
 
 let app = express();
 const server = http.createServer(app);
@@ -28,7 +35,28 @@ const io = socket(server, {
   pingInterval: 10000,
   pingTimeout: 5000,
 });
-returnCron()
+//returnCron()
+
+// cron.schedule("* * * * *", () => {
+//   activateTournament(io);
+// });
+
+const returnCron = async () => {
+  const job1 = new CronJob("* * * * *", async () => {
+    const d = new Date();
+    // console.log("Date-->", typeof new Date(new Date().toDateString()));
+    const tour = await tournamentModel.find({
+      startTime: new Date().toLocaleTimeString(),
+    });
+    console.log("tour", tour, new Date().toLocaleTimeString());
+    if (tour.length > 0) {
+      activateTournament(io);
+    }
+  });
+  job1.start();
+};
+returnCron();
+
 const whitelist = ["http://localhost:3000", "https://poker.scrooge.casino"];
 const corsOptions = {
   origin: function (origin, callback) {
