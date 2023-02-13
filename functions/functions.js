@@ -479,7 +479,6 @@ export const preflopround = async (room, io) => {
                     "preflopround.$.wallet": -smallBlindAmt,
                     "preflopround.$.pot": +smallBlindAmt,
                   },
-
                   smallBlind: smallBlindAmt,
                   smallBlindPosition,
                   dealerPosition,
@@ -3820,7 +3819,7 @@ export const socketDoBet = async (dta, io, socket) => {
         .lean();
 
       if (data !== null) {
-        if (data.bigBlind <= amt) {
+        if (data.raiseAmount <= amt) {
           const walletAmt = await getPlayerwallet(roomid, playerid);
           if (walletAmt >= amt) {
             await doBet(roomid, playerid, io, amt);
@@ -3849,6 +3848,7 @@ export const socketDoBet = async (dta, io, socket) => {
 };
 
 export const doRaise = async (roomid, playerid, io, amt) => {
+  console.log("amt====>>", amt);
   const roomData = await roomModel.findOne({ _id: roomid });
   let updatedRoom = null;
   let res = true;
@@ -4107,7 +4107,7 @@ export const socketDoRaise = async (dta, io, socket) => {
         .lean();
 
       if (data !== null) {
-        if (data.raiseAmount * 2 <= amt) {
+        if (data.raiseAmount <= amt) {
           const walletAmt = await getPlayerwallet(roomid, playerid);
           if (walletAmt >= amt) {
             await doRaise(roomid, playerid, io, amt);
