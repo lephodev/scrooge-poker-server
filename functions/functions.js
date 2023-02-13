@@ -7528,7 +7528,7 @@ export const playerTentativeAction = async (data, socket, io) => {
       );
       const updatedGame = await gameService.getGameById(gameId);
       // console.log("updatedGameupdatedGame", updatedGame);
-      io.in(gameId).emit("updateGame", { game: updatedGame });
+      // io.in(gameId).emit("updateGame", { game: updatedGame });
     } else {
       socket.emit("actionError", { msg: "No game found" });
     }
