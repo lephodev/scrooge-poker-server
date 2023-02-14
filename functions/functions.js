@@ -2302,7 +2302,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
         .findOne({ _id: convertMongoId(roomid) })
         .populate("tournament");
       let newHandPlayer = [];
-      let buyin = roomData.buyin;
+      let buyin = roomData?.buyin;
       const bigBlindAmt = roomData.bigBlind;
       const smallBlindAmt = roomData.smallBlind;
       let playerData = [];
@@ -4143,11 +4143,11 @@ export const doCheck = async (roomid, playerid, io) => {
   let res = true;
   let filterData = null;
 
-  const filterDta = roomData.players.filter(
-    (el) => el.userid.toString() === roomData.timerPlayer.toString()
-  );
+  // const filterDta = roomData.players.filter(
+  //   (el) => el?.userid.toString() === roomData?.timerPlayer?.toString()
+  // );
 
-  if (roomData.timerPlayer.toString() === playerid.toString()) {
+  if (roomData?.timerPlayer.toString() === playerid.toString()) {
     switch (roomData.runninground) {
       case 1:
         updatedRoom = await roomModel.findOneAndUpdate(
