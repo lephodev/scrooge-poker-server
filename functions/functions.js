@@ -272,8 +272,10 @@ export const preflopround = async (room, io) => {
   console.log("io", io);
   await updateRoomForNewHand(room._id, io);
   room = await roomModel.findOne(room._id).lean();
-  let playingPlayer = room.players.filter((el) => el.playing && el.wallet > 0);
-  let positions = room.players.map((pos) => pos.position);
+  let playingPlayer = room?.players?.filter(
+    (el) => el.playing && el.wallet > 0
+  );
+  let positions = room?.players?.map((pos) => pos.position);
   let isNewLeave = false;
   let i = 0;
   for (let el of positions) {
@@ -391,7 +393,7 @@ export const preflopround = async (room, io) => {
                     await roomModel.updateOne(
                       {
                         _id: room._id,
-                        "preflopround.position": player.position,
+                        "preflopround.position": player?.position,
                       },
                       {
                         $inc: {
