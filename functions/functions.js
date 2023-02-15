@@ -4098,6 +4098,8 @@ export const socketDoRaise = async (dta, io, socket) => {
       let playerid = userid;
       let amt = dta.amount;
 
+      console.log("amtamtamt", amt);
+
       const data = await roomModel
         .findOne(
           {
@@ -4819,6 +4821,7 @@ export const getPlayerwallet = async (roomid, playerid) => {
         (el) => el.id.toString() === playerid.toString()
       );
       res = filterData[0].wallet;
+      console.log("resresres", res);
       return res;
 
     case 2:
