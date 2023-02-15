@@ -2,7 +2,8 @@ import tournamentModel from "../models/tournament.js";
 import User from "../landing-server/models/user.model.js";
 import roomModel from "../models/room.js";
 import mongoose from "mongoose";
-
+import { JoinTournament } from "../functions/functions.js";
+sock
 var cron = require("node-cron");
 
 // cron.schedule("* * * * *", () => {
@@ -23,6 +24,16 @@ export const getAllGame = async (req, res) => {
   }
 };
 
+export const jointournament = async (req, res) => {
+  try {
+    const { _id } = req.user;
+    const { tournamentId } = req.body;
+    await JoinTournament({userId:_id,tournamentId})
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+};
 export const enterRoom = async (req, res) => {
   try {
     const { _id } = req.user;

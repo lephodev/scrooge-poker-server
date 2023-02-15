@@ -3,11 +3,12 @@
 /* eslint-disable import/no-dynamic-require */
 
 import { CronJob } from "cron";
+import { activateTournament } from "../functions/functions";
 import gameService from "../service/game.service";
-const returnCron = async() => {
-  const job1 = new CronJob("* * * * *", async () => {
-    console.log("Run ::> Every Saturday at 23:45 (11:45 PM)")
+const returnCron = async(io) => {
+  const job1 = new CronJob("*    *    *    *    *", async () => {
     await gameService.sendAcknowledgementForJoinTournament()
+    await activateTournament(io)
   });
   job1.start();
 };

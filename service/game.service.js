@@ -184,10 +184,6 @@ const playerTentativeActionSelection = async (game, userId, actionType) => {
     console.log('Error in playerTentativeActionSelection', error)
   }
 }
-function subtractMinutes(date, minutes) {
-  date.setMinutes(date.getMinutes() - minutes);
-  return date;
-}
 const sendAcknowledgementForJoinTournament = async () => {
   try {
     const findTournament = await tournamentModel
@@ -204,21 +200,10 @@ const sendAcknowledgementForJoinTournament = async () => {
         },
       })
       .exec()
-     
-    findTournament.forEach(async(el) => {
-      var date1 = new Date()
-      var date2 = new Date(el?.startDate)
-    const date= await subtractMinutes(new Date(el?.startDate),1)
-    console.log("date-->",{oldDate:new Date(el?.startDate).setHours(23,59,0,0),diffDate:date.getMinutes(),newDate:new Date().getMinutes(),t:date.getMinutes()<new Date().getMinutes()})
-      if (new Date(date1)-date2.setHours(23,59,0,0) > 1 * 60 * 1000) {
-        console.log("helooo---")
-        // Promise.all(
-        //   el.rooms[0]?.["players"]?.map(player => {
-        //     smsService.sendVerificationSms(player.userid.phone)
-        //   })
-        // )
-      }
-    })  
+    // findTournament.forEach(async(el) => {
+    //   var date1 = new Date()
+    //   console.log("date match--->",new Date(date1.setHours(23,59,0,0)),el.name,new Date(el.startDate))
+    // })  
   } catch (err) {
     console.log('Error in send acknowledge--->', err)
   }
