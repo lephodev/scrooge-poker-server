@@ -1,16 +1,16 @@
 //imports
-import { userJwtKey, adminJwtKey } from "../config/keys";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
-import pathDirectory from "path";
-import transactionModel from "../models/transaction";
-import roomModel from "../models/room";
-import mongoose from "mongoose";
-import tournamentModel from "../models/tournament";
-import roomHistoryModel from "../models/roomHistory";
-import userModel from "../landing-server/models/user.model";
-import each from "sync-each";
-import axios from "axios";
+import { userJwtKey, adminJwtKey } from '../config/keys';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import pathDirectory from 'path';
+import transactionModel from '../models/transaction';
+import roomModel from '../models/room';
+import mongoose from 'mongoose';
+import tournamentModel from '../models/tournament';
+import roomHistoryModel from '../models/roomHistory';
+import userModel from '../landing-server/models/user.model';
+import each from 'sync-each';
+import axios from 'axios';
 import {
   addWatcher,
   deductAmount,
@@ -19,25 +19,25 @@ import {
   removeInvToPlayers,
   getPurchasedItem,
   updateInGameStatus,
-} from "../firestore/dbFetch";
-import BetModal from "../models/betModal";
-import gameService from "../service/game.service";
-import userService from "../service/user.service";
-import rankModel from "../models/rankModel";
-var Hand = require("pokersolver").Hand;
-const admin = require("firebase-admin");
-import MessageModal from "../models/messageModal";
-import Notification from "../models/notificationModal";
-import { log } from "console";
-import User from "../landing-server/models/user.model";
+} from '../firestore/dbFetch';
+import BetModal from '../models/betModal';
+import gameService from '../service/game.service';
+import userService from '../service/user.service';
+import rankModel from '../models/rankModel';
+var Hand = require('pokersolver').Hand;
+const admin = require('firebase-admin');
+import MessageModal from '../models/messageModal';
+import Notification from '../models/notificationModal';
+import { log } from 'console';
+import User from '../landing-server/models/user.model';
 
 const gameRestartSeconds = 7000;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
-  "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
+  'https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg';
 
 const addUserInSocket = (io, socket, gameId, userId) => {
-  console.log("Socket room BEFORE ", io.room);
+  console.log('Socket room BEFORE ', io.room);
   let lastSocketData = io.room || [];
   // Add room
   lastSocketData.push({ gameId, pretimer: false, room: gameId.toString() });
@@ -47,13 +47,13 @@ const addUserInSocket = (io, socket, gameId, userId) => {
       pretimer: false,
     })
   );
-  console.log("Socket room After ", io.room);
+  console.log('Socket room After ', io.room);
   // Add users
   lastSocketData = io.users;
-  console.log("Socket Users BEFORE ", io.users);
+  console.log('Socket Users BEFORE ', io.users);
   lastSocketData.push(userId.toString());
   io.users = [...new Set(lastSocketData)];
-  console.log("Socket Users After ", io.users);
+  console.log('Socket Users After ', io.users);
   // Add user id and room id in socket
   socket.customId = userId.toString();
   socket.customRoom = gameId.toString();
@@ -79,7 +79,7 @@ export const signJwt = (userid) => {
       userid,
     };
     token = jwt.sign(tokenData, userJwtKey, {
-      expiresIn: "100h",
+      expiresIn: '100h',
     });
   } catch (e) {
     token = null;
@@ -121,7 +121,7 @@ export const signJwtAdmin = (adminId) => {
       adminId,
     };
     token = jwt.sign(tokenData, adminJwtKey, {
-      expiresIn: "100h",
+      expiresIn: '100h',
     });
   } catch (e) {
     token = null;
@@ -155,14 +155,14 @@ export const checkFileType = (file, cb) => {
   if (mimetype && extname) {
     return cb(null, true);
   } else {
-    cb("Error: Images Only!");
+    cb('Error: Images Only!');
   }
 };
 
 export const verifycards = (distributedCards, noOfCards) => {
   let cards = [];
-  const suits = ["h", "s", "c", "d"];
-  const values = ["A", 2, 3, 4, 5, 6, 7, 8, 9, "T", "J", "Q", "K"];
+  const suits = ['h', 's', 'c', 'd'];
+  const values = ['A', 2, 3, 4, 5, 6, 7, 8, 9, 'T', 'J', 'Q', 'K'];
   for (let suit in suits) {
     for (let value in values) {
       if (!distributedCards.includes(`${values[value]}${suits[suit]}`)) {
@@ -183,7 +183,7 @@ export const verifycards = (distributedCards, noOfCards) => {
 };
 
 export const preflopPlayerPush = async (players, roomid) => {
-  console.log("PREFLOP PLAYER PUSH");
+  console.log('PREFLOP PLAYER PUSH');
   return new Promise((resolve, reject) => {
     let distributedCards = [];
 
@@ -203,7 +203,7 @@ export const preflopPlayerPush = async (players, roomid) => {
           )
         ) {
           let playing;
-          if (typeof elem.playing !== "undefined" && elem.playing !== null) {
+          if (typeof elem.playing !== 'undefined' && elem.playing !== null) {
             playing = elem.playing;
           } else {
             playing = true;
@@ -269,7 +269,7 @@ export const preflopPlayerPush = async (players, roomid) => {
 };
 
 export const preflopround = async (room, io) => {
-  console.log("io", io);
+  console.log('io', io);
   await updateRoomForNewHand(room._id, io);
   room = await roomModel.findOne(room._id).lean();
   let playingPlayer = room?.players?.filter(
@@ -309,12 +309,12 @@ export const preflopround = async (room, io) => {
     );
   }
   if (!room.finish && !room.gamestart) {
-    console.log("CHECK 308");
+    console.log('CHECK 308');
     if (room.runninground === 0 && !room.pause) {
-      console.log("CHECK 310");
+      console.log('CHECK 310');
 
       if (playingPlayer.length > 1) {
-        console.log("CHECK 316");
+        console.log('CHECK 316');
         await roomModel.updateOne(
           {
             _id: room._id,
@@ -393,16 +393,16 @@ export const preflopround = async (room, io) => {
                     await roomModel.updateOne(
                       {
                         _id: room._id,
-                        "preflopround.position": player?.position,
+                        'preflopround.position': player?.position,
                       },
                       {
                         $inc: {
-                          "preflopround.$.wallet": -deductMissedAmt,
+                          'preflopround.$.wallet': -deductMissedAmt,
                         },
-                        "preflopround.$.missedBilndAmt": deductMissedAmt,
-                        "preflopround.$.missedSmallBlind": false,
-                        "preflopround.$.missedBigBlind": false,
-                        "preflopround.$.forceBigBlind": false,
+                        'preflopround.$.missedBilndAmt': deductMissedAmt,
+                        'preflopround.$.missedSmallBlind': false,
+                        'preflopround.$.missedBigBlind': false,
+                        'preflopround.$.forceBigBlind': false,
                       }
                     );
                   } else if (
@@ -412,16 +412,16 @@ export const preflopround = async (room, io) => {
                     await roomModel.updateOne(
                       {
                         _id: room._id,
-                        "preflopround.position": player.position,
+                        'preflopround.position': player.position,
                       },
                       {
                         $inc: {
-                          "preflopround.$.wallet": 0,
+                          'preflopround.$.wallet': 0,
                         },
-                        "preflopround.$.missedBilndAmt": player.wallet,
-                        "preflopround.$.missedSmallBlind": false,
-                        "preflopround.$.missedBigBlind": false,
-                        "preflopround.$.forceBigBlind": false,
+                        'preflopround.$.missedBilndAmt': player.wallet,
+                        'preflopround.$.missedSmallBlind': false,
+                        'preflopround.$.missedBigBlind': false,
+                        'preflopround.$.forceBigBlind': false,
                       }
                     );
                   }
@@ -430,16 +430,16 @@ export const preflopround = async (room, io) => {
                     await roomModel.updateOne(
                       {
                         _id: room._id,
-                        "preflopround.position": player.position,
+                        'preflopround.position': player.position,
                       },
                       {
                         $inc: {
-                          "preflopround.$.wallet": -forceBigBlindAmt,
-                          "preflopround.$.pot": +forceBigBlindAmt,
+                          'preflopround.$.wallet': -forceBigBlindAmt,
+                          'preflopround.$.pot': +forceBigBlindAmt,
                         },
-                        "preflopround.$.missedSmallBlind": false,
-                        "preflopround.$.missedBigBlind": false,
-                        "preflopround.$.forceBigBlind": false,
+                        'preflopround.$.missedSmallBlind': false,
+                        'preflopround.$.missedBigBlind': false,
+                        'preflopround.$.forceBigBlind': false,
                       }
                     );
                   }
@@ -474,19 +474,19 @@ export const preflopround = async (room, io) => {
               sb_deduct = await roomModel.updateOne(
                 {
                   _id: room._id,
-                  "preflopround.position": smallBlindPosition,
+                  'preflopround.position': smallBlindPosition,
                 },
                 {
                   $inc: {
-                    "preflopround.$.wallet": -smallBlindAmt,
-                    "preflopround.$.pot": +smallBlindAmt,
+                    'preflopround.$.wallet': -smallBlindAmt,
+                    'preflopround.$.pot': +smallBlindAmt,
                   },
                   smallBlind: smallBlindAmt,
                   smallBlindPosition,
                   dealerPosition,
-                  "preflopround.$.missedSmallBlind": false,
-                  "preflopround.$.missedBigBlind": false,
-                  "preflopround.$.forceBigBlind": false,
+                  'preflopround.$.missedSmallBlind': false,
+                  'preflopround.$.missedBigBlind': false,
+                  'preflopround.$.forceBigBlind': false,
                 }
               );
             } else {
@@ -499,23 +499,23 @@ export const preflopround = async (room, io) => {
               sb_deduct = await roomModel.findOneAndUpdate(
                 {
                   _id: room._id,
-                  "preflopround.id": playerAvilable[0].userid,
+                  'preflopround.id': playerAvilable[0].userid,
                 },
                 {
                   $inc: {
-                    "preflopround.$.wallet": -playerAvilable[0].wallet,
-                    "preflopround.$.pot": +playerAvilable[0].wallet,
+                    'preflopround.$.wallet': -playerAvilable[0].wallet,
+                    'preflopround.$.pot': +playerAvilable[0].wallet,
                   },
-                  "preflopround.$.action": true,
-                  "preflopround.$.actionType": "all-in",
+                  'preflopround.$.action': true,
+                  'preflopround.$.actionType': 'all-in',
                   smallBlind: smallBlindAmt,
-                  lastAction: "all-in",
+                  lastAction: 'all-in',
                   allinPlayers: allinPlayer,
                   smallBlindPosition,
                   dealerPosition,
-                  "preflopround.$.missedSmallBlind": false,
-                  "preflopround.$.missedBigBlind": false,
-                  "preflopround.$.forceBigBlind": false,
+                  'preflopround.$.missedSmallBlind': false,
+                  'preflopround.$.missedBigBlind': false,
+                  'preflopround.$.forceBigBlind': false,
                 },
                 {
                   new: true,
@@ -532,10 +532,10 @@ export const preflopround = async (room, io) => {
               await roomModel.updateOne(
                 {
                   _id: room._id,
-                  "preflopround.position": smallBlindPosition,
+                  'preflopround.position': smallBlindPosition,
                 },
                 {
-                  "preflopround.$.missedSmallBlind": true,
+                  'preflopround.$.missedSmallBlind': true,
                 }
               );
             }
@@ -569,7 +569,7 @@ export const preflopround = async (room, io) => {
               }
               smallLoopTime++;
             } else {
-              io.in(room._id.toString()).emit("notification", {
+              io.in(room._id.toString()).emit('notification', {
                 msg: "Player don't have enough chips for start another game",
               });
             }
@@ -589,21 +589,21 @@ export const preflopround = async (room, io) => {
               Bb_deduct = await roomModel.findOneAndUpdate(
                 {
                   _id: room._id,
-                  "preflopround.position": bigBlindPosition,
+                  'preflopround.position': bigBlindPosition,
                 },
                 {
                   $inc: {
-                    "preflopround.$.wallet": -bigBlindAmt,
-                    "preflopround.$.pot": +bigBlindAmt,
+                    'preflopround.$.wallet': -bigBlindAmt,
+                    'preflopround.$.pot': +bigBlindAmt,
                   },
 
                   bigBlind: bigBlindAmt,
                   bigBlindPosition,
                   dealerPosition,
                   raiseAmount: bigBlindAmt,
-                  "preflopround.$.missedSmallBlind": false,
-                  "preflopround.$.missedBigBlind": false,
-                  "preflopround.$.forceBigBlind": false,
+                  'preflopround.$.missedSmallBlind': false,
+                  'preflopround.$.missedBigBlind': false,
+                  'preflopround.$.forceBigBlind': false,
                 }
               );
             } else {
@@ -616,24 +616,24 @@ export const preflopround = async (room, io) => {
               Bb_deduct = await roomModel.findOneAndUpdate(
                 {
                   _id: room._id,
-                  "preflopround.id": playerAvilable[0].userid,
+                  'preflopround.id': playerAvilable[0].userid,
                 },
                 {
                   $inc: {
-                    "preflopround.$.wallet": -playerAvilable[0].wallet,
-                    "preflopround.$.pot": +playerAvilable[0].wallet,
+                    'preflopround.$.wallet': -playerAvilable[0].wallet,
+                    'preflopround.$.pot': +playerAvilable[0].wallet,
                   },
-                  "preflopround.$.action": true,
-                  "preflopround.$.actionType": "all-in",
+                  'preflopround.$.action': true,
+                  'preflopround.$.actionType': 'all-in',
                   bigBlind: bigBlindAmt,
-                  lastAction: "all-in",
+                  lastAction: 'all-in',
                   allinPlayers: allinPlayer,
                   bigBlindPosition,
                   dealerPosition,
                   raiseAmount: bigBlindAmt,
-                  "preflopround.$.missedSmallBlind": false,
-                  "preflopround.$.missedBigBlind": false,
-                  "preflopround.$.forceBigBlind": false,
+                  'preflopround.$.missedSmallBlind': false,
+                  'preflopround.$.missedBigBlind': false,
+                  'preflopround.$.forceBigBlind': false,
                 },
                 {
                   new: true,
@@ -649,10 +649,10 @@ export const preflopround = async (room, io) => {
               await roomModel.updateOne(
                 {
                   _id: room._id,
-                  "preflopround.position": bigBlindPosition,
+                  'preflopround.position': bigBlindPosition,
                 },
                 {
-                  "preflopround.$.missedBigBlind": true,
+                  'preflopround.$.missedBigBlind': true,
                 }
               );
             }
@@ -678,15 +678,15 @@ export const preflopround = async (room, io) => {
               await roomModel.findOneAndUpdate(
                 {
                   _id: room._id,
-                  "preflopround.position": smallBlindPosition,
+                  'preflopround.position': smallBlindPosition,
                 },
                 {
                   $inc: {
-                    "preflopround.$.wallet": +smallBlindAmt,
+                    'preflopround.$.wallet': +smallBlindAmt,
                   },
                 }
               );
-              io.in(room._id.toString()).emit("notification", {
+              io.in(room._id.toString()).emit('notification', {
                 msg: "Player don't have enough chips for start another game",
               });
               res.send({
@@ -699,36 +699,36 @@ export const preflopround = async (room, io) => {
         // if (bigBlindDeducted || smallBlindDeducted) {
         //   await roomModel.updateOne({ _id: room._id }, {bigBlindPosition,smallBlindPosition,pot:+bigBlindAmt+smallBlindAmt});
         // }
-        console.log("LINE 697 before going in preflop ", { _id: room._id });
+        console.log('LINE 697 before going in preflop ', { _id: room._id });
         prefloptimer(room._id, io);
         let updatedRoom = await roomModel.findOne({
           _id: room._id,
         });
-        io.in(room._id.toString()).emit("preflopround", updatedRoom);
+        io.in(room._id.toString()).emit('preflopround', updatedRoom);
       } else {
-        console.log("SHOULD NOT COME HERE ", JSON.stringify(room));
+        console.log('SHOULD NOT COME HERE ', JSON.stringify(room));
 
-        io.in(room._id.toString()).emit("onlyOnePlayingPlayer", {
-          msg: "Game finished, Only one player left",
+        io.in(room._id.toString()).emit('onlyOnePlayingPlayer', {
+          msg: 'Game finished, Only one player left',
           roomdata: room,
         });
-        if (room.gameType === "pokerTournament_Tables") {
+        if (room.gameType === 'pokerTournament_Tables') {
           await finishedTableGame(room);
-          io.in(room._id.toString()).emit("roomFinished", {
-            msg: "Game finished",
+          io.in(room._id.toString()).emit('roomFinished', {
+            msg: 'Game finished',
             finish: room.finish,
             roomdata: room,
           });
         }
       }
     } else {
-      io.in(room._id.toString()).emit("tablestopped", {
-        msg: "Game paused by host",
+      io.in(room._id.toString()).emit('tablestopped', {
+        msg: 'Game paused by host',
       });
     }
   } else {
-    io.in(room._id.toString()).emit("tablestopped", {
-      msg: "Table game has been finished",
+    io.in(room._id.toString()).emit('tablestopped', {
+      msg: 'Table game has been finished',
     });
   }
 };
@@ -738,7 +738,7 @@ export const prefloptimer = async (roomid, io) => {
   let totalPlayer = roomData.preflopround.length + roomData.eleminated.length;
   const timer = async (i, maxPosition) => {
     let j = roomData.timer;
-    let t = "timer";
+    let t = 'timer';
     let tx = roomData.timer;
     const udata = await roomModel.findOne({ _id: roomid });
     if (i < maxPosition) {
@@ -759,10 +759,10 @@ export const prefloptimer = async (roomid, io) => {
           await roomModel.findOneAndUpdate(
             {
               _id: roomid,
-              "preflopround.position": i,
+              'preflopround.position': i,
             },
             {
-              "preflopround.$.action": false,
+              'preflopround.$.action': false,
             }
           );
           let playerinterval = setInterval(async () => {
@@ -773,9 +773,9 @@ export const prefloptimer = async (roomid, io) => {
             if (j <= 0) {
               if (intervalPlayer[0].timebank > 1) {
                 j = intervalPlayer[0].timebank;
-                t = "time_bank";
+                t = 'time_bank';
                 tx = intervalPlayer[0].timebank;
-                io.in(data._id.toString()).emit("timer", {
+                io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
                   timerPlayer: i,
@@ -787,7 +787,7 @@ export const prefloptimer = async (roomid, io) => {
                 clearInterval(playerinterval);
                 if (
                   (data.raiseAmount === intervalPlayer[0].pot ||
-                    data.lastAction === "check") &&
+                    data.lastAction === 'check') &&
                   data.players.length !== 1
                 ) {
                   await doCheck(roomid, intervalPlayer[0].id, io);
@@ -798,7 +798,7 @@ export const prefloptimer = async (roomid, io) => {
                     intervalPlayer[0].id,
                     io
                   );
-                  io.in(data._id.toString()).emit("automaticFold", {
+                  io.in(data._id.toString()).emit('automaticFold', {
                     msg: `${intervalPlayer[0].name} has automatically folded`,
                   });
                   await doSitOut(data, io);
@@ -820,38 +820,38 @@ export const prefloptimer = async (roomid, io) => {
               // filteredData[0].playerchance = j;
               j--;
               if (j === 120 && !data.displayTimer) {
-                io.in(data._id.toString()).emit("beingtimeout", {
+                io.in(data._id.toString()).emit('beingtimeout', {
                   msg: `${intervalPlayer[0].name}, what do you want to do?`,
                 });
               } else if (j === 60 && !data.displayTimer) {
-                let tablemsg = "";
+                let tablemsg = '';
                 if (
                   data.raiseAmount === intervalPlayer[0].pot ||
-                  data.lastAction === "check"
+                  data.lastAction === 'check'
                 ) {
                   tablemsg = `${intervalPlayer[0].name}, please make your action, else you will automatically check in 1 minute.`;
                 } else {
                   tablemsg = `${intervalPlayer[0].name}, please make your action, else you will automatically fold in 1 minute.`;
                 }
-                io.in(data._id.toString()).emit("beingtimeout", {
+                io.in(data._id.toString()).emit('beingtimeout', {
                   msg: tablemsg,
                 });
               }
-              if (t === "timer") {
+              if (t === 'timer') {
                 const updatedRoom = await roomModel.findOneAndUpdate(
                   {
                     _id: roomid,
-                    "preflopround.id": intervalPlayer[0].id,
+                    'preflopround.id': intervalPlayer[0].id,
                   },
                   {
-                    "preflopround.$.playerchance": j,
+                    'preflopround.$.playerchance': j,
                   },
                   {
                     new: true,
                   }
                 );
                 if (updatedRoom) {
-                  io.in(updatedRoom._id.toString()).emit("timer", {
+                  io.in(updatedRoom._id.toString()).emit('timer', {
                     id: intervalPlayer[0].id,
                     playerchance: j,
                     timerPlayer: i,
@@ -863,16 +863,16 @@ export const prefloptimer = async (roomid, io) => {
                 const updatedRoom = await roomModel.findOneAndUpdate(
                   {
                     _id: roomid,
-                    "preflopround.id": intervalPlayer[0].id,
+                    'preflopround.id': intervalPlayer[0].id,
                   },
                   {
-                    "preflopround.$.timebank": j,
+                    'preflopround.$.timebank': j,
                   },
                   {
                     new: true,
                   }
                 );
-                io.in(updatedRoom._id.toString()).emit("timer", {
+                io.in(updatedRoom._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
                   timerPlayer: i,
@@ -882,7 +882,7 @@ export const prefloptimer = async (roomid, io) => {
               }
             } else {
               clearInterval(playerinterval);
-              io.in(data._id.toString()).emit("updateGame", {
+              io.in(data._id.toString()).emit('updateGame', {
                 game: data,
               });
             }
@@ -981,10 +981,10 @@ export const flopround = async (roomid, io) => {
         let actionType = null;
         if (e.fold === true) {
           playerchance = 0;
-          actionType = "fold";
+          actionType = 'fold';
         }
-        if (e.actionType === "all-in") {
-          actionType = "all-in";
+        if (e.actionType === 'all-in') {
+          actionType = 'all-in';
         }
         let p = {
           cards: e.cards,
@@ -1039,7 +1039,7 @@ export const flopround = async (roomid, io) => {
         pot: totalPot,
         raisePlayerPosition: roomData.smallBlindPosition,
         raiseAmount: roomData.bigBlind,
-        lastAction: "check",
+        lastAction: 'check',
         isCircleCompleted: false,
       },
 
@@ -1048,7 +1048,7 @@ export const flopround = async (roomid, io) => {
       }
     );
 
-    io.in(updatedRoom._id.toString()).emit("flopround", updatedRoom);
+    io.in(updatedRoom._id.toString()).emit('flopround', updatedRoom);
     if (playingPlayer > 1) {
       setTimeout(() => {
         flopTimer(roomid, io);
@@ -1068,7 +1068,7 @@ export const flopTimer = async (roomid, io) => {
 
   const timer = async (i, maxPosition) => {
     let j = roomData.timer;
-    let t = "timer";
+    let t = 'timer';
     let tx = roomData.timer;
     const udata = await roomModel.findOne({ _id: roomid });
 
@@ -1094,10 +1094,10 @@ export const flopTimer = async (roomid, io) => {
           await roomModel.findOneAndUpdate(
             {
               _id: roomid,
-              "flopround.position": i,
+              'flopround.position': i,
             },
             {
-              "flopround.$.action": false,
+              'flopround.$.action': false,
             }
           );
           let playerinterval = setInterval(async () => {
@@ -1110,9 +1110,9 @@ export const flopTimer = async (roomid, io) => {
             if (j <= 0) {
               if (intervalPlayer[0].timebank > 1) {
                 j = intervalPlayer[0].timebank;
-                t = "time_bank";
+                t = 'time_bank';
                 tx = intervalPlayer[0].timebank;
-                io.in(data._id.toString()).emit("timer", {
+                io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
                   timerPlayer: i,
@@ -1123,7 +1123,7 @@ export const flopTimer = async (roomid, io) => {
                 clearInterval(playerinterval);
                 if (
                   (data.raiseAmount === intervalPlayer[0].pot ||
-                    data.lastAction === "check") &&
+                    data.lastAction === 'check') &&
                   data.players.length !== 1
                 ) {
                   await doCheck(roomid, intervalPlayer[0].id, io);
@@ -1134,7 +1134,7 @@ export const flopTimer = async (roomid, io) => {
                     intervalPlayer[0].id,
                     io
                   );
-                  io.in(data._id.toString()).emit("automaticFold", {
+                  io.in(data._id.toString()).emit('automaticFold', {
                     msg: `${intervalPlayer[0].name} has automatically folded`,
                   });
                   await doSitOut(data, io);
@@ -1157,37 +1157,37 @@ export const flopTimer = async (roomid, io) => {
               j--;
 
               if (j === 120 && !data.displayTimer) {
-                io.in(data._id.toString()).emit("beingtimeout", {
+                io.in(data._id.toString()).emit('beingtimeout', {
                   msg: `${intervalPlayer[0].name}, what do you want to do?`,
                 });
               } else if (j === 60 && !data.displayTimer) {
-                let tablemsg = "";
+                let tablemsg = '';
                 if (
                   data.raiseAmount === intervalPlayer[0].pot ||
-                  data.lastAction === "check"
+                  data.lastAction === 'check'
                 ) {
                   tablemsg = `${intervalPlayer[0].name}, please make your action, else you will automatically check in 1 minute.`;
                 } else {
                   tablemsg = `${intervalPlayer[0].name}, please make your action, else you will automatically fold in 1 minute.`;
                 }
-                io.in(data._id.toString()).emit("beingtimeout", {
+                io.in(data._id.toString()).emit('beingtimeout', {
                   msg: tablemsg,
                 });
               }
-              if (t === "timer") {
+              if (t === 'timer') {
                 const updatedRoom = await roomModel.findOneAndUpdate(
                   {
                     _id: roomid,
-                    "flopround.id": intervalPlayer[0].id,
+                    'flopround.id': intervalPlayer[0].id,
                   },
                   {
-                    "flopround.$.playerchance": j,
+                    'flopround.$.playerchance': j,
                   },
                   {
                     new: true,
                   }
                 );
-                io.in(data._id.toString()).emit("timer", {
+                io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
                   timerPlayer: i,
@@ -1198,16 +1198,16 @@ export const flopTimer = async (roomid, io) => {
                 const updatedRoom = await roomModel.findOneAndUpdate(
                   {
                     _id: roomid,
-                    "flopround.id": intervalPlayer[0].id,
+                    'flopround.id': intervalPlayer[0].id,
                   },
                   {
-                    "flopround.$.timebank": j,
+                    'flopround.$.timebank': j,
                   },
                   {
                     new: true,
                   }
                 );
-                io.in(data._id.toString()).emit("timer", {
+                io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
                   timerPlayer: i,
@@ -1217,7 +1217,7 @@ export const flopTimer = async (roomid, io) => {
               }
             } else {
               clearInterval(playerinterval);
-              io.in(data._id.toString()).emit("updateGame", {
+              io.in(data._id.toString()).emit('updateGame', {
                 game: data,
               });
             }
@@ -1312,10 +1312,10 @@ export const turnround = async (roomid, io) => {
         let actionType = null;
         if (e.fold === true) {
           playerchance = 0;
-          actionType = "fold";
+          actionType = 'fold';
         }
-        if (e.actionType === "all-in") {
-          actionType = "all-in";
+        if (e.actionType === 'all-in') {
+          actionType = 'all-in';
         }
         let p = {
           cards: e.cards,
@@ -1379,7 +1379,7 @@ export const turnround = async (roomid, io) => {
         pot: totalPot,
         raisePlayerPosition: roomData.smallBlindPosition,
         raiseAmount: roomData.bigBlind,
-        lastAction: "check",
+        lastAction: 'check',
         isCircleCompleted: false,
       },
 
@@ -1388,7 +1388,7 @@ export const turnround = async (roomid, io) => {
       }
     );
 
-    io.in(updatedRoom._id.toString()).emit("turnround", updatedRoom);
+    io.in(updatedRoom._id.toString()).emit('turnround', updatedRoom);
     if (playingPlayer > 1) {
       setTimeout(() => {
         turnTimer(roomid, io);
@@ -1407,7 +1407,7 @@ export const turnTimer = async (roomid, io) => {
 
   const timer = async (i, maxPosition) => {
     let j = roomData.timer;
-    let t = "timer";
+    let t = 'timer';
     let tx = roomData.timer;
     const udata = await roomModel.findOne({ _id: roomid });
 
@@ -1429,10 +1429,10 @@ export const turnTimer = async (roomid, io) => {
           await roomModel.findOneAndUpdate(
             {
               _id: roomid,
-              "turnround.position": i,
+              'turnround.position': i,
             },
             {
-              "turnround.$.action": false,
+              'turnround.$.action': false,
             }
           );
           let playerinterval = setInterval(async () => {
@@ -1445,9 +1445,9 @@ export const turnTimer = async (roomid, io) => {
             if (j <= 0) {
               if (intervalPlayer[0].timebank > 1) {
                 j = intervalPlayer[0].timebank;
-                t = "time_bank";
+                t = 'time_bank';
                 tx = intervalPlayer[0].timebank;
-                io.in(data._id.toString()).emit("timer", {
+                io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
                   timerPlayer: i,
@@ -1458,7 +1458,7 @@ export const turnTimer = async (roomid, io) => {
                 clearInterval(playerinterval);
                 if (
                   (data.raiseAmount === intervalPlayer[0].pot ||
-                    data.lastAction === "check") &&
+                    data.lastAction === 'check') &&
                   data.players.length !== 1
                 ) {
                   await doCheck(roomid, intervalPlayer[0].id, io);
@@ -1469,7 +1469,7 @@ export const turnTimer = async (roomid, io) => {
                     intervalPlayer[0].id,
                     io
                   );
-                  io.in(data._id.toString()).emit("automaticFold", {
+                  io.in(data._id.toString()).emit('automaticFold', {
                     msg: `${intervalPlayer[0].name} has automatically folded`,
                   });
                   await doSitOut(data, io);
@@ -1492,37 +1492,37 @@ export const turnTimer = async (roomid, io) => {
               j--;
 
               if (j === 120 && !data.displayTimer) {
-                io.in(data._id.toString()).emit("beingtimeout", {
+                io.in(data._id.toString()).emit('beingtimeout', {
                   msg: `${intervalPlayer[0].name}, what do you want to do?`,
                 });
               } else if (j === 60 && !data.displayTimer) {
-                let tablemsg = "";
+                let tablemsg = '';
                 if (
                   data.raiseAmount === intervalPlayer[0].pot ||
-                  data.lastAction === "check"
+                  data.lastAction === 'check'
                 ) {
                   tablemsg = `${intervalPlayer[0].name}, please make your action, else you will automatically check in 1 minute.`;
                 } else {
                   tablemsg = `${intervalPlayer[0].name}, please make your action, else you will automatically fold in 1 minute.`;
                 }
-                io.in(data._id.toString()).emit("beingtimeout", {
+                io.in(data._id.toString()).emit('beingtimeout', {
                   msg: tablemsg,
                 });
               }
-              if (t === "timer") {
+              if (t === 'timer') {
                 const updatedRoom = await roomModel.findOneAndUpdate(
                   {
                     _id: roomid,
-                    "turnround.id": intervalPlayer[0].id,
+                    'turnround.id': intervalPlayer[0].id,
                   },
                   {
-                    "turnround.$.playerchance": j,
+                    'turnround.$.playerchance': j,
                   },
                   {
                     new: true,
                   }
                 );
-                io.in(data._id.toString()).emit("timer", {
+                io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
                   timerPlayer: i,
@@ -1533,16 +1533,16 @@ export const turnTimer = async (roomid, io) => {
                 const updatedRoom = await roomModel.findOneAndUpdate(
                   {
                     _id: roomid,
-                    "turnround.id": intervalPlayer[0].id,
+                    'turnround.id': intervalPlayer[0].id,
                   },
                   {
-                    "turnround.$.timebank": j,
+                    'turnround.$.timebank': j,
                   },
                   {
                     new: true,
                   }
                 );
-                io.in(data._id.toString()).emit("timer", {
+                io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
                   timerPlayer: i,
@@ -1552,7 +1552,7 @@ export const turnTimer = async (roomid, io) => {
               }
             } else {
               clearInterval(playerinterval);
-              io.in(data._id.toString()).emit("updateGame", {
+              io.in(data._id.toString()).emit('updateGame', {
                 game: data,
               });
             }
@@ -1645,10 +1645,10 @@ export const riverround = async (roomid, io) => {
         let actionType = null;
         if (e.fold === true) {
           playerchance = 0;
-          actionType = "fold";
+          actionType = 'fold';
         }
-        if (e.actionType === "all-in") {
-          actionType = "all-in";
+        if (e.actionType === 'all-in') {
+          actionType = 'all-in';
         }
         let p = {
           cards: e.cards,
@@ -1711,7 +1711,7 @@ export const riverround = async (roomid, io) => {
         pot: totalPot,
         raisePlayerPosition: roomData.smallBlindPosition,
         raiseAmount: roomData.bigBlind,
-        lastAction: "check",
+        lastAction: 'check',
         isCircleCompleted: false,
       },
 
@@ -1720,7 +1720,7 @@ export const riverround = async (roomid, io) => {
       }
     );
 
-    io.in(updatedRoom._id.toString()).emit("riverround", updatedRoom);
+    io.in(updatedRoom._id.toString()).emit('riverround', updatedRoom);
     if (playingPlayer > 1) {
       setTimeout(() => {
         riverTimer(roomid, io);
@@ -1738,7 +1738,7 @@ export const riverTimer = async (roomid, io) => {
   let totalPlayer = roomData.riverround.length + roomData.eleminated.length;
   const timer = async (i, maxPosition) => {
     let j = roomData.timer;
-    let t = "timer";
+    let t = 'timer';
     let tx = roomData.timer;
     const udata = await roomModel.findOne({ _id: roomid });
     if (i < maxPosition) {
@@ -1759,10 +1759,10 @@ export const riverTimer = async (roomid, io) => {
           await roomModel.findOneAndUpdate(
             {
               _id: roomid,
-              "riverround.position": i,
+              'riverround.position': i,
             },
             {
-              "riverround.$.action": false,
+              'riverround.$.action': false,
             }
           );
           let playerinterval = setInterval(async () => {
@@ -1775,9 +1775,9 @@ export const riverTimer = async (roomid, io) => {
             if (j <= 0) {
               if (intervalPlayer[0].timebank > 1) {
                 j = intervalPlayer[0].timebank;
-                t = "time_bank";
+                t = 'time_bank';
                 tx = intervalPlayer[0].timebank;
-                io.in(data._id.toString()).emit("timer", {
+                io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
                   timerPlayer: i,
@@ -1788,7 +1788,7 @@ export const riverTimer = async (roomid, io) => {
                 clearInterval(playerinterval);
                 if (
                   (data.raiseAmount === intervalPlayer[0].pot ||
-                    data.lastAction === "check") &&
+                    data.lastAction === 'check') &&
                   data.players.length !== 1
                 ) {
                   await doCheck(roomid, intervalPlayer[0].id, io);
@@ -1799,7 +1799,7 @@ export const riverTimer = async (roomid, io) => {
                     intervalPlayer[0].id,
                     io
                   );
-                  io.in(data._id.toString()).emit("automaticFold", {
+                  io.in(data._id.toString()).emit('automaticFold', {
                     msg: `${intervalPlayer[0].name} has automatically folded`,
                   });
                   await doSitOut(data, io);
@@ -1822,37 +1822,37 @@ export const riverTimer = async (roomid, io) => {
               j--;
 
               if (j === 120 && !data.displayTimer) {
-                io.in(data._id.toString()).emit("beingtimeout", {
+                io.in(data._id.toString()).emit('beingtimeout', {
                   msg: `${intervalPlayer[0].name}, what do you want to do?`,
                 });
               } else if (j === 60 && !data.displayTimer) {
-                let tablemsg = "";
+                let tablemsg = '';
                 if (
                   data.raiseAmount === intervalPlayer[0].pot ||
-                  data.lastAction === "check"
+                  data.lastAction === 'check'
                 ) {
                   tablemsg = `${intervalPlayer[0].name}, please make your action, else you will automatically check in 1 minute.`;
                 } else {
                   tablemsg = `${intervalPlayer[0].name}, please make your action, else you will automatically fold in 1 minute.`;
                 }
-                io.in(data._id.toString()).emit("beingtimeout", {
+                io.in(data._id.toString()).emit('beingtimeout', {
                   msg: tablemsg,
                 });
               }
-              if (t === "timer") {
+              if (t === 'timer') {
                 const updatedRoom = await roomModel.findOneAndUpdate(
                   {
                     _id: roomid,
-                    "riverround.id": intervalPlayer[0].id,
+                    'riverround.id': intervalPlayer[0].id,
                   },
                   {
-                    "riverround.$.playerchance": j,
+                    'riverround.$.playerchance': j,
                   },
                   {
                     new: true,
                   }
                 );
-                io.in(data._id.toString()).emit("timer", {
+                io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
                   timerPlayer: i,
@@ -1863,16 +1863,16 @@ export const riverTimer = async (roomid, io) => {
                 const updatedRoom = await roomModel.findOneAndUpdate(
                   {
                     _id: roomid,
-                    "riverround.id": intervalPlayer[0].id,
+                    'riverround.id': intervalPlayer[0].id,
                   },
                   {
-                    "riverround.$.timebank": j,
+                    'riverround.$.timebank': j,
                   },
                   {
                     new: true,
                   }
                 );
-                io.in(data._id.toString()).emit("timer", {
+                io.in(data._id.toString()).emit('timer', {
                   id: intervalPlayer[0].id,
                   playerchance: j,
                   timerPlayer: i,
@@ -1882,7 +1882,7 @@ export const riverTimer = async (roomid, io) => {
               }
             } else {
               clearInterval(playerinterval);
-              io.in(data._id.toString()).emit("updateGame", {
+              io.in(data._id.toString()).emit('updateGame', {
                 game: data,
               });
             }
@@ -1956,7 +1956,7 @@ export const riverTimer = async (roomid, io) => {
 };
 
 export const showdown = async (roomid, io) => {
-  console.log("----showdown-----");
+  console.log('----showdown-----');
   const roomData = await roomModel.findOne({ _id: roomid });
   if (!roomData.isGameRunning) return;
   let playersHand = [];
@@ -1967,10 +1967,10 @@ export const showdown = async (roomid, io) => {
   playerData.forEach((e) => {
     let actionType = null;
     if (e.fold === true) {
-      actionType = "fold";
+      actionType = 'fold';
     }
-    if (e.actionType === "all-in") {
-      actionType = "all-in";
+    if (e.actionType === 'all-in') {
+      actionType = 'all-in';
     }
     let p = {
       cards: e.cards,
@@ -2181,7 +2181,7 @@ export const showdown = async (roomid, io) => {
           return ele.id.toString() === player.id.toString();
         })
       ) {
-        action = "game-win";
+        action = 'game-win';
         const winnerObj = winnerPlayers.find(
           (ele) => ele.id.toString() === player.id.toString()
         );
@@ -2190,7 +2190,7 @@ export const showdown = async (roomid, io) => {
         );
         if (updateRoomObj && winnerObj) {
           if (winnerObj.winningAmount - updateRoomObj.amt < 0) {
-            action = "game-lose";
+            action = 'game-lose';
             amt = Math.abs(winnerObj.winningAmount - updateRoomObj.amt);
           } else if (winnerObj.winningAmount - updateRoomObj.amt === 0) {
             return;
@@ -2201,7 +2201,7 @@ export const showdown = async (roomid, io) => {
           amt = winnerObj.winningAmount;
         }
       } else {
-        action = "game-lose";
+        action = 'game-lose';
         amt = player.prevPot;
       }
       player.wallet = showdownData[i].wallet;
@@ -2229,7 +2229,7 @@ export const showdown = async (roomid, io) => {
     }
   );
 
-  io.in(upRoom._id.toString()).emit("winner", { updatedRoom: upRoom });
+  io.in(upRoom._id.toString()).emit('winner', { updatedRoom: upRoom });
   // await finishHandApiCall(upRoom);
   handleWatcherWinner(upRoom, io);
   // findLoserAndWinner(upRoom);
@@ -2258,18 +2258,18 @@ export const showdown = async (roomid, io) => {
           (el) => el.wallet > 0
         );
         if (havemoney.length > 1) {
-          io.in(upRoom._id.toString()).emit("tablestopped", {
-            msg: "Waiting to start game",
+          io.in(upRoom._id.toString()).emit('tablestopped', {
+            msg: 'Waiting to start game',
           });
         } else {
-          io.in(upRoom._id.toString()).emit("onlyOnePlayingPlayer", {
-            msg: "Game finished, Only one player left",
+          io.in(upRoom._id.toString()).emit('onlyOnePlayingPlayer', {
+            msg: 'Game finished, Only one player left',
             roomdata: updatedRoomPlayers,
           });
-          if (updatedRoomPlayers.gameType === "pokerTournament_Tables") {
+          if (updatedRoomPlayers.gameType === 'pokerTournament_Tables') {
             // await finishedTableGame(updatedRoomPlayers);
-            io.in(updatedRoomPlayers._id.toString()).emit("roomFinished", {
-              msg: "Game finished",
+            io.in(updatedRoomPlayers._id.toString()).emit('roomFinished', {
+              msg: 'Game finished',
               finish: updatedRoomPlayers.finish,
               roomdata: updatedRoomPlayers,
             });
@@ -2277,19 +2277,19 @@ export const showdown = async (roomid, io) => {
         }
       }
     } else {
-      io.in(upRoom._id.toString()).emit("tablestopped", {
-        msg: "Table stopped by host",
+      io.in(upRoom._id.toString()).emit('tablestopped', {
+        msg: 'Table stopped by host',
       });
     }
     const roomUpdate = await roomModel.findOne({ _id: upRoom._id });
     if (roomUpdate.finish) {
-      io.in(roomUpdate._id.toString()).emit("roomFinished", {
-        msg: "Game finished",
+      io.in(roomUpdate._id.toString()).emit('roomFinished', {
+        msg: 'Game finished',
         finish: roomUpdate.finish,
         roomdata: roomUpdate,
       });
     } else
-      io.in(upRoom._id.toString()).emit("newhand", {
+      io.in(upRoom._id.toString()).emit('newhand', {
         updatedRoom: roomUpdate,
       });
   }, gameRestartSeconds);
@@ -2300,7 +2300,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
     try {
       const roomData = await roomModel
         .findOne({ _id: convertMongoId(roomid) })
-        .populate("tournament");
+        .populate('tournament');
       let newHandPlayer = [];
       let buyin = roomData?.buyin;
       const bigBlindAmt = roomData.bigBlind;
@@ -2344,7 +2344,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 }
                 next();
               } catch (error) {
-                console.log("anyNewPlayer error", error);
+                console.log('anyNewPlayer error', error);
                 next();
               }
             },
@@ -2382,7 +2382,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 x.redeem = 1;
 
                 stripeBuy.push({
-                  action: "buy-coins",
+                  action: 'buy-coins',
                   amount: x.chips,
                   date: new Date(),
                   isWatcher: false,
@@ -2431,7 +2431,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
             }
             next();
           } catch (error) {
-            console.log("Error in player data", error);
+            console.log('Error in player data', error);
             next();
           }
         },
@@ -2484,13 +2484,13 @@ export const updateRoomForNewHand = async (roomid, io) => {
             // });
             resolve();
           } catch (error) {
-            console.log("Error in transformedItems", err);
+            console.log('Error in transformedItems', err);
             resolve();
           }
         }
       );
     } catch (err) {
-      console.log("error", err);
+      console.log('error', err);
       reject();
     }
   });
@@ -2499,7 +2499,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
 export const elemination = async (roomid, io) => {
   const roomData = await roomModel
     .findOne({ _id: roomid })
-    .populate("tournament");
+    .populate('tournament');
   const roomhistoryData = new roomHistoryModel({
     roomId: roomData._id,
     data: roomData,
@@ -2583,7 +2583,7 @@ export const elemination = async (roomid, io) => {
     }
   );
 
-  io.in(upRoom._id.toString()).emit("newhand", { updatedRoom: upRoom });
+  io.in(upRoom._id.toString()).emit('newhand', { updatedRoom: upRoom });
 
   setTimeout(() => {
     preflopround(upRoom, io);
@@ -2601,20 +2601,20 @@ export const doPauseGame = async (data, io, socket) => {
         { pause: true },
         { new: true }
       );
-      io.in(updatedData._id.toString()).emit("roomPaused", {
+      io.in(updatedData._id.toString()).emit('roomPaused', {
         pause: updatedData.pause,
       });
     } else {
-      socket.emit("actionError", { code: 400, msg: "Bad request" });
+      socket.emit('actionError', { code: 400, msg: 'Bad request' });
     }
   } catch (e) {
-    console.log("error : ", e);
-    socket.emit("actionError", { code: 444, msg: "Some error has occured." });
+    console.log('error : ', e);
+    socket.emit('actionError', { code: 444, msg: 'Some error has occured.' });
   }
 };
 
 export const doFinishGame = async (data, io, socket) => {
-  console.log("doFinishGame API called ");
+  console.log('doFinishGame API called ');
   const userid = convertMongoId(data.userid);
   let roomid = convertMongoId(data.roomid);
   const { isValid } = checkIfEmpty({ roomid });
@@ -2627,18 +2627,18 @@ export const doFinishGame = async (data, io, socket) => {
           { finish: true },
           { new: true }
         );
-        let msg = "";
+        let msg = '';
         if (updatedData.runninground === 0) {
-          msg = "Host initiated to finish this game";
+          msg = 'Host initiated to finish this game';
         } else {
           msg =
-            "Host initiated to finish this game, So you will see all stats after this hand";
+            'Host initiated to finish this game, So you will see all stats after this hand';
         }
 
         if (updatedData.runninground === 0) {
           await finishedTableGame(updatedData, userid);
         }
-        io.in(updatedData._id.toString()).emit("roomFinished", {
+        io.in(updatedData._id.toString()).emit('roomFinished', {
           msg: msg,
           finish: updatedData.finish,
           roomdata: updatedData,
@@ -2646,18 +2646,18 @@ export const doFinishGame = async (data, io, socket) => {
       } else {
         await finishedTableGame(roomData, userid);
         if (socket)
-          socket.emit("actionError", { code: 400, msg: "Bad request" });
+          socket.emit('actionError', { code: 400, msg: 'Bad request' });
       }
     }
   } catch (e) {
-    console.log("error : ", e);
+    console.log('error : ', e);
     if (socket)
-      socket.emit("actionError", { code: 444, msg: "Some error has occured." });
+      socket.emit('actionError', { code: 444, msg: 'Some error has occured.' });
   }
 };
 
 export const doResumeGame = async (data, io, socket) => {
-  console.log("doResumeGame API called ");
+  console.log('doResumeGame API called ');
   const userid = data.userid;
   let roomid = data.roomid;
   const { isValid } = checkIfEmpty({ roomid, userid });
@@ -2668,20 +2668,20 @@ export const doResumeGame = async (data, io, socket) => {
         { pause: false },
         { new: true }
       );
-      io.in(updatedData._id.toString()).emit("roomResume", {
+      io.in(updatedData._id.toString()).emit('roomResume', {
         pause: updatedData.pause,
       });
     } else {
-      socket.emit("actionError", { code: 400, msg: "Bad request" });
+      socket.emit('actionError', { code: 400, msg: 'Bad request' });
     }
   } catch (e) {
-    console.log("error : ", e);
-    socket.emit("actionError", { code: 444, msg: "Some error has occured." });
+    console.log('error : ', e);
+    socket.emit('actionError', { code: 444, msg: 'Some error has occured.' });
   }
 };
 
 export const doSitOut = async (data, io, socket) => {
-  console.log("doSitOut API called ");
+  console.log('doSitOut API called ');
   const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
   let roomid;
@@ -2694,13 +2694,13 @@ export const doSitOut = async (data, io, socket) => {
       const roomData = await roomModel
         .findOne({
           _id: tableId,
-          "players.userid": userid,
+          'players.userid': userid,
         })
         .lean();
       if (roomData) {
-        let lastAction = "fold";
-        if (roomData && roomData.lastAction === "check") {
-          lastAction = "check";
+        let lastAction = 'fold';
+        if (roomData && roomData.lastAction === 'check') {
+          lastAction = 'check';
         }
         let updatedData = roomData;
         roomid = roomData._id;
@@ -2718,22 +2718,22 @@ export const doSitOut = async (data, io, socket) => {
             updatedData = await roomModel.findOneAndUpdate(
               {
                 _id: roomid,
-                "players.userid": userid,
+                'players.userid': userid,
               },
               {
-                "players.$.playing": false,
-                "players.$.forceBigBlind": true,
+                'players.$.playing': false,
+                'players.$.forceBigBlind': true,
                 sitin: sitin,
               },
               { new: true }
             );
 
-            io.in(updatedData._id.toString()).emit("notification", {
+            io.in(updatedData._id.toString()).emit('notification', {
               id: userid,
-              action: "SitOut",
-              msg: "",
+              action: 'SitOut',
+              msg: '',
             });
-            if (socket) socket.emit("sitInOut", { updatedRoom: updatedData });
+            if (socket) socket.emit('sitInOut', { updatedRoom: updatedData });
             break;
 
           case 1:
@@ -2745,12 +2745,12 @@ export const doSitOut = async (data, io, socket) => {
             updatedData = await roomModel.findOneAndUpdate(
               {
                 _id: roomid,
-                "preflopround.id": userid,
+                'preflopround.id': userid,
               },
               {
-                "preflopround.$.playing": false,
-                "preflopround.$.forceBigBlind": true,
-                "preflopround.$.fold": true,
+                'preflopround.$.playing': false,
+                'preflopround.$.forceBigBlind': true,
+                'preflopround.$.fold': true,
                 sitin: sitin,
               },
               { new: true }
@@ -2782,12 +2782,12 @@ export const doSitOut = async (data, io, socket) => {
               );
               res = false;
             }
-            io.in(updatedData._id.toString()).emit("notification", {
+            io.in(updatedData._id.toString()).emit('notification', {
               id: userid,
-              action: "SitOut",
+              action: 'SitOut',
             });
             if (socket) {
-              socket.emit("sitInOut", { updatedRoom: updatedData });
+              socket.emit('sitInOut', { updatedRoom: updatedData });
             }
             return res;
 
@@ -2800,12 +2800,12 @@ export const doSitOut = async (data, io, socket) => {
             updatedData = await roomModel.findOneAndUpdate(
               {
                 _id: roomid,
-                "flopround.id": userid,
+                'flopround.id': userid,
               },
               {
-                "flopround.$.playing": false,
-                "flopround.$.forceBigBlind": true,
-                "flopround.$.fold": true,
+                'flopround.$.playing': false,
+                'flopround.$.forceBigBlind': true,
+                'flopround.$.fold': true,
                 sitin: sitin,
               },
               { new: true }
@@ -2837,12 +2837,12 @@ export const doSitOut = async (data, io, socket) => {
               );
               res = false;
             }
-            io.in(updatedData._id.toString()).emit("notification", {
+            io.in(updatedData._id.toString()).emit('notification', {
               id: userid,
-              action: "SitOut",
+              action: 'SitOut',
             });
             if (socket) {
-              socket.emit("sitInOut", { updatedRoom: updatedData });
+              socket.emit('sitInOut', { updatedRoom: updatedData });
             }
             return res;
 
@@ -2855,12 +2855,12 @@ export const doSitOut = async (data, io, socket) => {
             updatedData = await roomModel.findOneAndUpdate(
               {
                 _id: roomid,
-                "turnround.id": userid,
+                'turnround.id': userid,
               },
               {
-                "turnround.$.playing": false,
-                "turnround.$.forceBigBlind": true,
-                "turnround.$.fold": true,
+                'turnround.$.playing': false,
+                'turnround.$.forceBigBlind': true,
+                'turnround.$.fold': true,
                 sitin: sitin,
               },
               { new: true }
@@ -2892,12 +2892,12 @@ export const doSitOut = async (data, io, socket) => {
               );
               res = false;
             }
-            io.in(updatedData._id.toString()).emit("notification", {
+            io.in(updatedData._id.toString()).emit('notification', {
               id: userid,
-              action: "SitOut",
+              action: 'SitOut',
             });
             if (socket) {
-              socket.emit("sitInOut", { updatedRoom: updatedData });
+              socket.emit('sitInOut', { updatedRoom: updatedData });
             }
             return res;
 
@@ -2910,12 +2910,12 @@ export const doSitOut = async (data, io, socket) => {
             updatedData = await roomModel.findOneAndUpdate(
               {
                 _id: roomid,
-                "riverround.id": userid,
+                'riverround.id': userid,
               },
               {
-                "riverround.$.playing": false,
-                "riverround.$.forceBigBlind": true,
-                "riverround.$.fold": true,
+                'riverround.$.playing': false,
+                'riverround.$.forceBigBlind': true,
+                'riverround.$.fold': true,
                 sitin: sitin,
               },
               { new: true }
@@ -2947,12 +2947,12 @@ export const doSitOut = async (data, io, socket) => {
               );
               res = false;
             }
-            io.in(updatedData._id.toString()).emit("notification", {
+            io.in(updatedData._id.toString()).emit('notification', {
               id: userid,
-              action: "SitOut",
+              action: 'SitOut',
             });
             if (socket) {
-              socket.emit("sitInOut", { updatedRoom: updatedData });
+              socket.emit('sitInOut', { updatedRoom: updatedData });
             }
             return res;
 
@@ -2965,21 +2965,21 @@ export const doSitOut = async (data, io, socket) => {
             updatedData = await roomModel.findOneAndUpdate(
               {
                 _id: roomid,
-                "showdown.id": userid,
+                'showdown.id': userid,
               },
               {
-                "showdown.$.playing": false,
-                "riverround.$.forceBigBlind": true,
+                'showdown.$.playing': false,
+                'riverround.$.forceBigBlind': true,
                 sitin: sitin,
               },
               { new: true }
             );
 
-            io.in(updatedData._id.toString()).emit("notification", {
+            io.in(updatedData._id.toString()).emit('notification', {
               id: userid,
-              action: "SitOut",
+              action: 'SitOut',
             });
-            if (socket) socket.emit("sitInOut", { updatedRoom: updatedData });
+            if (socket) socket.emit('sitInOut', { updatedRoom: updatedData });
             break;
 
           default:
@@ -2987,17 +2987,17 @@ export const doSitOut = async (data, io, socket) => {
         }
       }
     } else {
-      if (socket) socket.emit("actionError", { code: 400, msg: "Bad request" });
+      if (socket) socket.emit('actionError', { code: 400, msg: 'Bad request' });
     }
   } catch (e) {
-    console.log("error : ", e);
+    console.log('error : ', e);
     if (socket)
-      socket.emit("actionError", { code: 444, msg: "Some error has occured." });
+      socket.emit('actionError', { code: 444, msg: 'Some error has occured.' });
   }
 };
 
 export const doSitIn = async (data, io, socket) => {
-  console.log("doSitIn API called ");
+  console.log('doSitIn API called ');
   const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
   let roomid;
@@ -3007,7 +3007,7 @@ export const doSitIn = async (data, io, socket) => {
       const roomdata = await roomModel
         .findOne({
           _id: tableId,
-          "players.userid": userid,
+          'players.userid': userid,
         })
         .lean();
       roomid = roomdata._id;
@@ -3021,10 +3021,10 @@ export const doSitIn = async (data, io, socket) => {
         updatedData = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "players.userid": userid,
+            'players.userid': userid,
           },
           {
-            "players.$.playing": true,
+            'players.$.playing': true,
             sitin: sitin,
             sitOut,
           },
@@ -3037,17 +3037,17 @@ export const doSitIn = async (data, io, socket) => {
           { new: true }
         );
       }
-      if (socket) socket.emit("sitInOut", { updatedRoom: updatedData });
-      io.in(updatedData._id.toString()).emit("notification", {
+      if (socket) socket.emit('sitInOut', { updatedRoom: updatedData });
+      io.in(updatedData._id.toString()).emit('notification', {
         id: userid,
-        action: "SitIn",
+        action: 'SitIn',
       });
     } else {
-      socket.emit("actionError", { code: 400, msg: "Bad request" });
+      socket.emit('actionError', { code: 400, msg: 'Bad request' });
     }
   } catch (e) {
-    console.log("error : ", e);
-    socket.emit("actionError", { code: 444, msg: "Some error has occured." });
+    console.log('error : ', e);
+    socket.emit('actionError', { code: 444, msg: 'Some error has occured.' });
   }
 };
 
@@ -3063,15 +3063,15 @@ export const doLeaveTable = async (data, io, socket) => {
         .findOneAndUpdate(
           {
             _id: tableId,
-            "players.userid": userid,
+            'players.userid': userid,
           },
-          { "players.$.playing": false },
+          { 'players.$.playing': false },
           { new: true }
         )
         .lean();
       console.log({ roomdata });
       if (roomdata) {
-        console.log("IN ROOM DATA");
+        console.log('IN ROOM DATA');
         roomid = roomdata._id;
         if (roomdata.hostId.toString() === userid.toString()) {
           let p = roomdata.players.filter(
@@ -3079,7 +3079,7 @@ export const doLeaveTable = async (data, io, socket) => {
           )[0];
 
           if (p) {
-            console.log("In P");
+            console.log('In P');
             roomdata.players
               .filter((ele) => ele.userid.toString() !== userid.toString())
               .forEach((pl) => {
@@ -3092,7 +3092,7 @@ export const doLeaveTable = async (data, io, socket) => {
               { hostId: p.userid },
               { new: true }
             );
-            io.in(roomdata._id.toString()).emit("adminLeave", {
+            io.in(roomdata._id.toString()).emit('adminLeave', {
               userId: p.userid,
               name: p.name,
             });
@@ -3103,10 +3103,10 @@ export const doLeaveTable = async (data, io, socket) => {
           roomdata.players.filter((ele) => ele.playing).length ||
           data.isWatcher
         ) {
-          console.log("LEAVE API CALL 3135");
+          console.log('LEAVE API CALL 3135');
           await leaveApiCall(roomdata, userid);
         } else {
-          console.log("doFinishGame CALL 3138");
+          console.log('doFinishGame CALL 3138');
           await doFinishGame(
             { roomid: roomdata._id, userid: userid },
             io,
@@ -3125,7 +3125,7 @@ export const doLeaveTable = async (data, io, socket) => {
           (el) => el.userid.toString() === userid.toString()
         );
         if (updatedData)
-          io.in(updatedData._id.toString()).emit("playerleft", {
+          io.in(updatedData._id.toString()).emit('playerleft', {
             msg: `${playerdata[0].name} has left the game`,
           });
       }
@@ -3141,27 +3141,29 @@ export const doLeaveTable = async (data, io, socket) => {
       //   }
       // }
     } else {
-      if (socket) socket.emit("actionError", { code: 400, msg: "Bad request" });
+      if (socket) socket.emit('actionError', { code: 400, msg: 'Bad request' });
     }
   } catch (e) {
-    console.log("error : ", e);
+    console.log('error : ', e);
     if (socket)
-      socket.emit("actionError", { code: 444, msg: "Some error has occured." });
+      socket.emit('actionError', { code: 444, msg: 'Some error has occured.' });
   }
 };
 
 export const doFold = async (roomid, playerid, io) => {
-  console.log("----doFold-----");
+  console.log('----doFold-----');
   const roomData = await roomModel.findOne({ _id: roomid });
   let updatedRoom = null;
   let playingPlayer = [];
   let res = true;
   let filterData = null;
 
-  let lastAction = "fold";
-  if (roomData.lastAction === "check") {
-    lastAction = "check";
+  let lastAction = 'fold';
+  if (roomData.lastAction === 'check') {
+    lastAction = 'check';
   }
+  console.log('playerid ===>' + playerid);
+  console.log('roomdata ==>' + roomData);
   if (
     roomData.timerPlayer &&
     roomData.timerPlayer.toString() === playerid.toString()
@@ -3171,26 +3173,29 @@ export const doFold = async (roomid, playerid, io) => {
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "preflopround.id": playerid,
+            'preflopround.id': playerid,
           },
           {
-            "preflopround.$.fold": true,
+            'preflopround.$.fold': true,
             lastAction: lastAction,
-            "preflopround.$.tentativeAction": null,
+            'preflopround.$.tentativeAction': null,
           },
           {
             new: true,
           }
         );
+        console.log('updatedroom===>' + updatedRoom);
         filterData = updatedRoom.preflopround.filter(
           (el) => el.id.toString() === playerid.toString()
         );
 
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        console.log('filterData =>>' + filterData);
+
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "fold",
+          action: 'fold',
         });
-        io.in(updatedRoom._id.toString()).emit("fold", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('fold', { updatedRoom });
 
         updatedRoom.preflopround.forEach((el) => {
           if (!el.fold && el.wallet > 0 && el.playing) {
@@ -3224,11 +3229,11 @@ export const doFold = async (roomid, playerid, io) => {
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "flopround.id": playerid,
+            'flopround.id': playerid,
           },
           {
-            "flopround.$.fold": true,
-            "flopround.$.tentativeAction": null,
+            'flopround.$.fold': true,
+            'flopround.$.tentativeAction': null,
             lastAction: lastAction,
           },
           {
@@ -3240,11 +3245,11 @@ export const doFold = async (roomid, playerid, io) => {
           (el) => el.id.toString() === playerid.toString()
         );
         // io.in(roomid).emit('fold',{userid:playerid,position:filterData[0].position})
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "fold",
+          action: 'fold',
         });
-        io.in(updatedRoom._id.toString()).emit("fold", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('fold', { updatedRoom });
 
         updatedRoom.flopround.forEach((el) => {
           if (!el.fold && el.wallet > 0 && el.playing) {
@@ -3278,11 +3283,11 @@ export const doFold = async (roomid, playerid, io) => {
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "turnround.id": playerid,
+            'turnround.id': playerid,
           },
           {
-            "turnround.$.fold": true,
-            "turnround.$.tentativeAction": null,
+            'turnround.$.fold': true,
+            'turnround.$.tentativeAction': null,
             lastAction: lastAction,
           },
           {
@@ -3293,11 +3298,11 @@ export const doFold = async (roomid, playerid, io) => {
           (el) => el.id.toString() === playerid.toString()
         );
         // io.in(roomid).emit('fold',{userid:playerid,position:filterData[0].position})
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "fold",
+          action: 'fold',
         });
-        io.in(updatedRoom._id.toString()).emit("fold", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('fold', { updatedRoom });
 
         updatedRoom.turnround.forEach((el) => {
           if (!el.fold && el.wallet > 0 && el.playing) {
@@ -3331,11 +3336,11 @@ export const doFold = async (roomid, playerid, io) => {
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "riverround.id": playerid,
+            'riverround.id': playerid,
           },
           {
-            "riverround.$.fold": true,
-            "riverround.$.tentativeAction": null,
+            'riverround.$.fold': true,
+            'riverround.$.tentativeAction': null,
             lastAction: lastAction,
           },
           {
@@ -3347,11 +3352,11 @@ export const doFold = async (roomid, playerid, io) => {
           (el) => el.id.toString() === playerid.toString()
         );
         // io.in(roomid).emit('fold',{userid:playerid,position:filterData[0].position})
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "fold",
+          action: 'fold',
         });
-        io.in(updatedRoom._id.toString()).emit("fold", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('fold', { updatedRoom });
 
         updatedRoom.riverround.forEach((el) => {
           if (!el.fold && el.wallet > 0 && el.playing) {
@@ -3398,23 +3403,26 @@ export const socketDoFold = async (dta, io, socket) => {
         .findOne(
           {
             _id: roomid,
-            "players.userid": playerid,
+            'players.userid': playerid,
           },
           { _id: 1 }
         )
         .lean();
-
+      console.log(data);
+      console.log('===');
       if (data !== null) {
+        console.log(data);
+        console.log('===');
         await doFold(roomid, playerid, io);
       } else {
-        socket.emit("actionError", { code: 400, msg: "Data not found" });
+        socket.emit('actionError', { code: 400, msg: 'Data not found' });
       }
     } else {
-      socket.emit("actionError", { code: 400, msg: "Bad request" });
+      socket.emit('actionError', { code: 400, msg: 'Bad request' });
     }
   } catch (e) {
-    console.log("error : ", e);
-    socket.emit("actionError", { code: 444, msg: "Some error has occured." });
+    console.log('error : ', e);
+    socket.emit('actionError', { code: 444, msg: 'Some error has occured.' });
   }
 };
 
@@ -3441,28 +3449,28 @@ export const doCall = async (roomid, playerid, io, amt) => {
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "preflopround.id": playerid,
+            'preflopround.id': playerid,
           },
           {
             $inc: {
-              "preflopround.$.wallet": -amt,
-              "preflopround.$.pot": +amt,
+              'preflopround.$.wallet': -amt,
+              'preflopround.$.pot': +amt,
             },
-            "preflopround.$.action": true,
-            "preflopround.$.actionType": "call",
-            "preflopround.$.tentativeAction": null,
-            lastAction: "call",
+            'preflopround.$.action': true,
+            'preflopround.$.actionType': 'call',
+            'preflopround.$.tentativeAction': null,
+            lastAction: 'call',
           },
           {
             new: true,
           }
         );
 
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "call",
+          action: 'call',
         });
-        io.in(updatedRoom._id.toString()).emit("call", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('call', { updatedRoom });
 
         break;
 
@@ -3475,28 +3483,28 @@ export const doCall = async (roomid, playerid, io, amt) => {
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "flopround.id": playerid,
+            'flopround.id': playerid,
           },
           {
             $inc: {
-              "flopround.$.wallet": -amt,
-              "flopround.$.pot": +amt,
+              'flopround.$.wallet': -amt,
+              'flopround.$.pot': +amt,
             },
-            "flopround.$.action": true,
-            "flopround.$.actionType": "call",
-            lastAction: "call",
-            "flopround.$.tentativeAction": null,
+            'flopround.$.action': true,
+            'flopround.$.actionType': 'call',
+            lastAction: 'call',
+            'flopround.$.tentativeAction': null,
           },
           {
             new: true,
           }
         );
 
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "call",
+          action: 'call',
         });
-        io.in(updatedRoom._id.toString()).emit("call", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('call', { updatedRoom });
 
         break;
       case 3:
@@ -3508,28 +3516,28 @@ export const doCall = async (roomid, playerid, io, amt) => {
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "turnround.id": playerid,
+            'turnround.id': playerid,
           },
           {
             $inc: {
-              "turnround.$.wallet": -amt,
-              "turnround.$.pot": +amt,
+              'turnround.$.wallet': -amt,
+              'turnround.$.pot': +amt,
             },
-            "turnround.$.action": true,
-            "turnround.$.actionType": "call",
-            lastAction: "call",
-            "turnround.$.tentativeAction": null,
+            'turnround.$.action': true,
+            'turnround.$.actionType': 'call',
+            lastAction: 'call',
+            'turnround.$.tentativeAction': null,
           },
           {
             new: true,
           }
         );
 
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "call",
+          action: 'call',
         });
-        io.in(updatedRoom._id.toString()).emit("call", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('call', { updatedRoom });
 
         return res;
 
@@ -3542,28 +3550,28 @@ export const doCall = async (roomid, playerid, io, amt) => {
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "riverround.id": playerid,
+            'riverround.id': playerid,
           },
           {
             $inc: {
-              "riverround.$.wallet": -amt,
-              "riverround.$.pot": +amt,
+              'riverround.$.wallet': -amt,
+              'riverround.$.pot': +amt,
             },
-            "riverround.$.action": true,
-            "riverround.$.actionType": "call",
-            lastAction: "call",
-            "riverround.$.tentativeAction": null,
+            'riverround.$.action': true,
+            'riverround.$.actionType': 'call',
+            lastAction: 'call',
+            'riverround.$.tentativeAction': null,
           },
           {
             new: true,
           }
         );
 
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "call",
+          action: 'call',
         });
-        io.in(updatedRoom._id.toString()).emit("call", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('call', { updatedRoom });
 
         break;
     }
@@ -3585,7 +3593,7 @@ export const socketDoCall = async (dta, io, socket) => {
         .findOne(
           {
             _id: roomid,
-            "players.userid": playerid,
+            'players.userid': playerid,
           },
           { _id: 1, raiseAmount: 1 }
         )
@@ -3596,26 +3604,26 @@ export const socketDoCall = async (dta, io, socket) => {
           if (walletAmt >= amt) {
             await doCall(roomid, playerid, io, amt);
           } else {
-            socket.emit("actionError", {
+            socket.emit('actionError', {
               code: 400,
-              msg: "Insufficient chips",
+              msg: 'Insufficient chips',
             });
           }
         } else {
-          socket.emit("actionError", {
+          socket.emit('actionError', {
             code: 400,
             msg: `Call amount must be ${data.raiseAmount}`,
           });
         }
       } else {
-        socket.emit("actionError", { code: 404, msg: "Data not found" });
+        socket.emit('actionError', { code: 404, msg: 'Data not found' });
       }
     } else {
-      socket.emit("actionError", { code: 400, msg: "Bad request" });
+      socket.emit('actionError', { code: 400, msg: 'Bad request' });
     }
   } catch (e) {
-    console.log("error : ", e);
-    socket.emit("actionError", { code: 444, msg: "Some error has occured." });
+    console.log('error : ', e);
+    socket.emit('actionError', { code: 444, msg: 'Some error has occured.' });
   }
 };
 
@@ -3641,48 +3649,48 @@ export const doBet = async (roomid, playerid, io, amt) => {
         p.forEach((e) => {
           if (
             e.tentativeAction &&
-            (e.tentativeAction.startsWith("call ") ||
-              e.tentativeAction === "check")
+            (e.tentativeAction.startsWith('call ') ||
+              e.tentativeAction === 'check')
           ) {
             e.tentativeAction = null;
-          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
-            e.tentativeAction = "fold";
+          } else if (e.tentativeAction && e.tentativeAction === 'check/fold') {
+            e.tentativeAction = 'fold';
           } else if (
             e.tentativeAction &&
-            e.tentativeAction === "callAny" &&
+            e.tentativeAction === 'callAny' &&
             amt >= e.wallet
           ) {
-            e.tentativeAction = "allin";
+            e.tentativeAction = 'allin';
           }
         });
         await roomModel.updateOne({ _id: roomid }, { flopround: p });
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "flopround.id": playerid,
+            'flopround.id': playerid,
           },
           {
             $inc: {
-              "flopround.$.wallet": -amt,
-              "flopround.$.pot": +amt,
+              'flopround.$.wallet': -amt,
+              'flopround.$.pot': +amt,
             },
-            "flopround.$.action": true,
-            "flopround.$.actionType": "bet",
-            "flopround.$.tentativeAction": null,
+            'flopround.$.action': true,
+            'flopround.$.actionType': 'bet',
+            'flopround.$.tentativeAction': null,
             raisePlayerPosition: filterDta[0].position,
             raiseAmount: amt + roundData[0].pot,
-            lastAction: "bet",
+            lastAction: 'bet',
           },
           {
             new: true,
           }
         );
 
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "bet",
+          action: 'bet',
         });
-        io.in(updatedRoom._id.toString()).emit("bet", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('bet', { updatedRoom });
 
         break;
       case 3:
@@ -3694,18 +3702,18 @@ export const doBet = async (roomid, playerid, io, amt) => {
         p.forEach((e) => {
           if (
             e.tentativeAction &&
-            (e.tentativeAction.startsWith("call ") ||
-              e.tentativeAction === "check")
+            (e.tentativeAction.startsWith('call ') ||
+              e.tentativeAction === 'check')
           ) {
             e.tentativeAction = null;
-          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
-            e.tentativeAction = "fold";
+          } else if (e.tentativeAction && e.tentativeAction === 'check/fold') {
+            e.tentativeAction = 'fold';
           } else if (
             e.tentativeAction &&
-            e.tentativeAction === "callAny" &&
+            e.tentativeAction === 'callAny' &&
             amt >= e.wallet
           ) {
-            e.tentativeAction = "allin";
+            e.tentativeAction = 'allin';
           }
         });
         await roomModel.updateOne({ _id: roomid }, { turnround: p });
@@ -3713,31 +3721,31 @@ export const doBet = async (roomid, playerid, io, amt) => {
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "turnround.id": playerid,
+            'turnround.id': playerid,
           },
           {
             $inc: {
-              "turnround.$.wallet": -amt,
-              "turnround.$.pot": +amt,
+              'turnround.$.wallet': -amt,
+              'turnround.$.pot': +amt,
             },
-            "turnround.$.tentativeAction": null,
-            "turnround.$.action": true,
-            "turnround.$.actionType": "bet",
+            'turnround.$.tentativeAction': null,
+            'turnround.$.action': true,
+            'turnround.$.actionType': 'bet',
 
             raisePlayerPosition: filterDta[0].position,
             raiseAmount: amt + roundData[0].pot,
-            lastAction: "bet",
+            lastAction: 'bet',
           },
           {
             new: true,
           }
         );
 
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "bet",
+          action: 'bet',
         });
-        io.in(updatedRoom._id.toString()).emit("bet", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('bet', { updatedRoom });
 
         return res;
 
@@ -3750,18 +3758,18 @@ export const doBet = async (roomid, playerid, io, amt) => {
         p.forEach((e) => {
           if (
             e.tentativeAction &&
-            (e.tentativeAction.startsWith("call ") ||
-              e.tentativeAction === "check")
+            (e.tentativeAction.startsWith('call ') ||
+              e.tentativeAction === 'check')
           ) {
             e.tentativeAction = null;
-          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
-            e.tentativeAction = "fold";
+          } else if (e.tentativeAction && e.tentativeAction === 'check/fold') {
+            e.tentativeAction = 'fold';
           } else if (
             e.tentativeAction &&
-            e.tentativeAction === "callAny" &&
+            e.tentativeAction === 'callAny' &&
             amt >= e.wallet
           ) {
-            e.tentativeAction = "allin";
+            e.tentativeAction = 'allin';
           }
         });
         await roomModel.updateOne({ _id: roomid }, { riverround: p });
@@ -3769,31 +3777,31 @@ export const doBet = async (roomid, playerid, io, amt) => {
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "riverround.id": playerid,
+            'riverround.id': playerid,
           },
           {
             $inc: {
-              "riverround.$.wallet": -amt,
-              "riverround.$.pot": +amt,
+              'riverround.$.wallet': -amt,
+              'riverround.$.pot': +amt,
             },
-            "riverround.$.tentativeAction": null,
-            "riverround.$.action": true,
-            "riverround.$.actionType": "bet",
+            'riverround.$.tentativeAction': null,
+            'riverround.$.action': true,
+            'riverround.$.actionType': 'bet',
 
             raisePlayerPosition: filterDta[0].position,
             raiseAmount: amt + roundData[0].pot,
-            lastAction: "bet",
+            lastAction: 'bet',
           },
           {
             new: true,
           }
         );
 
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "bet",
+          action: 'bet',
         });
-        io.in(updatedRoom._id.toString()).emit("bet", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('bet', { updatedRoom });
 
         break;
     }
@@ -3814,7 +3822,7 @@ export const socketDoBet = async (dta, io, socket) => {
         .findOne(
           {
             _id: roomid,
-            "players.userid": playerid,
+            'players.userid': playerid,
           },
           { _id: 1, raiseAmount: 1, bigBlind: 1 }
         )
@@ -3826,31 +3834,31 @@ export const socketDoBet = async (dta, io, socket) => {
           if (walletAmt >= amt) {
             await doBet(roomid, playerid, io, amt);
           } else {
-            socket.emit("actionError", {
+            socket.emit('actionError', {
               code: 400,
-              msg: "Insufficient chips",
+              msg: 'Insufficient chips',
             });
           }
         } else {
-          socket.emit("actionError", {
+          socket.emit('actionError', {
             code: 400,
             msg: `bet amount must be equal or more than bigblind amount`,
           });
         }
       } else {
-        socket.emit("actionError", { code: 404, msg: "Data not found" });
+        socket.emit('actionError', { code: 404, msg: 'Data not found' });
       }
     } else {
-      socket.emit("actionError", { code: 400, msg: "Bad request" });
+      socket.emit('actionError', { code: 400, msg: 'Bad request' });
     }
   } catch (e) {
-    console.log("error : ", e);
-    socket.emit("actionError", { code: 444, msg: "Some error has occured." });
+    console.log('error : ', e);
+    socket.emit('actionError', { code: 444, msg: 'Some error has occured.' });
   }
 };
 
 export const doRaise = async (roomid, playerid, io, amt) => {
-  console.log("amt====>>", amt);
+  console.log('amt====>>', amt);
   const roomData = await roomModel.findOne({ _id: roomid });
   let updatedRoom = null;
   let res = true;
@@ -3875,48 +3883,48 @@ export const doRaise = async (roomid, playerid, io, amt) => {
         p.forEach((e) => {
           if (
             e.tentativeAction &&
-            (e.tentativeAction.startsWith("call ") ||
-              e.tentativeAction === "check")
+            (e.tentativeAction.startsWith('call ') ||
+              e.tentativeAction === 'check')
           ) {
             e.tentativeAction = null;
-          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
-            e.tentativeAction = "fold";
+          } else if (e.tentativeAction && e.tentativeAction === 'check/fold') {
+            e.tentativeAction = 'fold';
           } else if (
             e.tentativeAction &&
-            e.tentativeAction === "callAny" &&
+            e.tentativeAction === 'callAny' &&
             amt >= e.wallet
           ) {
-            e.tentativeAction = "allin";
+            e.tentativeAction = 'allin';
           }
         });
         await roomModel.updateOne({ _id: roomid }, { preflopround: p });
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "preflopround.id": playerid,
+            'preflopround.id': playerid,
           },
           {
             $inc: {
-              "preflopround.$.wallet": -amt,
-              "preflopround.$.pot": +amt,
+              'preflopround.$.wallet': -amt,
+              'preflopround.$.pot': +amt,
             },
-            "preflopround.$.action": true,
-            "preflopround.$.actionType": "raise",
-            "preflopround.$.tentativeAction": null,
+            'preflopround.$.action': true,
+            'preflopround.$.actionType': 'raise',
+            'preflopround.$.tentativeAction': null,
             raisePlayerPosition: roundData[0].position,
             raiseAmount: amt + roundData[0].pot,
-            lastAction: "raise",
+            lastAction: 'raise',
           },
           {
             new: true,
           }
         );
 
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "raise",
+          action: 'raise',
         });
-        io.in(updatedRoom._id.toString()).emit("raise", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('raise', { updatedRoom });
 
         break;
 
@@ -3929,18 +3937,18 @@ export const doRaise = async (roomid, playerid, io, amt) => {
         p.forEach((e) => {
           if (
             e.tentativeAction &&
-            (e.tentativeAction.startsWith("call ") ||
-              e.tentativeAction === "check")
+            (e.tentativeAction.startsWith('call ') ||
+              e.tentativeAction === 'check')
           ) {
             e.tentativeAction = null;
-          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
-            e.tentativeAction = "fold";
+          } else if (e.tentativeAction && e.tentativeAction === 'check/fold') {
+            e.tentativeAction = 'fold';
           } else if (
             e.tentativeAction &&
-            e.tentativeAction === "callAny" &&
+            e.tentativeAction === 'callAny' &&
             amt >= e.wallet
           ) {
-            e.tentativeAction = "allin";
+            e.tentativeAction = 'allin';
           }
         });
         await roomModel.updateOne({ _id: roomid }, { flopround: p });
@@ -3948,30 +3956,30 @@ export const doRaise = async (roomid, playerid, io, amt) => {
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "flopround.id": playerid,
+            'flopround.id': playerid,
           },
           {
             $inc: {
-              "flopround.$.wallet": -amt,
-              "flopround.$.pot": +amt,
+              'flopround.$.wallet': -amt,
+              'flopround.$.pot': +amt,
             },
-            "flopround.$.action": true,
-            "flopround.$.actionType": "raise",
-            "flopround.$.tentativeAction": null,
+            'flopround.$.action': true,
+            'flopround.$.actionType': 'raise',
+            'flopround.$.tentativeAction': null,
             raisePlayerPosition: roundData[0].position,
             raiseAmount: amt + roundData[0].pot,
-            lastAction: "raise",
+            lastAction: 'raise',
           },
           {
             new: true,
           }
         );
 
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "raise",
+          action: 'raise',
         });
-        io.in(updatedRoom._id.toString()).emit("raise", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('raise', { updatedRoom });
 
         break;
       case 3:
@@ -3983,48 +3991,48 @@ export const doRaise = async (roomid, playerid, io, amt) => {
         p.forEach((e) => {
           if (
             e.tentativeAction &&
-            (e.tentativeAction.startsWith("call ") ||
-              e.tentativeAction === "check")
+            (e.tentativeAction.startsWith('call ') ||
+              e.tentativeAction === 'check')
           ) {
             e.tentativeAction = null;
-          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
-            e.tentativeAction = "fold";
+          } else if (e.tentativeAction && e.tentativeAction === 'check/fold') {
+            e.tentativeAction = 'fold';
           } else if (
             e.tentativeAction &&
-            e.tentativeAction === "callAny" &&
+            e.tentativeAction === 'callAny' &&
             amt >= e.wallet
           ) {
-            e.tentativeAction = "allin";
+            e.tentativeAction = 'allin';
           }
         });
         await roomModel.updateOne({ _id: roomid }, { turnround: p });
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "turnround.id": playerid,
+            'turnround.id': playerid,
           },
           {
             $inc: {
-              "turnround.$.wallet": -amt,
-              "turnround.$.pot": +amt,
+              'turnround.$.wallet': -amt,
+              'turnround.$.pot': +amt,
             },
-            "turnround.$.action": true,
-            "turnround.$.actionType": "raise",
-            "turnround.$.tentativeAction": null,
+            'turnround.$.action': true,
+            'turnround.$.actionType': 'raise',
+            'turnround.$.tentativeAction': null,
             raisePlayerPosition: roundData[0].position,
             raiseAmount: amt + roundData[0].pot,
-            lastAction: "raise",
+            lastAction: 'raise',
           },
           {
             new: true,
           }
         );
 
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "raise",
+          action: 'raise',
         });
-        io.in(updatedRoom._id.toString()).emit("raise", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('raise', { updatedRoom });
 
         return res;
 
@@ -4037,18 +4045,18 @@ export const doRaise = async (roomid, playerid, io, amt) => {
         p.forEach((e) => {
           if (
             e.tentativeAction &&
-            (e.tentativeAction.startsWith("call ") ||
-              e.tentativeAction === "check")
+            (e.tentativeAction.startsWith('call ') ||
+              e.tentativeAction === 'check')
           ) {
             e.tentativeAction = null;
-          } else if (e.tentativeAction && e.tentativeAction === "check/fold") {
-            e.tentativeAction = "fold";
+          } else if (e.tentativeAction && e.tentativeAction === 'check/fold') {
+            e.tentativeAction = 'fold';
           } else if (
             e.tentativeAction &&
-            e.tentativeAction === "callAny" &&
+            e.tentativeAction === 'callAny' &&
             amt >= e.wallet
           ) {
-            e.tentativeAction = "allin";
+            e.tentativeAction = 'allin';
           }
         });
         await roomModel.updateOne({ _id: roomid }, { riverround: p });
@@ -4056,30 +4064,30 @@ export const doRaise = async (roomid, playerid, io, amt) => {
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "riverround.id": playerid,
+            'riverround.id': playerid,
           },
           {
             $inc: {
-              "riverround.$.wallet": -amt,
-              "riverround.$.pot": +amt,
+              'riverround.$.wallet': -amt,
+              'riverround.$.pot': +amt,
             },
-            "riverround.$.action": true,
-            "riverround.$.actionType": "raise",
-            "riverround.$.tentativeAction": null,
+            'riverround.$.action': true,
+            'riverround.$.actionType': 'raise',
+            'riverround.$.tentativeAction': null,
             raisePlayerPosition: roundData[0].position,
             raiseAmount: amt + roundData[0].pot,
-            lastAction: "raise",
+            lastAction: 'raise',
           },
           {
             new: true,
           }
         );
 
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "raise",
+          action: 'raise',
         });
-        io.in(updatedRoom._id.toString()).emit("raise", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('raise', { updatedRoom });
 
         break;
     }
@@ -4102,7 +4110,7 @@ export const socketDoRaise = async (dta, io, socket) => {
         .findOne(
           {
             _id: roomid,
-            "players.userid": playerid,
+            'players.userid': playerid,
           },
           { _id: 1, raiseAmount: 1 }
         )
@@ -4114,26 +4122,26 @@ export const socketDoRaise = async (dta, io, socket) => {
           if (walletAmt >= amt) {
             await doRaise(roomid, playerid, io, amt);
           } else {
-            socket.emit("actionError", {
+            socket.emit('actionError', {
               code: 400,
-              msg: "Insufficient chips",
+              msg: 'Insufficient chips',
             });
           }
         } else {
-          socket.emit("actionError", {
+          socket.emit('actionError', {
             code: 400,
             msg: `Raise amount must be minimum ${data.raiseAmount * 2}`,
           });
         }
       } else {
-        socket.emit("actionError", { code: 404, msg: "Data not found" });
+        socket.emit('actionError', { code: 404, msg: 'Data not found' });
       }
     } else {
-      socket.emit("actionError", { code: 400, msg: "Bad request" });
+      socket.emit('actionError', { code: 400, msg: 'Bad request' });
     }
   } catch (e) {
-    console.log("error : ", e);
-    socket.emit("actionError", { code: 444, msg: "Some error has occured." });
+    console.log('error : ', e);
+    socket.emit('actionError', { code: 444, msg: 'Some error has occured.' });
   }
 };
 
@@ -4153,24 +4161,24 @@ export const doCheck = async (roomid, playerid, io) => {
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "preflopround.id": convertMongoId(playerid),
+            'preflopround.id': convertMongoId(playerid),
           },
           {
-            "preflopround.$.action": true,
-            "preflopround.$.tentativeAction": null,
-            "preflopround.$.actionType": "check",
-            lastAction: "check",
+            'preflopround.$.action': true,
+            'preflopround.$.tentativeAction': null,
+            'preflopround.$.actionType': 'check',
+            lastAction: 'check',
           },
           {
             new: true,
           }
         );
 
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "check",
+          action: 'check',
         });
-        io.in(updatedRoom._id.toString()).emit("check", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('check', { updatedRoom });
 
         break;
 
@@ -4178,48 +4186,48 @@ export const doCheck = async (roomid, playerid, io) => {
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "flopround.id": convertMongoId(playerid),
+            'flopround.id': convertMongoId(playerid),
           },
           {
-            "flopround.$.action": true,
-            "flopround.$.actionType": "check",
-            lastAction: "check",
-            "flopround.$.tentativeAction": null,
+            'flopround.$.action': true,
+            'flopround.$.actionType': 'check',
+            lastAction: 'check',
+            'flopround.$.tentativeAction': null,
           },
           {
             new: true,
           }
         );
 
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "Check",
+          action: 'Check',
         });
-        io.in(updatedRoom._id.toString()).emit("check", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('check', { updatedRoom });
 
         break;
       case 3:
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "turnround.id": convertMongoId(playerid),
+            'turnround.id': convertMongoId(playerid),
           },
           {
-            "turnround.$.action": true,
-            "turnround.$.actionType": "check",
-            lastAction: "check",
-            "turnround.$.tentativeAction": null,
+            'turnround.$.action': true,
+            'turnround.$.actionType': 'check',
+            lastAction: 'check',
+            'turnround.$.tentativeAction': null,
           },
           {
             new: true,
           }
         );
 
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "check",
+          action: 'check',
         });
-        io.in(updatedRoom._id.toString()).emit("check", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('check', { updatedRoom });
 
         return res;
 
@@ -4227,24 +4235,24 @@ export const doCheck = async (roomid, playerid, io) => {
         updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: roomid,
-            "riverround.id": convertMongoId(playerid),
+            'riverround.id': convertMongoId(playerid),
           },
           {
-            "riverround.$.action": true,
-            "riverround.$.actionType": "check",
-            lastAction: "check",
-            "riverround.$.tentativeAction": null,
+            'riverround.$.action': true,
+            'riverround.$.actionType': 'check',
+            lastAction: 'check',
+            'riverround.$.tentativeAction': null,
           },
           {
             new: true,
           }
         );
 
-        io.in(updatedRoom._id.toString()).emit("actionperformed", {
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
           id: playerid,
-          action: "check",
+          action: 'check',
         });
-        io.in(updatedRoom._id.toString()).emit("check", { updatedRoom });
+        io.in(updatedRoom._id.toString()).emit('check', { updatedRoom });
 
         break;
     }
@@ -4265,7 +4273,7 @@ export const socketDoCheck = async (dta, io, socket) => {
         .findOne(
           {
             _id: roomid,
-            "players.userid": convertMongoId(playerid),
+            'players.userid': convertMongoId(playerid),
           },
           { _id: 1, raiseAmount: 1, lastAction: 1 }
         )
@@ -4273,14 +4281,14 @@ export const socketDoCheck = async (dta, io, socket) => {
       if (data !== null) {
         await doCheck(roomid, playerid, io);
       } else {
-        socket.emit("actionError", { code: 404, msg: "Data not found" });
+        socket.emit('actionError', { code: 404, msg: 'Data not found' });
       }
     } else {
-      socket.emit("actionError", { code: 400, msg: "Bad request" });
+      socket.emit('actionError', { code: 400, msg: 'Bad request' });
     }
   } catch (e) {
-    console.log("error : ", e);
-    socket.emit("actionError", { code: 444, msg: "Some error has occured." });
+    console.log('error : ', e);
+    socket.emit('actionError', { code: 444, msg: 'Some error has occured.' });
   }
 };
 
@@ -4302,10 +4310,10 @@ export const doAllin = async (roomid, playerid, io) => {
     );
 
     if (roomData.timerPlayer.toString() === playerid.toString()) {
-      console.log("=================== ALLIN 4209", roomData.timerPlayer);
+      console.log('=================== ALLIN 4209', roomData.timerPlayer);
       switch (roomData.runninground) {
         case 1:
-          console.log("=================== ALLIN 4212");
+          console.log('=================== ALLIN 4212');
           roundData = roomData.preflopround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -4320,40 +4328,40 @@ export const doAllin = async (roomid, playerid, io) => {
             wallet: roundData[0].wallet,
             round: roomData.runninground,
           });
-          console.log("=================== ALLIN 4228");
+          console.log('=================== ALLIN 4228');
           updatedRoom = await roomModel.findOneAndUpdate(
             {
               _id: roomid,
-              "preflopround.id": playerid,
+              'preflopround.id': playerid,
             },
             {
               $inc: {
-                "preflopround.$.wallet": -roundData[0].wallet,
-                "preflopround.$.pot": +roundData[0].wallet,
+                'preflopround.$.wallet': -roundData[0].wallet,
+                'preflopround.$.pot': +roundData[0].wallet,
               },
-              "preflopround.$.action": true,
-              "preflopround.$.actionType": "all-in",
-              "preflopround.$.tentativeAction": null,
+              'preflopround.$.action': true,
+              'preflopround.$.actionType': 'all-in',
+              'preflopround.$.tentativeAction': null,
 
               raisePlayerPosition: raisePlayerPosition,
               raiseAmount: raiseAmount,
-              lastAction: "all-in",
+              lastAction: 'all-in',
               allinPlayers: allinPlayer,
             },
             {
               new: true,
             }
           );
-          io.in(updatedRoom._id.toString()).emit("actionperformed", {
+          io.in(updatedRoom._id.toString()).emit('actionperformed', {
             id: playerid,
-            action: "all-in",
+            action: 'all-in',
           });
-          io.in(updatedRoom._id.toString()).emit("allin", { updatedRoom });
+          io.in(updatedRoom._id.toString()).emit('allin', { updatedRoom });
 
           break;
 
         case 2:
-          console.log("=================== ALLIN 4260");
+          console.log('=================== ALLIN 4260');
           roundData = roomData.flopround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -4370,20 +4378,20 @@ export const doAllin = async (roomid, playerid, io) => {
           updatedRoom = await roomModel.findOneAndUpdate(
             {
               _id: roomid,
-              "flopround.id": playerid,
+              'flopround.id': playerid,
             },
             {
               $inc: {
-                "flopround.$.wallet": -roundData[0].wallet,
-                "flopround.$.pot": +roundData[0].wallet,
+                'flopround.$.wallet': -roundData[0].wallet,
+                'flopround.$.pot': +roundData[0].wallet,
               },
-              "flopround.$.action": true,
-              "flopround.$.actionType": "all-in",
-              "flopround.$.tentativeAction": null,
+              'flopround.$.action': true,
+              'flopround.$.actionType': 'all-in',
+              'flopround.$.tentativeAction': null,
 
               raisePlayerPosition: raisePlayerPosition,
               raiseAmount: raiseAmount,
-              lastAction: "all-in",
+              lastAction: 'all-in',
               allinPlayers: allinPlayer,
             },
             {
@@ -4391,15 +4399,15 @@ export const doAllin = async (roomid, playerid, io) => {
             }
           );
 
-          io.in(updatedRoom._id.toString()).emit("actionperformed", {
+          io.in(updatedRoom._id.toString()).emit('actionperformed', {
             id: playerid,
-            action: "all-in",
+            action: 'all-in',
           });
-          io.in(updatedRoom._id.toString()).emit("allin", { updatedRoom });
+          io.in(updatedRoom._id.toString()).emit('allin', { updatedRoom });
 
           break;
         case 3:
-          console.log("=================== ALLIN 4305");
+          console.log('=================== ALLIN 4305');
           roundData = roomData.turnround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -4416,20 +4424,20 @@ export const doAllin = async (roomid, playerid, io) => {
           updatedRoom = await roomModel.findOneAndUpdate(
             {
               _id: roomid,
-              "turnround.id": playerid,
+              'turnround.id': playerid,
             },
             {
               $inc: {
-                "turnround.$.wallet": -roundData[0].wallet,
-                "turnround.$.pot": +roundData[0].wallet,
-                "turnround.$.tentativeAction": null,
+                'turnround.$.wallet': -roundData[0].wallet,
+                'turnround.$.pot': +roundData[0].wallet,
+                'turnround.$.tentativeAction': null,
               },
-              "turnround.$.action": true,
-              "turnround.$.actionType": "all-in",
+              'turnround.$.action': true,
+              'turnround.$.actionType': 'all-in',
 
               raisePlayerPosition: raisePlayerPosition,
               raiseAmount: raiseAmount,
-              lastAction: "all-in",
+              lastAction: 'all-in',
               allinPlayers: allinPlayer,
             },
             {
@@ -4437,15 +4445,15 @@ export const doAllin = async (roomid, playerid, io) => {
             }
           );
 
-          io.in(updatedRoom._id.toString()).emit("actionperformed", {
+          io.in(updatedRoom._id.toString()).emit('actionperformed', {
             id: playerid,
-            action: "all-in",
+            action: 'all-in',
           });
-          io.in(updatedRoom._id.toString()).emit("allin", { updatedRoom });
+          io.in(updatedRoom._id.toString()).emit('allin', { updatedRoom });
 
           break;
         case 4:
-          console.log("=================== ALLIN 4350");
+          console.log('=================== ALLIN 4350');
           roundData = roomData.riverround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -4462,20 +4470,20 @@ export const doAllin = async (roomid, playerid, io) => {
           updatedRoom = await roomModel.findOneAndUpdate(
             {
               _id: roomid,
-              "riverround.id": playerid,
+              'riverround.id': playerid,
             },
             {
               $inc: {
-                "riverround.$.wallet": -roundData[0].wallet,
-                "riverround.$.pot": +roundData[0].wallet,
+                'riverround.$.wallet': -roundData[0].wallet,
+                'riverround.$.pot': +roundData[0].wallet,
               },
-              "riverround.$.action": true,
-              "riverround.$.tentativeAction": null,
-              "riverround.$.actionType": "all-in",
+              'riverround.$.action': true,
+              'riverround.$.tentativeAction': null,
+              'riverround.$.actionType': 'all-in',
 
               raisePlayerPosition: raisePlayerPosition,
               raiseAmount: raiseAmount,
-              lastAction: "all-in",
+              lastAction: 'all-in',
               allinPlayers: allinPlayer,
             },
             {
@@ -4483,22 +4491,22 @@ export const doAllin = async (roomid, playerid, io) => {
             }
           );
 
-          io.in(updatedRoom._id.toString()).emit("actionperformed", {
+          io.in(updatedRoom._id.toString()).emit('actionperformed', {
             id: playerid,
-            action: "all-in",
+            action: 'all-in',
           });
-          io.in(updatedRoom._id.toString()).emit("allin", { updatedRoom });
+          io.in(updatedRoom._id.toString()).emit('allin', { updatedRoom });
 
           break;
       }
     }
   } catch (error) {
-    console.log("LINE NUMBER 4352 in function.js", error);
+    console.log('LINE NUMBER 4352 in function.js', error);
   }
 };
 
 export const socketDoAllin = async (dta, io, socket) => {
-  console.log("ALLIN 4395");
+  console.log('ALLIN 4395');
   let userid = mongoose.Types.ObjectId(dta.userid);
   let roomid = mongoose.Types.ObjectId(dta.roomid);
 
@@ -4506,7 +4514,7 @@ export const socketDoAllin = async (dta, io, socket) => {
 
   try {
     if (isValid) {
-      console.log("=================== ALLIN 4405");
+      console.log('=================== ALLIN 4405');
       roomid = mongoose.Types.ObjectId(roomid);
       let playerid = userid;
       // let amt  = body.amount;
@@ -4514,32 +4522,32 @@ export const socketDoAllin = async (dta, io, socket) => {
         .findOne(
           {
             _id: roomid,
-            "players.userid": playerid,
+            'players.userid': playerid,
           },
           { _id: 1, raiseAmount: 1 }
         )
         .lean();
       console.log({ data });
       if (data !== null) {
-        console.log("=================== ALLIN 4420");
+        console.log('=================== ALLIN 4420');
         await doAllin(roomid, playerid, io);
       } else {
-        console.log("=================== ALLIN 4442");
-        socket.emit("actionError", { code: 404, msg: "Data not found" });
+        console.log('=================== ALLIN 4442');
+        socket.emit('actionError', { code: 404, msg: 'Data not found' });
       }
     } else {
-      console.log("=================== ALLIN 4427");
-      socket.emit("actionError", { code: 400, msg: "Bad request" });
+      console.log('=================== ALLIN 4427');
+      socket.emit('actionError', { code: 400, msg: 'Bad request' });
     }
   } catch (e) {
-    console.log("error : ", e);
-    socket.emit("actionError", { code: 444, msg: "Some error has occured." });
+    console.log('error : ', e);
+    socket.emit('actionError', { code: 444, msg: 'Some error has occured.' });
   }
 };
 
 const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
   const roomData = await roomModel.findOne({ _id: roomid });
-  console.log("ROOM DATA PLAYERS ", roomData.players);
+  console.log('ROOM DATA PLAYERS ', roomData.players);
   let winnerAmount = 0;
   let showDownPlayers = [];
   let playerData = null;
@@ -4709,10 +4717,10 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     let action, amt;
     if (player.playing) {
       if (winnerPlayer.find((ele) => ele.id === player.id)) {
-        action = "game-win";
+        action = 'game-win';
         amt = winnerPlayer.find((ele) => ele.id === player.id).winningAmount;
       } else {
-        action = "game-lose";
+        action = 'game-lose';
         amt = player.prevPot;
       }
 
@@ -4740,7 +4748,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     }
   );
 
-  io.in(updatedRoom._id.toString()).emit("winner", { updatedRoom });
+  io.in(updatedRoom._id.toString()).emit('winner', { updatedRoom });
   // await finishHandApiCall(updatedRoom);
   handleWatcherWinner(updatedRoom, io);
   // findLoserAndWinner(updatedRoom);
@@ -4770,18 +4778,18 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
           (el) => el.wallet > 0
         );
         if (havemoney.length > 1) {
-          io.in(updatedRoom._id.toString()).emit("tablestopped", {
-            msg: "Waiting to start game",
+          io.in(updatedRoom._id.toString()).emit('tablestopped', {
+            msg: 'Waiting to start game',
           });
         } else {
-          io.in(updatedRoom._id.toString()).emit("onlyOnePlayingPlayer", {
-            msg: "Game finished, Only one player left",
+          io.in(updatedRoom._id.toString()).emit('onlyOnePlayingPlayer', {
+            msg: 'Game finished, Only one player left',
             roomdata: updatedRoomPlayers,
           });
-          if (updatedRoomPlayers.gameType === "pokerTournament_Tables") {
+          if (updatedRoomPlayers.gameType === 'pokerTournament_Tables') {
             await finishedTableGame(updatedRoomPlayers, playerid);
-            io.in(updatedRoomPlayers._id.toString()).emit("roomFinished", {
-              msg: "Game finished",
+            io.in(updatedRoomPlayers._id.toString()).emit('roomFinished', {
+              msg: 'Game finished',
               finish: updatedRoomPlayers.finish,
               roomdata: updatedRoomPlayers,
             });
@@ -4789,20 +4797,20 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         }
       }
     } else {
-      io.in(updatedRoom._id.toString()).emit("tablestopped", {
-        msg: "Table stopped by host",
+      io.in(updatedRoom._id.toString()).emit('tablestopped', {
+        msg: 'Table stopped by host',
       });
     }
     const roomUpdate = await roomModel.findOne({ _id: updatedRoom._id });
     if (roomUpdate.finish) {
       await finishedTableGame(roomUpdate, playerid);
-      io.in(roomUpdate._id.toString()).emit("roomFinished", {
-        msg: "Room Finished",
+      io.in(roomUpdate._id.toString()).emit('roomFinished', {
+        msg: 'Room Finished',
         finish: roomUpdate.finish,
         roomdata: roomUpdate,
       });
     } else
-      io.in(updatedRoom._id.toString()).emit("newhand", {
+      io.in(updatedRoom._id.toString()).emit('newhand', {
         updatedRoom: roomUpdate,
       });
   }, gameRestartSeconds);
@@ -4856,9 +4864,9 @@ export const startLevelInterval = (_id) => {
           await tournamentModel.updateOne(
             { _id },
             {
-              $inc: { "levels.level": 1 },
-              "levels.bigBlind.amount": bigBlind,
-              "levels.smallBlind.amount": smallBlind,
+              $inc: { 'levels.level': 1 },
+              'levels.bigBlind.amount': bigBlind,
+              'levels.smallBlind.amount': smallBlind,
             }
           );
         }
@@ -5081,7 +5089,7 @@ export const reArrangeTables = async (tournamentId, io) => {
         havePlayers: 1,
         levels: 1,
       })
-      .populate("rooms", null, { gamestart: false })
+      .populate('rooms', null, { gamestart: false })
       .lean();
     const tData = await tournamentModel
       .findById(tournamentId, { rooms: 1, destroyedRooms: 1, havePlayers: 1 })
@@ -5177,9 +5185,9 @@ export const reArrangeTables = async (tournamentId, io) => {
 
         fullRooms.forEach((el) => {
           console.log(
-            "full rooms id ==> ",
+            'full rooms id ==> ',
             el._id,
-            " players.length => ",
+            ' players.length => ',
             el.players.length
           );
         });
@@ -5261,7 +5269,7 @@ export const reArrangeTables = async (tournamentId, io) => {
 
     await rearrange(tournamentData);
   } catch (e) {
-    console.log("error : ", e);
+    console.log('error : ', e);
   }
 };
 
@@ -5303,7 +5311,7 @@ export const fillSpot = async (room, fullRooms, canPlayMinimum, io) => {
                 new: true,
               }
             );
-            io.in(roomData._id.toString()).emit("roomData", rUpdatedData);
+            io.in(roomData._id.toString()).emit('roomData', rUpdatedData);
 
             let oldPlayer = eleminated.filter(
               (el) => el.position === avilablePlayer[0].position
@@ -5314,17 +5322,17 @@ export const fillSpot = async (room, fullRooms, canPlayMinimum, io) => {
               (el) => el.position !== avilablePlayer[0].position
             );
 
-            io.in(roomData._id.toString()).emit("roomchanged", {
+            io.in(roomData._id.toString()).emit('roomchanged', {
               userid: avilablePlayer[0].userid,
               newRoomId: roomData._id,
             });
             const userData = await userModel.findOneAndUpdate(
               {
                 _id: avilablePlayer[0].userid,
-                "tournaments.tournamentId": roomData.tournament,
+                'tournaments.tournamentId': roomData.tournament,
               },
               {
-                "tournaments.$.roomId": roomData._id,
+                'tournaments.$.roomId': roomData._id,
               },
               { new: true }
             );
@@ -5344,7 +5352,7 @@ export const fillSpot = async (room, fullRooms, canPlayMinimum, io) => {
             fullRooms = fullRooms.filter((el) => {
               el._id !== froom._id;
             });
-            io.in(fUpdatedData._id.toString()).emit("roomData", fUpdatedData);
+            io.in(fUpdatedData._id.toString()).emit('roomData', fUpdatedData);
             let avilableSpot = room.spots.filter(
               (el) => el !== avilablePlayer[0].position
             );
@@ -5405,18 +5413,18 @@ export const destroyTable = async (mostBlnkRoom, leftBlankTables, io) => {
               }
             );
 
-            io.in(roomData._id.toString()).emit("roomData", rUpdatedData);
-            io.in(dRoomData._id.toString()).emit("roomchanged", {
+            io.in(roomData._id.toString()).emit('roomData', rUpdatedData);
+            io.in(dRoomData._id.toString()).emit('roomchanged', {
               userid: player.userid,
               newRoomId: roomData._id,
             });
             const userData = await userModel.findOneAndUpdate(
               {
                 _id: player.userid,
-                "tournaments.tournamentId": roomData.tournament,
+                'tournaments.tournamentId': roomData.tournament,
               },
               {
-                "tournaments.$.roomId": roomData._id,
+                'tournaments.$.roomId': roomData._id,
               },
               { new: true }
             );
@@ -5441,7 +5449,7 @@ export const destroyTable = async (mostBlnkRoom, leftBlankTables, io) => {
                 new: true,
               }
             );
-            io.in(dRoomData._id.toString()).emit("roomData", dUpdatedData);
+            io.in(dRoomData._id.toString()).emit('roomData', dUpdatedData);
 
             let index = havePosition[0].spots.indexOf(player.position);
             if (index > -1) {
@@ -5491,20 +5499,20 @@ export const destroyTable = async (mostBlnkRoom, leftBlankTables, io) => {
                     }
                   );
                   io.in(rUpdatedData._id.toString()).emit(
-                    "roomData",
+                    'roomData',
                     rUpdatedData
                   );
-                  io.in(dRoomData._id.toString()).emit("roomchanged", {
+                  io.in(dRoomData._id.toString()).emit('roomchanged', {
                     userid: player.userid,
                     newRoomId: roomData._id,
                   });
                   const userData = await userModel.findOneAndUpdate(
                     {
                       _id: player.userid,
-                      "tournaments.tournamentId": roomData.tournament,
+                      'tournaments.tournamentId': roomData.tournament,
                     },
                     {
-                      "tournaments.$.roomId": roomData._id,
+                      'tournaments.$.roomId': roomData._id,
                     },
                     { new: true }
                   );
@@ -5524,7 +5532,7 @@ export const destroyTable = async (mostBlnkRoom, leftBlankTables, io) => {
                     }
                   );
                   io.in(dRoomData._id.toString()).emit(
-                    "roomData",
+                    'roomData',
                     dUpdatedData
                   );
 
@@ -5606,7 +5614,7 @@ export const findAvailablePosition = async (playerList) => {
         i++;
       }
     } catch (error) {
-      console.log("error", error);
+      console.log('error', error);
     }
   });
 };
@@ -5615,9 +5623,9 @@ export const joinRequest = async (data, socket, io) => {
   try {
     const roomData = await getDoc(data.gameType, data._id);
     if (!roomData) {
-      return socket.emit("noTable", "No such table exists");
+      return socket.emit('noTable', 'No such table exists');
     }
-    const userData = await getDoc("users", data.userId);
+    const userData = await getDoc('users', data.userId);
     if (userData) {
       userData.userid = data.userId;
       let room = await roomModel.findOne({
@@ -5628,18 +5636,18 @@ export const joinRequest = async (data, socket, io) => {
           (el) => el.userid.toString() === userData.userid.toString()
         );
         if (isExist.length) {
-          socket.emit("alreadyJoin", "");
+          socket.emit('alreadyJoin', '');
         } else {
           if (room.players.length < 9) {
             let ischecked = false;
             let amt;
             if (
-              data.gameType === "pokerTournament_Tables" &&
+              data.gameType === 'pokerTournament_Tables' &&
               room.maxchips <= userData.stats.total.coins
             ) {
               ischecked = true;
               amt = room.maxchips;
-            } else if (data.gameType !== "pokerTournament_Tables") {
+            } else if (data.gameType !== 'pokerTournament_Tables') {
               ischecked = true;
               amt = userData.stats.total.coins;
             }
@@ -5658,31 +5666,31 @@ export const joinRequest = async (data, socket, io) => {
                 joinRequests: joinRequests,
               });
               let roomId = room._id;
-              io.in(data._id.toString()).emit("joinrequest", {
+              io.in(data._id.toString()).emit('joinrequest', {
                 player,
                 hostid: room.hostId,
                 _id: data._id,
                 gameType: data.gameType,
               });
-              socket.emit("hostApproval", "Waithing for host approval");
+              socket.emit('hostApproval', 'Waithing for host approval');
             } else {
-              io.in(data._id.toString()).emit("lowBalance", {
+              io.in(data._id.toString()).emit('lowBalance', {
                 userid: userData.userid,
               });
             }
           } else {
-            socket.emit("roomFull", "Room is Already Full");
+            socket.emit('roomFull', 'Room is Already Full');
           }
         }
       } else {
-        socket.emit("notFound", "Room not Found");
+        socket.emit('notFound', 'Room not Found');
       }
     } else {
-      socket.emit("actionError", "Some Error Occured");
+      socket.emit('actionError', 'Some Error Occured');
     }
   } catch (e) {
-    console.log("error : ", e);
-    socket.emit("actionError", "Some Error Occured");
+    console.log('error : ', e);
+    socket.emit('actionError', 'Some Error Occured');
   }
 };
 
@@ -5695,8 +5703,8 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
     // let items = await getPurchasedItem(user.userid, user.stats.Level);
     let items = [];
 
-    if (room.table.media !== "no-media") {
-      amount = room.table.media === "video" ? 400 : 100;
+    if (room.table.media !== 'no-media') {
+      amount = room.table.media === 'video' ? 400 : 100;
       hand.push({
         amount,
         action: `${room.table.media}-game`,
@@ -5709,47 +5717,47 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
       if (
         room.table.isGameFinished ||
         isRoomExist.finish ||
-        room.table.status === "empty"
+        room.table.status === 'empty'
       ) {
-        return socket.emit("gameFinished", "Game Already Finished.");
+        return socket.emit('gameFinished', 'Game Already Finished.');
       }
       if (isRoomExist.watchers.find((ele) => ele.userid === user.userid)) {
         const bet = await BetModal.findOne({ _id: room.roomid });
-        socket.join(room.roomid.toString() + "watchers");
-        io.in(room.roomid.toString() + "watchers").emit("newWatcherJoin", {
+        socket.join(room.roomid.toString() + 'watchers');
+        io.in(room.roomid.toString() + 'watchers').emit('newWatcherJoin', {
           watcherId: user.userid,
           roomData: isRoomExist,
         });
         if (bet)
-          io.in(room.roomid.toString() + "watchers").emit("newBetPlaced", bet);
+          io.in(room.roomid.toString() + 'watchers').emit('newBetPlaced', bet);
         return;
       } else if (
         isRoomExist.players.find((ele) => ele.userid === user.userid)
       ) {
         return io
           .in(room.roomid.toString())
-          .emit("updatePlayerList", isRoomExist);
+          .emit('updatePlayerList', isRoomExist);
       }
       const position = await findAvailablePosition(isRoomExist.players);
       if (
-        (isRoomExist.gameType === "poker1vs1_Tables" &&
+        (isRoomExist.gameType === 'poker1vs1_Tables' &&
           isRoomExist.players.length === 2) ||
         isRoomExist.players.length >= 9
       ) {
         if (isRoomExist.allowWatcher) {
-          return socket.emit("newWatcher", {
+          return socket.emit('newWatcher', {
             _id: room.roomid,
             userId: user.userid,
             allowWatcher: room.table.alloWatchers,
           });
         } else {
-          return socket.emit("roomFull", "Room is full");
+          return socket.emit('roomFull', 'Room is full');
         }
       }
       if (isRoomExist.gamestart) {
         if (room.table.public) {
           if (
-            isRoomExist.gameType !== "poker1vs1_Tables" &&
+            isRoomExist.gameType !== 'poker1vs1_Tables' &&
             isRoomExist.players.length < 9 &&
             !isRoomExist.players.find((ele) => ele.userid === user.userid)
           ) {
@@ -5775,11 +5783,11 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
               const API_KEY = process.env.VIDEOSDK_API_KEY;
               const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
 
-              const options = { expiresIn: "10d", algorithm: "HS256" };
+              const options = { expiresIn: '10d', algorithm: 'HS256' };
 
               const payload = {
                 apikey: API_KEY,
-                permissions: ["ask_join"], // also accepts "ask_join"
+                permissions: ['ask_join'], // also accepts "ask_join"
               };
 
               const token = jwt.sign(payload, SECRET_KEY, options);
@@ -5810,32 +5818,32 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
                 },
                 { new: true }
               );
-              io.in(room.roomid.toString()).emit("joinInRunningGame", {
+              io.in(room.roomid.toString()).emit('joinInRunningGame', {
                 updatedRoom: updateRoom,
                 playerId: user.userid,
               });
               await removeInvToPlayers(room.roomid, user.userid, gameType);
             } else {
-              io.in(room.roomid.toString()).emit("lowBalance", {
+              io.in(room.roomid.toString()).emit('lowBalance', {
                 userid: user.userid,
               });
             }
           } else if (
             !room.invPlayers.find((ele) => ele === user.userid) &&
-            isRoomExist.gameType !== "poker1vs1_Tables" &&
+            isRoomExist.gameType !== 'poker1vs1_Tables' &&
             isRoomExist.players.length < 9
           ) {
-            socket.emit("newUser", {
+            socket.emit('newUser', {
               _id: room.roomid,
               userId: user.userid,
               allowWatcher: room.table.alloWatchers,
             });
           } else if (
-            isRoomExist.gameType !== "poker1vs1_Tables" &&
+            isRoomExist.gameType !== 'poker1vs1_Tables' &&
             isRoomExist.players.length >= 9
           ) {
-            console.log("ROOM FULL 5716");
-            socket.emit("roomFull", "Room is full");
+            console.log('ROOM FULL 5716');
+            socket.emit('roomFull', 'Room is full');
           }
         } else {
           if (
@@ -5864,11 +5872,11 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
               const API_KEY = process.env.VIDEOSDK_API_KEY;
               const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
 
-              const options = { expiresIn: "10d", algorithm: "HS256" };
+              const options = { expiresIn: '10d', algorithm: 'HS256' };
 
               const payload = {
                 apikey: API_KEY,
-                permissions: ["ask_join"], // also accepts "ask_join"
+                permissions: ['ask_join'], // also accepts "ask_join"
               };
 
               const token = jwt.sign(payload, SECRET_KEY, options);
@@ -5900,18 +5908,18 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
                 { new: true }
               );
               io.in(room.roomid.toString()).emit(
-                "updatePlayerList",
+                'updatePlayerList',
                 updateRoom
               );
               await removeInvToPlayers(room.roomid, user.userid, gameType);
             } else {
-              io.in(room.roomid.toString()).emit("lowBalance", {
+              io.in(room.roomid.toString()).emit('lowBalance', {
                 userid: user.userid,
               });
             }
           } else if (room.players.find((ele) => ele === user.userid)) {
             if (isRoomExist.hostId === user.userid) {
-              socket.emit("tableOwner", isRoomExist);
+              socket.emit('tableOwner', isRoomExist);
             }
             if (
               !isRoomExist.players.find((ele) => ele.userid === user.userid)
@@ -5929,13 +5937,13 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
               const API_KEY = process.env.VIDEOSDK_API_KEY;
               const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
 
-              const options = { expiresIn: "10d", algorithm: "HS256" };
+              const options = { expiresIn: '10d', algorithm: 'HS256' };
 
               const payload = {
                 apikey: API_KEY,
-                permissions: ["ask_join"], // also accepts "ask_join"
+                permissions: ['ask_join'], // also accepts "ask_join"
               };
-              console.log("LINE NUMBER 5883");
+              console.log('LINE NUMBER 5883');
               const token = jwt.sign(payload, SECRET_KEY, options);
               const updateRoom = await roomModel.findOneAndUpdate(
                 { _id: isRoomExist._id },
@@ -5966,18 +5974,18 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
               );
               isRoomExist = updateRoom;
             }
-            io.in(room.roomid.toString()).emit("updatePlayerList", isRoomExist);
+            io.in(room.roomid.toString()).emit('updatePlayerList', isRoomExist);
           } else {
             socket.emit(
-              "privateTable",
-              "This is private table and you are not invited."
+              'privateTable',
+              'This is private table and you are not invited.'
             );
           }
         }
       } else {
         if (room.table.public) {
           if (
-            isRoomExist.gameType !== "poker1vs1_Tables" &&
+            isRoomExist.gameType !== 'poker1vs1_Tables' &&
             isRoomExist.players.length < 9 &&
             !room.players.find((ele) => ele === user.userid)
           ) {
@@ -6003,11 +6011,11 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
               const API_KEY = process.env.VIDEOSDK_API_KEY;
               const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
 
-              const options = { expiresIn: "10d", algorithm: "HS256" };
+              const options = { expiresIn: '10d', algorithm: 'HS256' };
 
               const payload = {
                 apikey: API_KEY,
-                permissions: ["ask_join"], // also accepts "ask_join"
+                permissions: ['ask_join'], // also accepts "ask_join"
               };
 
               const token = jwt.sign(payload, SECRET_KEY, options);
@@ -6039,18 +6047,18 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
                 { new: true }
               );
               io.in(room.roomid.toString()).emit(
-                "updatePlayerList",
+                'updatePlayerList',
                 updateRoom
               );
               await removeInvToPlayers(room.roomid, user.userid, gameType);
             } else {
-              io.in(room.roomid.toString()).emit("lowBalance", {
+              io.in(room.roomid.toString()).emit('lowBalance', {
                 userid: user.userid,
               });
             }
           } else if (room.players.find((ele) => ele === user.userid)) {
             if (isRoomExist.hostId === user.userid) {
-              socket.emit("tableOwner", isRoomExist);
+              socket.emit('tableOwner', isRoomExist);
             }
             if (
               !isRoomExist.players.find((ele) => ele.userid === user.userid)
@@ -6068,11 +6076,11 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
               const API_KEY = process.env.VIDEOSDK_API_KEY;
               const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
 
-              const options = { expiresIn: "10d", algorithm: "HS256" };
+              const options = { expiresIn: '10d', algorithm: 'HS256' };
 
               const payload = {
                 apikey: API_KEY,
-                permissions: ["ask_join"], // also accepts "ask_join"
+                permissions: ['ask_join'], // also accepts "ask_join"
               };
 
               const token = jwt.sign(payload, SECRET_KEY, options);
@@ -6105,9 +6113,9 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
               );
               isRoomExist = updateRoom;
             }
-            io.in(room.roomid.toString()).emit("updatePlayerList", isRoomExist);
+            io.in(room.roomid.toString()).emit('updatePlayerList', isRoomExist);
           } else {
-            socket.emit("newUser", {
+            socket.emit('newUser', {
               _id: room.roomid,
               userId: user.userid,
               allowWatcher: room.table.alloWatchers,
@@ -6140,11 +6148,11 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
               const API_KEY = process.env.VIDEOSDK_API_KEY;
               const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
 
-              const options = { expiresIn: "10d", algorithm: "HS256" };
+              const options = { expiresIn: '10d', algorithm: 'HS256' };
 
               const payload = {
                 apikey: API_KEY,
-                permissions: ["ask_join"], // also accepts "ask_join"
+                permissions: ['ask_join'], // also accepts "ask_join"
               };
 
               const token = jwt.sign(payload, SECRET_KEY, options);
@@ -6176,18 +6184,18 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
                 { new: true }
               );
               io.in(room.roomid.toString()).emit(
-                "updatePlayerList",
+                'updatePlayerList',
                 updateRoom
               );
               await removeInvToPlayers(room.roomid, user.userid, gameType);
             } else {
-              io.in(room.roomid.toString()).emit("lowBalance", {
+              io.in(room.roomid.toString()).emit('lowBalance', {
                 userid: user.userid,
               });
             }
           } else if (room.players.find((ele) => ele === user.userid)) {
             if (isRoomExist.hostId === user.userid) {
-              socket.emit("tableOwner", isRoomExist);
+              socket.emit('tableOwner', isRoomExist);
             }
             if (
               !isRoomExist.players.find((ele) => ele.userid === user.userid)
@@ -6205,11 +6213,11 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
               const API_KEY = process.env.VIDEOSDK_API_KEY;
               const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
 
-              const options = { expiresIn: "10d", algorithm: "HS256" };
+              const options = { expiresIn: '10d', algorithm: 'HS256' };
 
               const payload = {
                 apikey: API_KEY,
-                permissions: ["ask_join"], // also accepts "ask_join"
+                permissions: ['ask_join'], // also accepts "ask_join"
               };
 
               const token = jwt.sign(payload, SECRET_KEY, options);
@@ -6242,23 +6250,23 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
               );
               isRoomExist = updateRoom;
             }
-            io.in(room.roomid.toString()).emit("updatePlayerList", isRoomExist);
+            io.in(room.roomid.toString()).emit('updatePlayerList', isRoomExist);
           } else {
             socket.emit(
-              "privateTable",
-              "This is private table and you are not invited."
+              'privateTable',
+              'This is private table and you are not invited.'
             );
           }
         }
       }
     } else {
-      if (room.table.isGameFinished || room.table.status === "empty") {
+      if (room.table.isGameFinished || room.table.status === 'empty') {
         await updateInGameStatus(user.userid);
-        return socket.emit("gameFinished", "Game Already Finished.");
+        return socket.emit('gameFinished', 'Game Already Finished.');
       }
       if (
         room.table.admin === user.userid ||
-        room.table.status === "scheduled"
+        room.table.status === 'scheduled'
       ) {
         user.isAdmin = room.table.admin === user.userid;
         const deduct = await deductAmount(
@@ -6273,18 +6281,18 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
           const API_KEY = process.env.VIDEOSDK_API_KEY;
           const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
 
-          const options = { expiresIn: "10d", algorithm: "HS256" };
+          const options = { expiresIn: '10d', algorithm: 'HS256' };
 
           const payload = {
             apikey: API_KEY,
-            permissions: ["allow_join", "allow_mod"], // also accepts "ask_join"
+            permissions: ['allow_join', 'allow_mod'], // also accepts "ask_join"
           };
 
           const token = jwt.sign(payload, SECRET_KEY, options);
           const url = `${process.env.VIDEOSDK_API_ENDPOINT}/api/meetings`;
 
           const option = {
-            method: "POST",
+            method: 'POST',
             headers: { Authorization: token },
           };
 
@@ -6340,21 +6348,21 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
             meetingToken: token,
           });
           await removeInvToPlayers(room.roomid, user.userid, gameType);
-          io.in(room.roomid.toString()).emit("updatePlayerList", createRoom);
+          io.in(room.roomid.toString()).emit('updatePlayerList', createRoom);
           setTimeout(() => {
-            socket.emit("tableOwner", createRoom);
+            socket.emit('tableOwner', createRoom);
           }, 1000);
         } else {
-          io.in(room.roomid.toString()).emit("lowBalance", {
+          io.in(room.roomid.toString()).emit('lowBalance', {
             userid: user.userid,
           });
         }
       } else {
-        socket.emit("noAdmin", "Table admin is not available yet");
+        socket.emit('noAdmin', 'Table admin is not available yet');
       }
     }
   } catch (err) {
-    console.log("Error in checkRoomForConnectedUser =>", err);
+    console.log('Error in checkRoomForConnectedUser =>', err);
   }
 };
 
@@ -6362,9 +6370,9 @@ export const approveJoinRequest = async (data, socket, io) => {
   try {
     const roomData = await getDoc(data.gameType, data._id);
     if (!roomData) {
-      return socket.emit("noTable", "No such table exists");
+      return socket.emit('noTable', 'No such table exists');
     }
-    const userData = await getDoc("users", data.player.userid);
+    const userData = await getDoc('users', data.player.userid);
     if (userData) {
       userData.userid = data.player.userid;
       let items = await getPurchasedItem(
@@ -6378,8 +6386,8 @@ export const approveJoinRequest = async (data, socket, io) => {
       if (room != null) {
         let hand = [];
         let amount = 0;
-        if (room.media !== "no-media") {
-          amount = room.media === "video" ? 400 : 100;
+        if (room.media !== 'no-media') {
+          amount = room.media === 'video' ? 400 : 100;
           hand.push({
             amount,
             action: `${room.media}-game`,
@@ -6401,11 +6409,11 @@ export const approveJoinRequest = async (data, socket, io) => {
           const API_KEY = process.env.VIDEOSDK_API_KEY;
           const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
 
-          const options = { expiresIn: "10d", algorithm: "HS256" };
+          const options = { expiresIn: '10d', algorithm: 'HS256' };
 
           const payload = {
             apikey: API_KEY,
-            permissions: ["ask_join"], // also accepts "ask_join"
+            permissions: ['ask_join'], // also accepts "ask_join"
           };
 
           const token = jwt.sign(payload, SECRET_KEY, options);
@@ -6455,16 +6463,16 @@ export const approveJoinRequest = async (data, socket, io) => {
               const updatedRoom = await roomModel.findById(roomId);
 
               if (updatedRoom.gamestart) {
-                io.in(data._id.toString()).emit("joinInRunningGame", {
+                io.in(data._id.toString()).emit('joinInRunningGame', {
                   updatedRoom,
                   playerId: data.player.userid,
                 });
               } else
                 io.in(data._id.toString()).emit(
-                  "updatePlayerList",
+                  'updatePlayerList',
                   updatedRoom
                 );
-              io.in(data._id.toString()).emit("approved", {
+              io.in(data._id.toString()).emit('approved', {
                 playerid: userData.userid,
                 name: data.player.name,
               });
@@ -6474,25 +6482,25 @@ export const approveJoinRequest = async (data, socket, io) => {
                 data.gameType
               );
             } else {
-              io.in(data._id.toString()).emit("lowBalance", {
+              io.in(data._id.toString()).emit('lowBalance', {
                 userid: userData.userid,
               });
             }
           }
         } else {
-          console.log("ROOM FULL 6362");
-          socket.emit("roomFull", "Room is Already Full");
+          console.log('ROOM FULL 6362');
+          socket.emit('roomFull', 'Room is Already Full');
         }
       } else {
-        console.log("----NOT FOUND 6362----");
-        socket.emit("notFound", "Room not Found");
+        console.log('----NOT FOUND 6362----');
+        socket.emit('notFound', 'Room not Found');
       }
     } else {
-      socket.emit("actionError", "Action Error");
+      socket.emit('actionError', 'Action Error');
     }
   } catch (e) {
-    console.log("error : ", e);
-    socket.emit("actionError", "Action Error");
+    console.log('error : ', e);
+    socket.emit('actionError', 'Action Error');
   }
 };
 
@@ -6500,9 +6508,9 @@ export const rejectJoinRequest = async (data, socket, io) => {
   try {
     const roomData = await getDoc(data.gameType, data._id);
     if (!roomData) {
-      return socket.emit("noTable", "No such table exists");
+      return socket.emit('noTable', 'No such table exists');
     }
-    const userData = await getDoc("users", data.player.userid);
+    const userData = await getDoc('users', data.player.userid);
     if (userData) {
       userData.userid = data.player.userid;
       let room = await roomModel.findOne({
@@ -6521,30 +6529,30 @@ export const rejectJoinRequest = async (data, socket, io) => {
         });
         const updatedRoom = await roomModel.findById(roomId);
 
-        io.in(data._id.toString()).emit("updatePlayerList", updatedRoom);
-        io.in(data._id.toString()).emit("rejected", {
+        io.in(data._id.toString()).emit('updatePlayerList', updatedRoom);
+        io.in(data._id.toString()).emit('rejected', {
           playerid: data.player.userid,
         });
       } else {
-        console.log("----NOT FOUND 6404----");
-        socket.emit("notFound", "Room not Found");
+        console.log('----NOT FOUND 6404----');
+        socket.emit('notFound', 'Room not Found');
       }
     } else {
-      socket.emit("actionError", "Action Error");
+      socket.emit('actionError', 'Action Error');
     }
   } catch (e) {
-    console.log("error : ", e);
-    scoket.emit("actionError", "Action Error");
+    console.log('error : ', e);
+    scoket.emit('actionError', 'Action Error');
   }
 };
 
 export const startPreflopRound = async (data, socket, io) => {
   try {
-    console.log("INSIDE PREFOLP ROUND", data);
+    console.log('INSIDE PREFOLP ROUND', data);
     let room = await gameService.getGameById(data.tableId);
     console.log({ room: JSON.stringify(room) });
     if (room && room.players.length === 1) {
-      return socket.emit("OnlyOne", room);
+      return socket.emit('OnlyOne', room);
     }
     if (room && !room.gamestart) {
       await roomModel.findOneAndUpdate(
@@ -6554,12 +6562,12 @@ export const startPreflopRound = async (data, socket, io) => {
         },
         { new: true }
       );
-      console.log("Before preflopround function");
+      console.log('Before preflopround function');
       await preflopround(room, io);
     }
   } catch (e) {
-    console.log("error : ", e);
-    socket.emit("actionError", "Action Error");
+    console.log('error : ', e);
+    socket.emit('actionError', 'Action Error');
   }
 };
 
@@ -6567,9 +6575,9 @@ export const joinWatcherRequest = async (data, socket, io) => {
   try {
     const roomData = await getDoc(data.gameType, data._id);
     if (!roomData) {
-      return socket.emit("noTable", "No such table exists");
+      return socket.emit('noTable', 'No such table exists');
     }
-    const userData = await getDoc("users", data.userId);
+    const userData = await getDoc('users', data.userId);
     if (userData) {
       userData.userid = data.userId;
       if (roomData.table.alloWatchers) {
@@ -6584,15 +6592,15 @@ export const joinWatcherRequest = async (data, socket, io) => {
             (ele) => (ele.id ? ele.id : ele.userid) === data.userId
           )
         ) {
-          return socket.emit("alreadyJoin", "");
+          return socket.emit('alreadyJoin', '');
         }
         await addWatcher(data.userId, data._id, data.gameType);
         const deduct = await deductAmount(
           userData.stats.total.coins,
           data.userId,
-          "wacher",
+          'wacher',
           100,
-          "no-media"
+          'no-media'
         );
         const updateRoom = await roomModel.findOneAndUpdate(
           { _id: data.tableId },
@@ -6614,17 +6622,17 @@ export const joinWatcherRequest = async (data, socket, io) => {
           }
         );
 
-        socket.join(data._id.toString() + "watchers");
-        io.in(data._id.toString() + "watchers").emit("newWatcherJoin", {
+        socket.join(data._id.toString() + 'watchers');
+        io.in(data._id.toString() + 'watchers').emit('newWatcherJoin', {
           watcherId: userData.userid,
           roomData: updateRoom,
         });
       }
     } else {
-      return socket.emit("noUser", "No such User exists");
+      return socket.emit('noUser', 'No such User exists');
     }
   } catch (err) {
-    console.log("Error in JoinWatcher request  =>", err.message);
+    console.log('Error in JoinWatcher request  =>', err.message);
   }
 };
 
@@ -6646,7 +6654,7 @@ export const handleNewBet = async (data, socket, io) => {
       },
       {
         $inc: {
-          "watchers.$.wallet": -amount,
+          'watchers.$.wallet': -amount,
         },
       }
     );
@@ -6666,12 +6674,12 @@ export const handleNewBet = async (data, socket, io) => {
           update = await BetModal.findOneAndUpdate(
             { bet: { $elemMatch: { _id: sameBet._id } } },
             {
-              "bet.$.betAcceptBy": user,
-              "bet.$.isAccepted": true,
+              'bet.$.betAcceptBy': user,
+              'bet.$.isAccepted': true,
             },
             { new: true }
           );
-          if (update) socket.emit("betMatched");
+          if (update) socket.emit('betMatched');
         } else {
           update = await BetModal.findOneAndUpdate(
             { tableId },
@@ -6689,9 +6697,9 @@ export const handleNewBet = async (data, socket, io) => {
           );
         }
         if (update) {
-          socket.emit("betCreated");
-          io.in(_id.toString() + "watchers").emit("newBetPlaced", update);
-          io.in(_id.toString()).emit("watcherbet", data);
+          socket.emit('betCreated');
+          io.in(_id.toString() + 'watchers').emit('newBetPlaced', update);
+          io.in(_id.toString()).emit('watcherbet', data);
         }
       } else {
         const newbet = await BetModal.create({
@@ -6705,17 +6713,17 @@ export const handleNewBet = async (data, socket, io) => {
             },
           ],
         });
-        socket.emit("betCreated");
-        io.in(_id.toString() + "watchers").emit("newBetPlaced", newbet);
-        io.in(_id.toString()).emit("watcherbet", data);
+        socket.emit('betCreated');
+        io.in(_id.toString() + 'watchers').emit('newBetPlaced', newbet);
+        io.in(_id.toString()).emit('watcherbet', data);
       }
     } else {
-      socket.emit("lowBalanceBet", {
+      socket.emit('lowBalanceBet', {
         userid: user.userid,
       });
     }
   } catch (err) {
-    console.log("Error in handleNewBet =>", err.message);
+    console.log('Error in handleNewBet =>', err.message);
   }
 };
 
@@ -6726,7 +6734,7 @@ export const acceptBet = async (data, socket, io) => {
 
     const betmatch = bet.bet.find((ele) => ele._id.toString() === betId);
     if (betAcceptBy.userid === betmatch.betBy.userid) {
-      return socket.emit("yourBetCard", "You cant bet on your bet card");
+      return socket.emit('yourBetCard', 'You cant bet on your bet card');
     }
 
     const room = await roomModel.findOneAndUpdate(
@@ -6745,7 +6753,7 @@ export const acceptBet = async (data, socket, io) => {
       },
       {
         $inc: {
-          "watchers.$.wallet": -betmatch.betAmount,
+          'watchers.$.wallet': -betmatch.betAmount,
         },
       }
     );
@@ -6753,21 +6761,21 @@ export const acceptBet = async (data, socket, io) => {
       const update = await BetModal.findOneAndUpdate(
         { bet: { $elemMatch: { _id: betId } } },
         {
-          "bet.$.betAcceptBy": betAcceptBy,
-          "bet.$.isAccepted": true,
+          'bet.$.betAcceptBy': betAcceptBy,
+          'bet.$.isAccepted': true,
         },
         { new: true }
       );
       if (update) {
-        io.in(update._id.toString() + "watchers").emit("newBetPlaced", update);
+        io.in(update._id.toString() + 'watchers').emit('newBetPlaced', update);
       }
     } else {
-      socket.emit("lowBalanceBet", {
+      socket.emit('lowBalanceBet', {
         userid: betAcceptBy.userid,
       });
     }
   } catch (err) {
-    console.log("Error in Accept Bet", err.message);
+    console.log('Error in Accept Bet', err.message);
   }
 };
 
@@ -6800,13 +6808,13 @@ export const handleWatcherWinner = async (room, io) => {
               });
 
               watchers[watcherbetByIndex].hands.push({
-                action: "win-as-watcher",
+                action: 'win-as-watcher',
                 amount: item.betAmount,
                 date: new Date(),
                 isWatcher: true,
               });
               watchers[watcherBetAccetByIndex].hands.push({
-                action: "lose-as-watcher",
+                action: 'lose-as-watcher',
                 amount: item.betAmount,
                 date: new Date(),
                 isWatcher: true,
@@ -6819,13 +6827,13 @@ export const handleWatcherWinner = async (room, io) => {
               });
 
               watchers[watcherbetByIndex].hands.push({
-                action: "lose-as-watcher",
+                action: 'lose-as-watcher',
                 amount: item.betAmount,
                 date: new Date(),
                 isWatcher: true,
               });
               watchers[watcherBetAccetByIndex].hands.push({
-                action: "win-as-watcher",
+                action: 'win-as-watcher',
                 amount: item.betAmount,
                 date: new Date(),
                 isWatcher: true,
@@ -6840,13 +6848,13 @@ export const handleWatcherWinner = async (room, io) => {
               });
 
               watchers[watcherbetByIndex].hands.push({
-                action: "win-as-watcher",
+                action: 'win-as-watcher',
                 amount: item.betAmount,
                 date: new Date(),
                 isWatcher: true,
               });
               watchers[watcherBetAccetByIndex].hands.push({
-                action: "lose-as-watcher",
+                action: 'lose-as-watcher',
                 amount: item.betAmount,
                 date: new Date(),
                 isWatcher: true,
@@ -6859,13 +6867,13 @@ export const handleWatcherWinner = async (room, io) => {
               });
 
               watchers[watcherbetByIndex].hands.push({
-                action: "lose-as-watcher",
+                action: 'lose-as-watcher',
                 amount: item.betAmount,
                 date: new Date(),
                 isWatcher: true,
               });
               watchers[watcherBetAccetByIndex].hands.push({
-                action: "win-as-watcher",
+                action: 'win-as-watcher',
                 amount: item.betAmount,
                 date: new Date(),
                 isWatcher: true,
@@ -6876,7 +6884,7 @@ export const handleWatcherWinner = async (room, io) => {
           notBet.push({ userid: item.betBy.userid, amount: item.betAmount });
         }
       });
-      io.in(room._id.toString() + "watchers").emit("watcherWinners", {
+      io.in(room._id.toString() + 'watchers').emit('watcherWinners', {
         winner: watcherWinners,
       });
       watcherWinners.forEach(async (item, i) => {
@@ -6900,7 +6908,7 @@ export const handleWatcherWinner = async (room, io) => {
       );
     }
   } catch (err) {
-    console.log("Error in watcher winner Bet", err.message);
+    console.log('Error in watcher winner Bet', err.message);
   }
 };
 
@@ -6935,11 +6943,11 @@ export const findLoserAndWinner = async (room) => {
 
 export const finishedTableGame = async (room) => {
   try {
-    console.log("LEAVE API CALL 6885");
+    console.log('LEAVE API CALL 6885');
     const dd = await leaveApiCall(room);
     if (dd || room.finish) await roomModel.deleteOne({ _id: room._id });
   } catch (err) {
-    console.log("Error in finished game function =>", err.message);
+    console.log('Error in finished game function =>', err.message);
   }
 };
 
@@ -6959,7 +6967,7 @@ export const addBuyIn = async (
     if (room && room.watchers.find((ele) => ele.userid === userId)) {
       let hand = room.watchers.find((ele) => ele.userid === userId).hands;
       hand.push({
-        action: "buy-coins",
+        action: 'buy-coins',
         amount: amt,
         date: new Date(),
         isWatcher: true,
@@ -6971,10 +6979,10 @@ export const addBuyIn = async (
       wallet = wallet === false ? amt : wallet + amt;
 
       const updateRoom = await roomModel.findOneAndUpdate(
-        { tableId, "watchers.userid": userId },
+        { tableId, 'watchers.userid': userId },
         {
-          "watchers.$.wallet": wallet,
-          "watchers.$.hands": hand,
+          'watchers.$.wallet': wallet,
+          'watchers.$.hands': hand,
         },
         {
           new: true,
@@ -6982,13 +6990,13 @@ export const addBuyIn = async (
       );
 
       if (updateRoom) {
-        io.in(_id.toString()).emit("CoinsAdded", {
+        io.in(_id.toString()).emit('CoinsAdded', {
           userId,
           name: updateRoom.watchers.find((ele) => ele.userid === userId).name,
           amt,
         });
       } else {
-        socket.emit("addFail");
+        socket.emit('addFail');
       }
     } else {
       const updateRoom = await roomModel.findOneAndUpdate(
@@ -7010,17 +7018,17 @@ export const addBuyIn = async (
         }
       );
       if (updateRoom) {
-        io.in(_id.toString()).emit("CoinsAdded", {
+        io.in(_id.toString()).emit('CoinsAdded', {
           userId,
           name: updateRoom.players.find((ele) => ele.userid === userId).name,
           amt,
         });
       } else {
-        socket.emit("addFail");
+        socket.emit('addFail');
       }
     }
   } catch (err) {
-    console.log("Error in addBuyIn =>", err.message);
+    console.log('Error in addBuyIn =>', err.message);
     return true;
   }
 };
@@ -7029,11 +7037,11 @@ export const leaveAndJoinWatcher = async (data, io, socket) => {
   try {
     await doLeaveTable(data, io, socket);
     await joinWatcherRequest(data, socket, io);
-    socket.emit("joinAndLeave", {
-      msg: "Success",
+    socket.emit('joinAndLeave', {
+      msg: 'Success',
     });
   } catch (err) {
-    console.log("Error in leaveJoinWatcher =>", err.message);
+    console.log('Error in leaveJoinWatcher =>', err.message);
   }
 };
 
@@ -7082,13 +7090,13 @@ export const InvitePlayers = async (data, socket, io) => {
       await MessageModal.insertMany(sendMessageToInvitedUsers);
       await Notification.insertMany(sendNotificationToInvitedUsers);
 
-      socket.emit("invitationSend", {
+      socket.emit('invitationSend', {
         room: updateRoom,
       });
-      socket.emit("invitationSend");
+      socket.emit('invitationSend');
     }
   } catch (err) {
-    console.log("Error in InvitePlayer Function =>", err.message);
+    console.log('Error in InvitePlayer Function =>', err.message);
   }
 };
 
@@ -7096,11 +7104,11 @@ export const doLeaveWatcher = async (data, io, socket) => {
   try {
     const { tableId, userId, gameType } = data;
     const room = await roomModel.findOne({ tableId });
-    console.log("LEAVE API CALL 7046");
+    console.log('LEAVE API CALL 7046');
     const isCalled = await leaveApiCall(room, userId);
     if (isCalled) {
       const updatedRoom = await roomModel.findOneAndUpdate(
-        { tableId, "watchers.userid": userId },
+        { tableId, 'watchers.userid': userId },
         {
           $pull: {
             watchers: { userid: userId },
@@ -7111,14 +7119,14 @@ export const doLeaveWatcher = async (data, io, socket) => {
         }
       );
       if (updatedRoom) {
-        io.in(_id.toString()).emit("updatePlayerList", updatedRoom);
+        io.in(_id.toString()).emit('updatePlayerList', updatedRoom);
         setTimeout(() => {
-          socket.emit("reload");
+          socket.emit('reload');
         }, 30000);
       }
     }
   } catch (err) {
-    console.log("Error in doLeaveWatcher =>", err.message);
+    console.log('Error in doLeaveWatcher =>', err.message);
   }
 };
 
@@ -7128,7 +7136,7 @@ const createTransactionFromUsersArray = (roomId, users = []) => {
   const rankModelUpdate = [];
 
   users.forEach((el, i) => {
-    console.log("7013", JSON.stringify(el));
+    console.log('7013', JSON.stringify(el));
     let updatedAmount = el.coinsBeforeJoin;
     const userId = el.uid;
 
@@ -7139,19 +7147,19 @@ const createTransactionFromUsersArray = (roomId, users = []) => {
 
     const handsTransaction = el.hands.map((elem) => {
       console.log({ elem });
-      if (elem.action === "game-lose") {
-        console.log("GAME LOSE");
+      if (elem.action === 'game-lose') {
+        console.log('GAME LOSE');
         totalLossAmount += elem.amount;
         totalLose++;
       } else {
-        console.log("GAME WIN");
+        console.log('GAME WIN');
         totalWinAmount += elem.amount;
         totalWin++;
       }
 
       // Get each transaction last and update wallet amount
       const gameWinOrLoseamount =
-        elem.action === "game-lose" ? -elem.amount : elem.amount;
+        elem.action === 'game-lose' ? -elem.amount : elem.amount;
       const lastAmount = updatedAmount;
       updatedAmount = updatedAmount + gameWinOrLoseamount;
       return {
@@ -7161,7 +7169,7 @@ const createTransactionFromUsersArray = (roomId, users = []) => {
         transactionDetails: {},
         prevWallet: lastAmount,
         updatedWallet: updatedAmount,
-        transactionType: "poker",
+        transactionType: 'poker',
       };
     });
 
@@ -7172,7 +7180,7 @@ const createTransactionFromUsersArray = (roomId, users = []) => {
         rankModel.updateOne(
           {
             userId: convertMongoId(userId),
-            gameName: "poker",
+            gameName: 'poker',
           },
           {
             $inc: {
@@ -7197,7 +7205,7 @@ const createTransactionFromUsersArray = (roomId, users = []) => {
 export const leaveApiCall = async (room, userId) => {
   try {
     let player;
-    console.log("leave api call", room.players.length);
+    console.log('leave api call', room.players.length);
     if (room.runninground === 0) {
       player = room.players;
     } else if (room.runninground === 1) {
@@ -7223,21 +7231,21 @@ export const leaveApiCall = async (room, userId) => {
     ) {
       player = room.players;
     }
-    let url = "";
+    let url = '';
     if (!userId && room.handWinner.length === 0 && room.runninground === 0) {
-      url = "https://leave-table-t3e66zpola-uc.a.run.app/all"; // for all user leave before any hands
+      url = 'https://leave-table-t3e66zpola-uc.a.run.app/all'; // for all user leave before any hands
     } else if (
       userId &&
       room.handWinner.length === 0 &&
       room.runninground === 0
     ) {
-      url = "https://leave-table-t3e66zpola-uc.a.run.app/single"; // for one user leave before any hands
+      url = 'https://leave-table-t3e66zpola-uc.a.run.app/single'; // for one user leave before any hands
     } else if (userId && (room.runninground === 0 || room.runninground === 5)) {
-      url = "https://leave-tab-v2-posthand-one-t3e66zpola-uc.a.run.app/"; // for one user leave after/before hand
+      url = 'https://leave-tab-v2-posthand-one-t3e66zpola-uc.a.run.app/'; // for one user leave after/before hand
     } else if (userId && room.runninground !== 0 && room.runninground !== 5) {
-      url = "https://leave-tab-v2-inhand-one-t3e66zpola-uc.a.run.app/"; // for one user leave during hand
+      url = 'https://leave-tab-v2-inhand-one-t3e66zpola-uc.a.run.app/'; // for one user leave during hand
     } else {
-      url = "https://leave-tab-v2-posthand-all-t3e66zpola-uc.a.run.app/"; // for all user leave after playing any hand
+      url = 'https://leave-tab-v2-posthand-all-t3e66zpola-uc.a.run.app/'; // for all user leave after playing any hand
     }
 
     let allUsers = player.concat(room.watchers).concat(room.sitOut);
@@ -7265,9 +7273,9 @@ export const leaveApiCall = async (room, userId) => {
       console.log({ hands });
       console.log({ runningRound: room.runninground });
       if (room.runninground !== 0 && room.runninground !== 5) {
-        console.log("PUSHING HERE INTO ARRAY");
+        console.log('PUSHING HERE INTO ARRAY');
         hands.push({
-          action: "game-lose",
+          action: 'game-lose',
           amount: item.pot + item.prevPot || 0,
           date: new Date(),
           isWatcher: room.watchers.find(
@@ -7290,16 +7298,16 @@ export const leaveApiCall = async (room, userId) => {
       });
     });
 
-    console.log("USERS => ", JSON.stringify(users));
+    console.log('USERS => ', JSON.stringify(users));
 
     let payload = {
       mode:
         room.runninground === 0 || room.runninground === 5
-          ? "afterHand"
-          : "duringHand",
+          ? 'afterHand'
+          : 'duringHand',
       gameColl: room.gameType,
       _id: room._id,
-      buyIn: room.gameType === "pokerTournament_Tables" ? room.maxchips : 0,
+      buyIn: room.gameType === 'pokerTournament_Tables' ? room.maxchips : 0,
       playerCount: player.length,
       users: users,
       adminUid: room.hostId,
@@ -7324,7 +7332,7 @@ export const leaveApiCall = async (room, userId) => {
       const response = await Promise.allSettled([
         // Remove user from the room
         roomModel.updateOne(
-          { _id: room._id, "players.userid": convertMongoId(userId) },
+          { _id: room._id, 'players.userid': convertMongoId(userId) },
           {
             $pull: {
               players: { userid: userId },
@@ -7338,7 +7346,7 @@ export const leaveApiCall = async (room, userId) => {
         ...rankModelUpdate,
       ]);
       console.log(
-        "FINAL RESPONSE:1",
+        'FINAL RESPONSE:1',
         JSON.stringify(response.map((el) => el.value))
       );
     } else {
@@ -7350,21 +7358,21 @@ export const leaveApiCall = async (room, userId) => {
         ...rankModelUpdate,
       ]);
       console.log(
-        "FINAL RESPONSE:2",
+        'FINAL RESPONSE:2',
         JSON.stringify(response.map((el) => el.value))
       );
     }
 
     return true;
   } catch (err) {
-    console.log("Error in Leave APi call =>", err.message);
+    console.log('Error in Leave APi call =>', err.message);
     return false;
   }
 };
 
 export const finishHandApiCall = async (room, userId) => {
   try {
-    console.log("finish hand api call");
+    console.log('finish hand api call');
     let player;
     if (room.runninground === 0) {
       player = room.players;
@@ -7387,7 +7395,7 @@ export const finishHandApiCall = async (room, userId) => {
     let users = [];
     allUsers.forEach((item) => {
       if (!item.playing) return;
-      console.log("playing user hands ==>", item.hands);
+      console.log('playing user hands ==>', item.hands);
       let uid = item.id ? item.id : item.userid;
       users.push({
         uid,
@@ -7403,12 +7411,12 @@ export const finishHandApiCall = async (room, userId) => {
     let payload = {
       gameColl: room.gameType,
       _id: room._id,
-      buyIn: room.gameType === "pokerTournament_Tables" ? room.maxchips : 0,
+      buyIn: room.gameType === 'pokerTournament_Tables' ? room.maxchips : 0,
       playerCount: player.length,
       users: users,
       adminUid: room.hostId,
     };
-    console.log("payload =>", payload);
+    console.log('payload =>', payload);
 
     let newPlayers = [];
     for await (let item of room.players) {
@@ -7424,37 +7432,37 @@ export const finishHandApiCall = async (room, userId) => {
         players: newPlayers,
       }
     );
-    console.log("Players =>", newPlayers);
+    console.log('Players =>', newPlayers);
     return true;
   } catch (err) {
-    console.log("Error in finishHand APi call =>", err.message);
+    console.log('Error in finishHand APi call =>', err.message);
     return false;
   }
 };
 
 // NEW functions
 export const checkForGameTable = async (data, socket, io) => {
-  console.log("datadatadata", data);
+  console.log('datadatadata', data);
   try {
     const { gameId, userId, sitInAmount } = data;
     const game = await gameService.getGameById(gameId);
 
     if (!game || game.finish) {
-      console.log("7353 in function.js");
-      return socket.emit("notFound", {
-        message: "Game not found. Either game is finished or not exist",
+      console.log('7353 in function.js');
+      return socket.emit('notFound', {
+        message: 'Game not found. Either game is finished or not exist',
       });
     }
 
     const user = await userService.getUserById(userId);
 
     if (!user) {
-      return socket.emit("notAuthorized", {
-        message: "You are not authorized",
+      return socket.emit('notAuthorized', {
+        message: 'You are not authorized',
       });
     }
 
-    console.log("USER WALLET ", user.wallet);
+    console.log('USER WALLET ', user.wallet);
 
     const ifUserInGame = game.players.find((el) => {
       return el.userid?.toString() === userId.toString();
@@ -7465,7 +7473,7 @@ export const checkForGameTable = async (data, socket, io) => {
       parseFloat(game.smallBlind) > parseFloat(user.wallet) &&
       !ifUserInGame
     ) {
-      return socket.emit("notEnoughBalance", {
+      return socket.emit('notEnoughBalance', {
         message: "You don't have enough balance to sit on the table.",
       });
     }
@@ -7475,21 +7483,21 @@ export const checkForGameTable = async (data, socket, io) => {
       const gameUpdatedData = await roomModel.findOneAndUpdate(
         {
           _id: convertMongoId(gameId),
-          "players.userid": convertMongoId(userId),
+          'players.userid': convertMongoId(userId),
         },
         {
-          "players.$.playing": true,
+          'players.$.playing': true,
         }
       );
-      io.in(gameId).emit("updateGame", { game: gameUpdatedData });
+      io.in(gameId).emit('updateGame', { game: gameUpdatedData });
       return;
     }
 
     const checkIfInOtherGame = await gameService.checkIfUserInGame(userId);
     if (checkIfInOtherGame) {
-      console.log("User in the other table");
-      return socket.emit("inOtherGame", {
-        message: "You are also on other tabe.",
+      console.log('User in the other table');
+      return socket.emit('inOtherGame', {
+        message: 'You are also on other tabe.',
       });
     }
 
@@ -7499,21 +7507,21 @@ export const checkForGameTable = async (data, socket, io) => {
       userId,
       sitInAmount
     );
-    console.log("updateRoom", Object.keys(updatedRoom));
+    console.log('updateRoom', Object.keys(updatedRoom));
     if (Object.keys(updatedRoom).length > 0) {
       addUserInSocket(io, socket, gameId, userId);
-      io.in(gameId).emit("updateGame", { game: updatedRoom });
+      io.in(gameId).emit('updateGame', { game: updatedRoom });
       return;
     }
     // if (updatedRoom===) {
     //   socket.emit("tablefull", { message: "This table is full." });
     // }
     else {
-      socket.emit("tablefull", { message: "This table is full." });
+      socket.emit('tablefull', { message: 'This table is full.' });
     }
   } catch (error) {
-    console.log("Error in check for table =>", error);
-    socket.emit("socketError", error.message);
+    console.log('Error in check for table =>', error);
+    socket.emit('socketError', error.message);
   }
 };
 
@@ -7532,16 +7540,16 @@ export const playerTentativeAction = async (data, socket, io) => {
       // console.log("updatedGameupdatedGame", updatedGame);
       // io.in(gameId).emit("updateGame", { game: updatedGame });
     } else {
-      socket.emit("actionError", { msg: "No game found" });
+      socket.emit('actionError', { msg: 'No game found' });
     }
   } catch (error) {
-    console.log("Error in playerTentativeAction", error);
+    console.log('Error in playerTentativeAction', error);
   }
 };
 
 export const UpdateRoomChat = async (data, socket, io) => {
   try {
-    console.log("I am chat user", data);
+    console.log('I am chat user', data);
     const { tableId, message, userId } = data;
     let room = await roomModel.find({ _id: tableId });
     if (room) {
@@ -7566,23 +7574,23 @@ export const UpdateRoomChat = async (data, socket, io) => {
       );
       let room = await roomModel.findOne({ _id: tableId });
 
-      io.in(tableId).emit("updateChat", { chat: room?.chats });
+      io.in(tableId).emit('updateChat', { chat: room?.chats });
     } else {
-      io.in(tableId).emit("updateChat", { chat: [] });
+      io.in(tableId).emit('updateChat', { chat: [] });
     }
 
-    console.log("room : ----- >", room);
+    console.log('room : ----- >', room);
   } catch (error) {
-    console.log("Error in updateRoomChat", error);
+    console.log('Error in updateRoomChat', error);
   }
 };
 
 export const updateSeenBy = async (data, socket, io) => {
-  console.log("update chat is read ", data);
+  console.log('update chat is read ', data);
   try {
     const { userId, tableId } = data;
     let room = await roomModel.findOne({ _id: tableId });
-    console.log("room", room);
+    console.log('room', room);
     let filterdChats = room.chats.map((chat) => {
       if (chat.userId !== userId && chat.seenBy.indexOf(userId) < 0) {
         chat.seenBy.push(userId);
@@ -7595,18 +7603,18 @@ export const updateSeenBy = async (data, socket, io) => {
       { $set: { chats: filterdChats } }
     );
   } catch (err) {
-    console.log("error in updateChatIsRead", err);
+    console.log('error in updateChatIsRead', err);
   }
 };
 
 export const emitTyping = (data, socket, io) => {
   try {
-    console.log("typing socket is called");
+    console.log('typing socket is called');
     const { tableId, userId, typing } = data;
     console.log(typing);
-    io.in(tableId).emit("typingOnChat", { crrTypingUserId: userId, typing });
+    io.in(tableId).emit('typingOnChat', { crrTypingUserId: userId, typing });
   } catch (err) {
-    console.log("error in emit typing", err);
+    console.log('error in emit typing', err);
   }
 };
 
@@ -7615,18 +7623,18 @@ export const JoinTournament = async (data, socket, io) => {
     const { userId, tournamentId } = data;
     const checkTable = await roomModel.findOne({
       tournament: mongoose.Types.ObjectId(tournamentId),
-      "players.id": mongoose.Types.ObjectId(userId),
+      'players.id': mongoose.Types.ObjectId(userId),
     });
     if (!checkTable) {
       await Tournament(userId, tournamentId, socket);
 
-      return socket.emit("alreadyInTournament", {
-        message: "You joined in game.",
+      return socket.emit('alreadyInTournament', {
+        message: 'You joined in game.',
         code: 200,
       });
     } else {
-      return socket.emit("alreadyInTournament", {
-        message: "You are already in game.",
+      return socket.emit('alreadyInTournament', {
+        message: 'You are already in game.',
         code: 400,
       });
     }
@@ -7663,7 +7671,7 @@ const pushPlayerInRoom = async (
       .lean();
   }
   if (checkTournament?.rooms?.length && lastRoom?.players?.length < 9) {
-    console.log("push player to ==>", lastRoom._id);
+    console.log('push player to ==>', lastRoom._id);
     roomId = lastRoom._id;
     let players = lastRoom.players;
     players.push({
@@ -7735,8 +7743,8 @@ const pushPlayerInRoom = async (
       { $inc: { havePlayers: 1 }, $push: { rooms: roomId } },
       { upsert: true, new: true }
     );
-    const getAllTournament = await tournamentModel.find({}).populate("rooms");
-    socket.emit("updatePlayerList", getAllTournament);
+    const getAllTournament = await tournamentModel.find({}).populate('rooms');
+    socket.emit('updatePlayerList', getAllTournament);
     const updatedUser = await User.findOneAndUpdate(
       { _id: userData._id },
       { $push: { tournaments: { tournamentId, roomId } } },
@@ -7746,12 +7754,12 @@ const pushPlayerInRoom = async (
 };
 
 export const activateTournament = async (io) => {
-  console.log("activatedTournament");
+  console.log('activatedTournament');
   const checkTournament = await tournamentModel
     .findOne({
-      startDate: "2023-02-08T10:28:00.000+00:00",
+      startDate: '2023-02-08T10:28:00.000+00:00',
     })
-    .populate("rooms")
+    .populate('rooms')
     .lean();
 
   if (checkTournament) {
@@ -7759,7 +7767,7 @@ export const activateTournament = async (io) => {
     each(
       checkTournament.rooms,
       async function (room, next) {
-        console.log("room", room);
+        console.log('room', room);
         await preflopround(room, io);
         next();
       },
@@ -7772,14 +7780,14 @@ export const activateTournament = async (io) => {
             await reArrangeTables(checkTournament._id, io);
           } else {
             clearInterval(rearrangeInterval);
-            console.log("We got tournament winner.");
+            console.log('We got tournament winner.');
           }
         }, 120000);
         startLevelInterval(checkTournament._id);
       }
     );
   } else {
-    console.log("Tournament not found");
+    console.log('Tournament not found');
   }
 
   //console.log("checkTournament", checkTournament);
