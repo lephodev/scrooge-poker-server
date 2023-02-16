@@ -260,6 +260,9 @@ let returnSocket = (io) => {
     socket.on('showCard', (data) => {
       io.in(data.gameId).emit('showCard', data);
     });
+    socket.on('hideCard', (data) => {
+      io.in(data.gameId).emit('hideCard', data);
+    });
 
     socket.on('disconnect', async () => {
       try {
