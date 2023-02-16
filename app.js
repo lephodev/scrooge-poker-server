@@ -40,18 +40,21 @@ const io = socket(server, {
 // });
 
 const returnCron = async () => {
-  const job1 = new CronJob("* * * * * *", async () => {
+  const job1 = new CronJob("* * * * *", async () => {
     const d = new Date();
     // console.log("Date-->", typeof new Date(new Date().toDateString()));
     const tour = await tournamentModel.find({
-      startDate: new Date(new Date().toLocaleDateString()),
+      startTime: new Date().toLocaleTimeString(),
     });
-    // console.log("tour", tour);
-    // activateTournament(io);
+    console.log("tour", tour, new Date().toLocaleTimeString());
+    if (tour.length > 0) {
+      activateTournament(io);
+    }
   });
   job1.start();
 };
 returnCron();
+
 const whitelist = ["http://localhost:3000", "https://poker.scrooge.casino"];
 const corsOptions = {
   origin: function (origin, callback) {
