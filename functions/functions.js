@@ -7761,13 +7761,13 @@ const pushPlayerInRoom = async (
 export const activateTournament = async (io) => {
   console.log('activatedTournament')
   const date = new Date().toISOString().split('T')[0]
-  const time = `${new Date().getHours()}:${new Date().getMinutes()}:00`
+  const time = `${new Date().getUTCHours()}:${new Date().getUTCMinutes()}:00`
   console.log("tournament date and time",{date:date,time:time})
   const checkTournament = await tournamentModel
     .findOne(
         {
           startDate: date,
-          startTime:time.toString()
+          startTime:time
         },
     )
     .populate('rooms')
