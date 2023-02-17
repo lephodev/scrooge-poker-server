@@ -3,7 +3,7 @@ import User from "../landing-server/models/user.model.js";
 import roomModel from "../models/room.js";
 import mongoose from "mongoose";
 import { JoinTournament } from "../functions/functions.js";
-sock
+
 var cron = require("node-cron");
 
 // cron.schedule("* * * * *", () => {

@@ -36,7 +36,7 @@ const io = socket(server, {
 
 returnCron(io);
 
-const whitelist = ["http://localhost:3002", "https://poker.scrooge.casino"];
+const whitelist = ["http://localhost:3000","http://localhost:3001", "https://poker.scrooge.casino"];
 const corsOptions = {
   origin: function (origin, callback) {
     if (whitelist.indexOf(origin) !== -1) {

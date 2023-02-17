@@ -270,13 +270,15 @@ export const preflopPlayerPush = async (players, roomid) => {
 }
 
 export const preflopround = async (room, io) => {
-  console.log("i in preflop round-->",io)
-  await updateRoomForNewHand(room._id, io)
-  room = await roomModel.findOne(room._id).lean()
-  let playingPlayer = room.players.filter((el) => el.playing && el.wallet > 0)
-  let positions = room.players.map((pos) => pos.position)
-  let isNewLeave = false
-  let i = 0
+  console.log("io", io);
+  await updateRoomForNewHand(room._id, io);
+  room = await roomModel.findOne(room._id).lean();
+  let playingPlayer = room?.players?.filter(
+    (el) => el.playing && el.wallet > 0
+  );
+  let positions = room?.players?.map((pos) => pos.position);
+  let isNewLeave = false;
+  let i = 0;
   for (let el of positions) {
     if (el !== i) {
       isNewLeave = true
@@ -392,7 +394,7 @@ export const preflopround = async (room, io) => {
                     await roomModel.updateOne(
                       {
                         _id: room._id,
-                        'preflopround.position': player.position,
+                        "preflopround.position": player?.position,
                       },
                       {
                         $inc: {
@@ -480,7 +482,6 @@ export const preflopround = async (room, io) => {
                     'preflopround.$.wallet': -smallBlindAmt,
                     'preflopround.$.pot': +smallBlindAmt,
                   },
-
                   smallBlind: smallBlindAmt,
                   smallBlindPosition,
                   dealerPosition,
@@ -2299,12 +2300,12 @@ export const updateRoomForNewHand = async (roomid, io) => {
     try {
       const roomData = await roomModel
         .findOne({ _id: convertMongoId(roomid) })
-        .populate('tournament')
-      let newHandPlayer = []
-      let buyin = roomData.buyin
-      const bigBlindAmt = roomData.bigBlind
-      const smallBlindAmt = roomData.smallBlind
-      let playerData = []
+        .populate("tournament");
+      let newHandPlayer = [];
+      let buyin = roomData?.buyin;
+      const bigBlindAmt = roomData.bigBlind;
+      const smallBlindAmt = roomData.smallBlind;
+      let playerData = [];
       switch (roomData.runninground) {
         case 0:
           playerData = roomData.players
@@ -3820,8 +3821,8 @@ export const socketDoBet = async (dta, io, socket) => {
         .lean()
 
       if (data !== null) {
-        if (data.bigBlind <= amt) {
-          const walletAmt = await getPlayerwallet(roomid, playerid)
+        if (data.raiseAmount <= amt) {
+          const walletAmt = await getPlayerwallet(roomid, playerid);
           if (walletAmt >= amt) {
             await doBet(roomid, playerid, io, amt)
           } else {
@@ -3849,13 +3850,14 @@ export const socketDoBet = async (dta, io, socket) => {
 }
 
 export const doRaise = async (roomid, playerid, io, amt) => {
-  const roomData = await roomModel.findOne({ _id: roomid })
-  let updatedRoom = null
-  let res = true
-  let filterData = null
-  let newRaiseAmt = null
-  let roundData = null
-  let p
+  console.log("amt====>>", amt);
+  const roomData = await roomModel.findOne({ _id: roomid });
+  let updatedRoom = null;
+  let res = true;
+  let filterData = null;
+  let newRaiseAmt = null;
+  let roundData = null;
+  let p;
 
   const filterDta = roomData.players.filter(
     (el) => el.userid.toString() === roomData.timerPlayer.toString(),
@@ -4096,6 +4098,8 @@ export const socketDoRaise = async (dta, io, socket) => {
       let playerid = userid
       let amt = dta.amount
 
+      console.log("amtamtamt", amt);
+
       const data = await roomModel
         .findOne(
           {
@@ -4107,8 +4111,8 @@ export const socketDoRaise = async (dta, io, socket) => {
         .lean()
 
       if (data !== null) {
-        if (data.raiseAmount * 2 <= amt) {
-          const walletAmt = await getPlayerwallet(roomid, playerid)
+        if (data.raiseAmount <= amt) {
+          const walletAmt = await getPlayerwallet(roomid, playerid);
           if (walletAmt >= amt) {
             await doRaise(roomid, playerid, io, amt)
           } else {
@@ -4141,11 +4145,11 @@ export const doCheck = async (roomid, playerid, io) => {
   let res = true
   let filterData = null
 
-  const filterDta = roomData.players.filter(
-    (el) => el.userid.toString() === roomData.timerPlayer.toString(),
-  )
+  // const filterDta = roomData.players.filter(
+  //   (el) => el?.userid.toString() === roomData?.timerPlayer?.toString()
+  // );
 
-  if (roomData.timerPlayer.toString() === playerid.toString()) {
+  if (roomData?.timerPlayer.toString() === playerid.toString()) {
     switch (roomData.runninground) {
       case 1:
         updatedRoom = await roomModel.findOneAndUpdate(
@@ -4760,11 +4764,15 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     let updatedRoomPlayers = await roomModel.findOne({
       _id: roomid,
     })
+    console.log("auto hand--->",updatedRoom)
     if (!updatedRoom.pause) {
+      console.log("auto hand--->",updatedRoom)
       if (updatedRoom.autoNextHand) {
         preflopround(updatedRoom, io)
       } else {
+        console.log("updated room player-->",updatedRoomPlayers)
         let havemoney = updatedRoomPlayers.players.filter((el) => el.wallet > 0)
+        console.log("havemoney-->",havemoney)
         if (havemoney.length > 1) {
           console.log('Table stop waiting for start game')
           io.in(updatedRoom._id.toString()).emit('tablestopped', {
@@ -4813,10 +4821,11 @@ export const getPlayerwallet = async (roomid, playerid) => {
   switch (roomData.runninground) {
     case 1:
       filterData = roomData.preflopround.filter(
-        (el) => el.id.toString() === playerid.toString(),
-      )
-      res = filterData[0].wallet
-      return res
+        (el) => el.id.toString() === playerid.toString()
+      );
+      res = filterData[0].wallet;
+      console.log("resresres", res);
+      return res;
 
     case 2:
       filterData = roomData.flopround.filter(
@@ -7508,7 +7517,7 @@ export const playerTentativeAction = async (data, socket, io) => {
       )
       const updatedGame = await gameService.getGameById(gameId)
       // console.log("updatedGameupdatedGame", updatedGame);
-      io.in(gameId).emit('updateGame', { game: updatedGame })
+      // io.in(gameId).emit("updateGame", { game: updatedGame });
     } else {
       socket.emit('actionError', { msg: 'No game found' })
     }
@@ -7590,18 +7599,34 @@ export const emitTyping = (data, socket, io) => {
 
 export const JoinTournament = async (data, socket) => {
   try {
-    const { userId, tournamentId } = data
+    console.log("Fees--->",data)
+    const { userId, tournamentId,fees } = data
     const checkTable = await roomModel.findOne({
       tournament: mongoose.Types.ObjectId(tournamentId),
       'players.id': mongoose.Types.ObjectId(userId),
     })
-    if (!checkTable) {
-      await Tournament(userId, tournamentId, socket)
 
-      return socket.emit('alreadyInTournament', {
-        message: 'You joined in game.',
-        code: 200,
-      })
+    if (!checkTable) {
+      const userData = await User.findById(userId).lean()
+      if(userData?.wallet >=fees){
+        await Tournament(userId, tournamentId,fees, socket)
+      const updatedUser= await User.findOneAndUpdate(
+        { _id: userId },
+        { $inc: { wallet: -parseFloat(fees) } },
+        { new: true },
+      )
+        return socket.emit('alreadyInTournament', {
+          message: 'You joined in game.',
+          code: 200,
+          user:updatedUser || {}
+        })
+      }else{
+        return socket.emit('notEnoughAmount', {
+          message: 'You have not much amount to join.',
+          code: 400,
+        })
+      }
+ 
     } else {
       return socket.emit('alreadyInTournament', {
         message: 'You are already in game.',
@@ -7613,14 +7638,14 @@ export const JoinTournament = async (data, socket) => {
   }
 }
 
-const Tournament = async (userId, tournamentId, socket) => {
+const Tournament = async (userId, tournamentId,tournamentAmount, socket) => {
   const userData = await User.findById(userId).lean()
   let checkTournament = await tournamentModel
     .findOne({ _id: tournamentId })
     .lean()
   if (checkTournament) {
     if (checkTournament.havePlayers < 10000) {
-      await pushPlayerInRoom(checkTournament, userData, tournamentId, socket)
+      await pushPlayerInRoom(checkTournament, userData, tournamentId,tournamentAmount, socket)
     }
   }
 }
@@ -7629,11 +7654,12 @@ const pushPlayerInRoom = async (
   checkTournament,
   userData,
   tournamentId,
+  tournamentAmount,
   socket,
 ) => {
   // console.log("checkTournamentin PushPlayer", checkTournament);
   let roomId
-  const { username, wallet, _id, avatar, profile } = userData
+  const { username,  _id, avatar, profile } = userData
   let lastRoom = null
   if (checkTournament?.rooms?.length) {
     lastRoom = await roomModel
@@ -7649,7 +7675,7 @@ const pushPlayerInRoom = async (
       userid: _id,
       id: _id,
       photoURI: avatar ? avatar : profile ? profile : img,
-      wallet: wallet,
+      wallet: tournamentAmount,
       position: players.length,
       missedSmallBlind: false,
       missedBigBlind: false,
@@ -7690,7 +7716,7 @@ const pushPlayerInRoom = async (
           userid: _id,
           id: _id,
           photoURI: avatar ? avatar : profile ? profile : img,
-          wallet: wallet,
+          wallet: tournamentAmount,
           position: 0,
           missedSmallBlind: false,
           missedBigBlind: false,
@@ -7702,6 +7728,7 @@ const pushPlayerInRoom = async (
         },
       ],
       tournament: tournamentId,
+      autoNextHand:true
     }
 
     const roomData = new roomModel(payload)
@@ -7727,7 +7754,6 @@ export const activateTournament = async (io) => {
   console.log('activatedTournament')
   const date = new Date().toISOString().split('T')[0]
   const time = `${new Date().getHours()}:${new Date().getMinutes()}:00`
-  console.log('date and time-->', date.toString(), time.toString())
   const checkTournament = await tournamentModel
     .findOne(
         {
@@ -7737,9 +7763,7 @@ export const activateTournament = async (io) => {
     )
     .populate('rooms')
     .lean()
-  console.log('Check tpurna ment--->', checkTournament)
   if (checkTournament) {
-    console.log("Helo--->")
     //preflopround()
     each(
       checkTournament.rooms,
