@@ -209,37 +209,31 @@ const sendAcknowledgementForJoinTournament = async () => {
       .find({})
       .populate({
         path: 'rooms',
-        populate: {
-          path: 'rooms.players.userid',
-          model:'User',
-          select:{
-            phone:1,
-            email:1
-          }
-        },
       })
       .exec()
-      
-      findTournament.forEach((el)=>{ 
-       const matched= subSubtractTimeForSendMail(el.tournamentDate,el.startDate)
-       if(matched){
-        console.log("client url--->",process.env.CLIENTURL)
-        const room= findRoom(el.rooms)
-        const {players,roomId}=room
-        if(players&& players?.length >0){
-          players.forEach(async(player)=>{
-            const payload={
-              sender:player.userid,
-              receiver:player.userid,
-              message: "Tournament start in 2 minutes",
-              url: `${process.env.CLIENTURL}/table?gamecollection=poker&tableid=${roomId}`,
-            }
-            await Notification.create(payload)
-          })
-        }
-       }
-      })
-      
+      console.log("Find tournamnent-->",findTournament)
+      if(findTournament?.length >0){
+        findTournament.forEach((el)=>{ 
+          const matched= subSubtractTimeForSendMail(el.tournamentDate,el.startDate)
+          if(matched){
+           console.log("client url--->",process.env.CLIENTURL)
+           const room= findRoom(el.rooms)
+           const {players,roomId}=room
+           if(players&& players?.length >0){
+             players.forEach(async(player)=>{
+               const payload={
+                 sender:player.userid,
+                 receiver:player.userid,
+                 message: "Poker tournament start in 2 minutes",
+                 url: `${process.env.CLIENTURL}/table?gamecollection=poker&tableid=${roomId}`,
+               }
+               await Notification.create(payload)
+             })
+           }
+          }
+         })
+      }
+      return     
   } catch (err) {
     console.log('Error in send acknowledge--->', err)
   }
