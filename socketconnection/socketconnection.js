@@ -102,6 +102,7 @@ let returnSocket = (io) => {
       let room = await roomModel.findOne({
         _id: convertMongoId(data.roomid),
       });
+      console.log("dofold");
       data.roomid = room._id;
       await socketDoFold(data, io, socket);
     });
@@ -139,7 +140,7 @@ let returnSocket = (io) => {
     });
 
     socket.on("doallin", async (data) => {
-      console.log("INSIDE ALL IN");
+      console.log("INSIDE ALL IN", data);
       let room = await roomModel.findOne({
         _id: data.roomid,
       });
@@ -254,6 +255,13 @@ let returnSocket = (io) => {
         id: socket.id,
         userid: payload.userid,
       });
+    });
+
+    socket.on("showCard", (data) => {
+      io.in(data.gameId).emit("showCard", data);
+    });
+    socket.on('hideCard', (data) => {
+      io.in(data.gameId).emit('hideCard', data);
     });
 
     socket.on("disconnect", async () => {

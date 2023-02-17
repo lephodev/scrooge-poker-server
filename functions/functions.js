@@ -3162,6 +3162,8 @@ export const doFold = async (roomid, playerid, io) => {
   if (roomData.lastAction === 'check') {
     lastAction = 'check'
   }
+  console.log("playerid ===>" + playerid);
+  console.log("roomdata ==>" + roomData);
   if (
     roomData.timerPlayer &&
     roomData.timerPlayer.toString() === playerid.toString()
@@ -3180,13 +3182,16 @@ export const doFold = async (roomid, playerid, io) => {
           },
           {
             new: true,
-          },
-        )
+          }
+        );
+        console.log("updatedroom===>" + updatedRoom);
         filterData = updatedRoom.preflopround.filter(
           (el) => el.id.toString() === playerid.toString(),
         )
 
-        io.in(updatedRoom._id.toString()).emit('actionperformed', {
+        console.log("filterData =>>" + filterData);
+
+        io.in(updatedRoom._id.toString()).emit("actionperformed", {
           id: playerid,
           action: 'fold',
         })
@@ -3402,10 +3407,13 @@ export const socketDoFold = async (dta, io, socket) => {
           },
           { _id: 1 },
         )
-        .lean()
-
+        .lean();
+      console.log(data);
+      console.log("===");
       if (data !== null) {
-        await doFold(roomid, playerid, io)
+        console.log(data);
+        console.log("===");
+        await doFold(roomid, playerid, io);
       } else {
         socket.emit('actionError', { code: 400, msg: 'Data not found' })
       }
@@ -4414,7 +4422,8 @@ export const doAllin = async (roomid, playerid, io) => {
             amt: roundData[0].wallet + roundData[0].pot,
             round: roomData.runninground,
             wallet: roundData[0].wallet,
-          })
+          });
+
           updatedRoom = await roomModel.findOneAndUpdate(
             {
               _id: roomid,
@@ -4422,12 +4431,12 @@ export const doAllin = async (roomid, playerid, io) => {
             },
             {
               $inc: {
-                'turnround.$.wallet': -roundData[0].wallet,
-                'turnround.$.pot': +roundData[0].wallet,
-                'turnround.$.tentativeAction': null,
+                "turnround.$.wallet": -roundData[0].wallet,
+                "turnround.$.pot": +roundData[0].wallet,
               },
-              'turnround.$.action': true,
-              'turnround.$.actionType': 'all-in',
+              "turnround.$.action": true,
+              "turnround.$.tentativeAction": null,
+              "turnround.$.actionType": "all-in",
 
               raisePlayerPosition: raisePlayerPosition,
               raiseAmount: raiseAmount,
@@ -4471,10 +4480,9 @@ export const doAllin = async (roomid, playerid, io) => {
                 'riverround.$.wallet': -roundData[0].wallet,
                 'riverround.$.pot': +roundData[0].wallet,
               },
-              'riverround.$.action': true,
-              'riverround.$.tentativeAction': null,
-              'riverround.$.actionType': 'all-in',
-
+              "riverround.$.action": true,
+              "riverround.$.tentativeAction": null,
+              "riverround.$.actionType": "all-in",
               raisePlayerPosition: raisePlayerPosition,
               raiseAmount: raiseAmount,
               lastAction: 'all-in',
