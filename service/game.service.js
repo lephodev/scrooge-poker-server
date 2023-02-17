@@ -4,6 +4,8 @@ import mongoose from 'mongoose'
 import blackjackRoom from './../models/blackjackRoom.js'
 import tournamentModel from '../models/tournament.js'
 import smsService from './sms.service.js'
+import moment from 'moment'
+import Notification from '../models/notificationModal.js'
 
 const converMongoId = (id) => mongoose.Types.ObjectId(id)
 const maxPlayer = 9;
@@ -184,26 +186,54 @@ const playerTentativeActionSelection = async (game, userId, actionType) => {
     console.log('Error in playerTentativeActionSelection', error)
   }
 }
+const subSubtractTimeForSendMail=(tournamentDate,startDate)=>{
+  const currentDate = new Date().toISOString().split('T')[0]
+  const oldTime=new Date(tournamentDate)
+  const newTime=oldTime.setMinutes(oldTime.getMinutes()-2)
+  const beforeTime=`${new Date(newTime).getHours()}:${new Date(newTime).getMinutes()}:00`
+  const currentTime=`${new Date().getHours()}:${new Date().getMinutes()}:00`
+  return currentDate===startDate&&beforeTime===currentTime
+}
+const findRoom=(rooms)=>{
+  let data=[]
+  let roomId
+  rooms.map((el)=>{
+    data=[...el.players]
+    roomId=el._id
+  })
+  return {players:data,roomId}
+}
 const sendAcknowledgementForJoinTournament = async () => {
   try {
     const findTournament = await tournamentModel
       .find({})
       .populate({
         path: 'rooms',
-        populate: {
-          path: 'players.userid',
-          model:'User',
-          select:{
-            phone:1,
-            email:1
-          }
-        },
       })
       .exec()
-    // findTournament.forEach(async(el) => {
-    //   var date1 = new Date()
-    //   console.log("date match--->",new Date(date1.setHours(23,59,0,0)),el.name,new Date(el.startDate))
-    // })  
+      console.log("Find tournamnent-->",findTournament)
+      if(findTournament?.length >0){
+        findTournament.forEach((el)=>{ 
+          const matched= subSubtractTimeForSendMail(el.tournamentDate,el.startDate)
+          if(matched){
+           console.log("client url--->",process.env.CLIENTURL)
+           const room= findRoom(el.rooms)
+           const {players,roomId}=room
+           if(players&& players?.length >0){
+             players.forEach(async(player)=>{
+               const payload={
+                 sender:player.userid,
+                 receiver:player.userid,
+                 message: "Poker tournament start in 2 minutes",
+                 url: `${process.env.CLIENTURL}/table?gamecollection=poker&tableid=${roomId}`,
+               }
+               await Notification.create(payload)
+             })
+           }
+          }
+         })
+      }
+      return     
   } catch (err) {
     console.log('Error in send acknowledge--->', err)
   }

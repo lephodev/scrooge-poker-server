@@ -4,6 +4,9 @@ const Schema = mongoose.Schema;
 const tournamentSchema = new Schema({
   name: { type: String, required: true },
   tournamentFee: { type: String, required: true },
+  tournamentDate: { type: Date, default:()=>{
+    return new Date()
+  }},
   levels: { type: Object, required: true },
   startDate: { type: String, required: true},
   startTime: { type: String, required: true},
