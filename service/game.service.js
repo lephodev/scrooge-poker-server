@@ -189,10 +189,10 @@ const playerTentativeActionSelection = async (game, userId, actionType) => {
 const subSubtractTimeForSendMail=(tournamentDate,startDate)=>{
   const currentDate = new Date().toISOString().split('T')[0]
   const oldTime=new Date(tournamentDate)
-  const newTime=oldTime.setMinutes(oldTime.getMinutes()-2)
-  const beforeTime=`${new Date(newTime).getHours()}:${new Date(newTime).getMinutes()}:00`
-  const currentTime=`${new Date().getHours()}:${new Date().getMinutes()}:00`
-  console.log("current time-->",{curTime:currentTime,befor:beforeTime,oltime:oldTime,ti:oldTime.toLocaleTimeString(),newDate:new Date().toLocaleTimeString()})
+  const newTime=oldTime.setMinutes(oldTime.getUTCMinutes()-2)
+  const beforeTime=`${new Date(newTime).getUTCHours()}:${new Date(newTime).getUTCMinutes()}:00`
+  const currentTime=`${new Date().getUTCHours()}:${new Date().getUTCMinutes()}:00`
+  console.log("ne date-->",{nt:newTime,before:beforeTime,curTime:currentTime})
   return currentDate===startDate&&beforeTime===currentTime
 }
 const findRoom=(rooms)=>{
@@ -212,7 +212,6 @@ const sendAcknowledgementForJoinTournament = async () => {
         path: 'rooms',
       })
       .exec()
-      console.log("Find tournamnent-->",findTournament)
       if(findTournament?.length >0){
         findTournament.forEach((el)=>{ 
           const matched= subSubtractTimeForSendMail(el.tournamentDate,el.startDate)
