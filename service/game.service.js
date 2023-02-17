@@ -192,6 +192,7 @@ const subSubtractTimeForSendMail=(tournamentDate,startDate)=>{
   const newTime=oldTime.setMinutes(oldTime.getMinutes()-2)
   const beforeTime=`${new Date(newTime).getHours()}:${new Date(newTime).getMinutes()}:00`
   const currentTime=`${new Date().getHours()}:${new Date().getMinutes()}:00`
+  console.log("current time-->",{curTime:currentTime,befor:beforeTime,oltime:oldTime,ti:oldTime.toLocaleTimeString(),newDate:new Date().toLocaleTimeString()})
   return currentDate===startDate&&beforeTime===currentTime
 }
 const findRoom=(rooms)=>{
