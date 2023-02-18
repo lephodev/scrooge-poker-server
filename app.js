@@ -8,7 +8,6 @@ import passport, { authenticate } from "passport";
 import socket from "socket.io";
 import roomModel from "./models/room";
 import {
-  activateTournament,
   doLeaveTable,
   doLeaveWatcher,
 } from "./functions/functions";
@@ -24,7 +23,7 @@ import tournamentRoute from "./routes/tournamentRoutes.js";
 import auth from "./landing-server/middlewares/auth.js";
 import mongoose from "mongoose";
 import User from "./landing-server/models/user.model";
-import { CronJob } from "cron";
+import returnCron from "./cron/cron";
 import tournamentModel from "./models/tournament";
 import { log } from "console";
 
@@ -35,27 +34,9 @@ const io = socket(server, {
   pingTimeout: 5000,
 });
 
-// cron.schedule("* * * * *", () => {
-//   activateTournament(io);
-// });
+returnCron(io);
 
-const returnCron = async () => {
-  const job1 = new CronJob("* * * * *", async () => {
-    const d = new Date();
-    // console.log("Date-->", typeof new Date(new Date().toDateString()));
-    const tour = await tournamentModel.find({
-      startTime: new Date().toLocaleTimeString(),
-    });
-    console.log("tour", tour, new Date().toLocaleTimeString());
-    if (tour.length > 0) {
-      activateTournament(io);
-    }
-  });
-  job1.start();
-};
-returnCron();
-
-const whitelist = ["http://localhost:3000", "https://poker.scrooge.casino"];
+const whitelist = ["http://localhost:3000","http://localhost:3001", "https://poker.scrooge.casino"];
 const corsOptions = {
   origin: function (origin, callback) {
     if (whitelist.indexOf(origin) !== -1) {
@@ -86,7 +67,7 @@ if (process.env.ENVIROMENT !== "test") {
 }
 
 require("./socketconnection/socketconnection")(io);
-
+// app.use("/api/user", tournamentRoute(socket));
 app.get("/checkTableExist/:tableId", async (req, res) => {
   try {
     const { tableId } = req.params;
@@ -203,6 +184,7 @@ app.get("/deleteStuckTable/:tableId", async (req, res) => {
     console.log("Error in Poker game delete table api =>", error);
   }
 });
+
 
 app.get("/leaveGame/:tableId/:userId", async (req, res) => {
   try {

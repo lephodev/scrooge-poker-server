@@ -1,9 +1,10 @@
 //imports
-import { userJwtKey, adminJwtKey } from "../config/keys";
+
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import pathDirectory from "path";
 import transactionModel from "../models/transaction";
+import { userJwtKey, adminJwtKey } from "../config/keys";
 import roomModel from "../models/room";
 import mongoose from "mongoose";
 import tournamentModel from "../models/tournament";
@@ -706,8 +707,7 @@ export const preflopround = async (room, io) => {
         });
         io.in(room._id.toString()).emit("preflopround", updatedRoom);
       } else {
-        console.log("SHOULD NOT COME HERE ", JSON.stringify(room));
-
+        console.log("io--->", io);
         io.in(room._id.toString()).emit("onlyOnePlayingPlayer", {
           msg: "Game finished, Only one player left",
           roomdata: room,
@@ -727,6 +727,7 @@ export const preflopround = async (room, io) => {
       });
     }
   } else {
+    console.log("table game finished-->", room);
     io.in(room._id.toString()).emit("tablestopped", {
       msg: "Table game has been finished",
     });
@@ -2258,6 +2259,7 @@ export const showdown = async (roomid, io) => {
           (el) => el.wallet > 0
         );
         if (havemoney.length > 1) {
+          console.log("Table stopped waiting to start game");
           io.in(upRoom._id.toString()).emit("tablestopped", {
             msg: "Waiting to start game",
           });
@@ -2730,7 +2732,7 @@ export const doSitOut = async (data, io, socket) => {
 
             io.in(updatedData._id.toString()).emit("notification", {
               id: userid,
-              action: "Stood up",
+              action: "SitOut",
               msg: "",
             });
             if (socket) socket.emit("sitInOut", { updatedRoom: updatedData });
@@ -2784,7 +2786,7 @@ export const doSitOut = async (data, io, socket) => {
             }
             io.in(updatedData._id.toString()).emit("notification", {
               id: userid,
-              action: "Stood up",
+              action: "SitOut",
             });
             if (socket) {
               socket.emit("sitInOut", { updatedRoom: updatedData });
@@ -2839,7 +2841,7 @@ export const doSitOut = async (data, io, socket) => {
             }
             io.in(updatedData._id.toString()).emit("notification", {
               id: userid,
-              action: "Stood up",
+              action: "SitOut",
             });
             if (socket) {
               socket.emit("sitInOut", { updatedRoom: updatedData });
@@ -2894,7 +2896,7 @@ export const doSitOut = async (data, io, socket) => {
             }
             io.in(updatedData._id.toString()).emit("notification", {
               id: userid,
-              action: "Stood up",
+              action: "SitOut",
             });
             if (socket) {
               socket.emit("sitInOut", { updatedRoom: updatedData });
@@ -2949,7 +2951,7 @@ export const doSitOut = async (data, io, socket) => {
             }
             io.in(updatedData._id.toString()).emit("notification", {
               id: userid,
-              action: "Stood up",
+              action: "SitOut",
             });
             if (socket) {
               socket.emit("sitInOut", { updatedRoom: updatedData });
@@ -2977,7 +2979,7 @@ export const doSitOut = async (data, io, socket) => {
 
             io.in(updatedData._id.toString()).emit("notification", {
               id: userid,
-              action: "Stood up",
+              action: "SitOut",
             });
             if (socket) socket.emit("sitInOut", { updatedRoom: updatedData });
             break;
@@ -3040,7 +3042,7 @@ export const doSitIn = async (data, io, socket) => {
       if (socket) socket.emit("sitInOut", { updatedRoom: updatedData });
       io.in(updatedData._id.toString()).emit("notification", {
         id: userid,
-        action: "Sat down",
+        action: "SitIn",
       });
     } else {
       socket.emit("actionError", { code: 400, msg: "Bad request" });
@@ -4772,14 +4774,19 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     let updatedRoomPlayers = await roomModel.findOne({
       _id: roomid,
     });
+    console.log("auto hand--->", updatedRoom);
     if (!updatedRoom.pause) {
+      console.log("auto hand--->", updatedRoom);
       if (updatedRoom.autoNextHand) {
         preflopround(updatedRoom, io);
       } else {
+        console.log("updated room player-->", updatedRoomPlayers);
         let havemoney = updatedRoomPlayers.players.filter(
           (el) => el.wallet > 0
         );
+        console.log("havemoney-->", havemoney);
         if (havemoney.length > 1) {
+          console.log("Table stop waiting for start game");
           io.in(updatedRoom._id.toString()).emit("tablestopped", {
             msg: "Waiting to start game",
           });
@@ -7168,12 +7175,6 @@ const createTransactionFromUsersArray = (roomId, users = []) => {
       const gameWinOrLoseamount =
         elem.action === "game-lose" ? -elem.amount : elem.amount;
       const lastAmount = updatedAmount;
-
-      console.log(
-        "win or lose amount: -----------------------------",
-        gameWinOrLoseamount
-      );
-
       updatedAmount = updatedAmount + gameWinOrLoseamount;
       return {
         userId,
@@ -7207,7 +7208,7 @@ const createTransactionFromUsersArray = (roomId, users = []) => {
         )
       );
     }
-    console.log("updatedAmount =====>", updatedAmount);
+
     transactionObjectsArray = [...transactionObjectsArray, ...handsTransaction];
     users[i].newBalance = updatedAmount;
   });
@@ -7263,11 +7264,11 @@ export const leaveApiCall = async (room, userId) => {
 
     let allUsers = player.concat(room.watchers).concat(room.sitOut);
 
-    // console.log({
-    //   allUsers: JSON.stringify(allUsers),
-    //   userId,
-    //   runningRound: room.runninground,
-    // });
+    console.log({
+      allUsers: JSON.stringify(allUsers),
+      userId,
+      runningRound: room.runninground,
+    });
 
     if (userId) {
       allUsers = allUsers.filter((ele) => {
@@ -7276,7 +7277,7 @@ export const leaveApiCall = async (room, userId) => {
       });
     }
 
-    // console.log({ allUsers });
+    console.log({ allUsers });
     let users = [];
     allUsers.forEach((item) => {
       console.log({ item });
@@ -7311,7 +7312,7 @@ export const leaveApiCall = async (room, userId) => {
       });
     });
 
-    // console.log("USERS => ", JSON.stringify(users));
+    console.log("USERS => ", JSON.stringify(users));
 
     let payload = {
       mode:
@@ -7341,7 +7342,7 @@ export const leaveApiCall = async (room, userId) => {
         {
           _id: convertMongoId(el.uid),
         },
-        { $set: { wallet: el.newBalance } }
+        { $inc: { wallet: el.newBalance } }
       );
     });
 
@@ -7374,10 +7375,10 @@ export const leaveApiCall = async (room, userId) => {
         ...userBalancePromise,
         ...rankModelUpdate,
       ]);
-      // console.log(
-      //   "FINAL RESPONSE:2",
-      //   JSON.stringify(response.map((el) => el.value))
-      // );
+      console.log(
+        "FINAL RESPONSE:2",
+        JSON.stringify(response.map((el) => el.value))
+      );
     }
 
     return true;
@@ -7635,20 +7636,35 @@ export const emitTyping = (data, socket, io) => {
   }
 };
 
-export const JoinTournament = async (data, socket, io) => {
+export const JoinTournament = async (data, socket) => {
   try {
-    const { userId, tournamentId } = data;
+    console.log("Fees--->", data);
+    const { userId, tournamentId, fees } = data;
     const checkTable = await roomModel.findOne({
       tournament: mongoose.Types.ObjectId(tournamentId),
       "players.id": mongoose.Types.ObjectId(userId),
     });
-    if (!checkTable) {
-      await Tournament(userId, tournamentId, socket);
 
-      return socket.emit("alreadyInTournament", {
-        message: "You joined in game.",
-        code: 200,
-      });
+    if (!checkTable) {
+      const userData = await User.findById(userId).lean();
+      if (userData?.wallet >= fees) {
+        await Tournament(userId, tournamentId, fees, socket);
+        const updatedUser = await User.findOneAndUpdate(
+          { _id: userId },
+          { $inc: { wallet: -parseFloat(fees) } },
+          { new: true }
+        );
+        return socket.emit("alreadyInTournament", {
+          message: "You joined in game.",
+          code: 200,
+          user: updatedUser || {},
+        });
+      } else {
+        return socket.emit("notEnoughAmount", {
+          message: "You have not much amount to join.",
+          code: 400,
+        });
+      }
     } else {
       return socket.emit("alreadyInTournament", {
         message: "You are already in game.",
@@ -7660,14 +7676,20 @@ export const JoinTournament = async (data, socket, io) => {
   }
 };
 
-const Tournament = async (userId, tournamentId, socket) => {
+const Tournament = async (userId, tournamentId, tournamentAmount, socket) => {
   const userData = await User.findById(userId).lean();
   let checkTournament = await tournamentModel
     .findOne({ _id: tournamentId })
     .lean();
   if (checkTournament) {
     if (checkTournament.havePlayers < 10000) {
-      await pushPlayerInRoom(checkTournament, userData, tournamentId, socket);
+      await pushPlayerInRoom(
+        checkTournament,
+        userData,
+        tournamentId,
+        tournamentAmount,
+        socket
+      );
     }
   }
 };
@@ -7676,11 +7698,12 @@ const pushPlayerInRoom = async (
   checkTournament,
   userData,
   tournamentId,
+  tournamentAmount,
   socket
 ) => {
   // console.log("checkTournamentin PushPlayer", checkTournament);
   let roomId;
-  const { username, wallet, _id, avatar, profile } = userData;
+  const { username, _id, avatar, profile } = userData;
   let lastRoom = null;
   if (checkTournament?.rooms?.length) {
     lastRoom = await roomModel
@@ -7696,7 +7719,7 @@ const pushPlayerInRoom = async (
       userid: _id,
       id: _id,
       photoURI: avatar ? avatar : profile ? profile : img,
-      wallet: wallet,
+      wallet: tournamentAmount,
       position: players.length,
       missedSmallBlind: false,
       missedBigBlind: false,
@@ -7737,7 +7760,7 @@ const pushPlayerInRoom = async (
           userid: _id,
           id: _id,
           photoURI: avatar ? avatar : profile ? profile : img,
-          wallet: wallet,
+          wallet: tournamentAmount,
           position: 0,
           missedSmallBlind: false,
           missedBigBlind: false,
@@ -7749,6 +7772,7 @@ const pushPlayerInRoom = async (
         },
       ],
       tournament: tournamentId,
+      autoNextHand: true,
     };
 
     const roomData = new roomModel(payload);
@@ -7772,13 +7796,16 @@ const pushPlayerInRoom = async (
 
 export const activateTournament = async (io) => {
   console.log("activatedTournament");
+  const date = new Date().toISOString().split("T")[0];
+  const time = `${new Date().getUTCHours()}:${new Date().getUTCMinutes()}:00`;
+  console.log("tournament date and time", { date: date, time: time });
   const checkTournament = await tournamentModel
     .findOne({
-      startDate: "2023-02-08T10:28:00.000+00:00",
+      startDate: date,
+      startTime: time,
     })
     .populate("rooms")
     .lean();
-
   if (checkTournament) {
     //preflopround()
     each(
@@ -7806,6 +7833,5 @@ export const activateTournament = async (io) => {
   } else {
     console.log("Tournament not found");
   }
-
   //console.log("checkTournament", checkTournament);
 };

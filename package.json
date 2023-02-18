@@ -39,6 +39,7 @@
     "shortid": "^2.2.15",
     "socket.io": "^4.0.1",
     "sync-each": "^1.0.1",
+    "twilio": "^3.84.1",
     "uuid": "^8.3.2",
     "validator": "^13.7.0",
     "winston": "^3.8.2"
