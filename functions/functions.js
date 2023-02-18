@@ -29,7 +29,6 @@ var Hand = require('pokersolver').Hand
 const admin = require('firebase-admin')
 import MessageModal from '../models/messageModal'
 import Notification from '../models/notificationModal'
-import { log } from 'console'
 import User from '../landing-server/models/user.model'
 
 const gameRestartSeconds = 7000
@@ -38,7 +37,7 @@ const img =
   'https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg'
 
 const addUserInSocket = (io, socket, gameId, userId) => {
-  console.log('Socket room BEFORE ', io.room)
+ 
   let lastSocketData = io.room || []
   // Add room
   lastSocketData.push({ gameId, pretimer: false, room: gameId.toString() })
@@ -48,17 +47,16 @@ const addUserInSocket = (io, socket, gameId, userId) => {
       pretimer: false,
     }),
   )
-  console.log('Socket room After ', io.room)
+
   // Add users
   lastSocketData = io.users
-  console.log('Socket Users BEFORE ', io.users)
+ 
   lastSocketData.push(userId.toString())
   io.users = [...new Set(lastSocketData)]
-  console.log('Socket Users After ', io.users)
+
   // Add user id and room id in socket
   socket.customId = userId.toString()
   socket.customRoom = gameId.toString()
-  console.log({ customId: socket.customId, customRoom: socket.customRoom })
   // JOIN USER IN GAME ROOM
   socket.join(gameId)
 }
@@ -184,7 +182,6 @@ export const verifycards = (distributedCards, noOfCards) => {
 }
 
 export const preflopPlayerPush = async (players, roomid) => {
-  console.log('PREFLOP PLAYER PUSH')
   return new Promise((resolve, reject) => {
     let distributedCards = []
 
@@ -270,7 +267,6 @@ export const preflopPlayerPush = async (players, roomid) => {
 }
 
 export const preflopround = async (room, io) => {
-  console.log("io", io);
   await updateRoomForNewHand(room._id, io);
   room = await roomModel.findOne(room._id).lean();
   let playingPlayer = room?.players?.filter(
@@ -391,7 +387,7 @@ export const preflopround = async (room, io) => {
                     forceBigBlindAmt = walletAmt
                   }
                   if (deductMissedAmt && player.wallet > deductMissedAmt) {
-                    console.log("update wallet amount first--->")
+                    
                     await roomModel.updateOne(
                       {
                         _id: room._id,
@@ -411,7 +407,7 @@ export const preflopround = async (room, io) => {
                     deductMissedAmt &&
                     player.wallet < deductMissedAmt
                   ) {
-                    console.log("update wallet amount second--->")
+                    
                     await roomModel.updateOne(
                       {
                         _id: room._id,
@@ -462,7 +458,7 @@ export const preflopround = async (room, io) => {
         }
 
         let allinPlayer = room.allinPlayers
-        console.log({ allinPlayer: JSON.stringify(allinPlayer) })
+        
         while (smallBlindDeducted < 1) {
           let playerAvilable = room.players.filter(
             (el) =>
@@ -475,7 +471,7 @@ export const preflopround = async (room, io) => {
             )
             let sb_deduct
             if (playerAvilable[0].wallet > smallBlindAmt) {
-              console.log("fourth--->",smallBlindAmt,)
+          
               sb_deduct = await roomModel.updateOne(
                 {
                   _id: room._id,
@@ -501,7 +497,7 @@ export const preflopround = async (room, io) => {
                 wallet: playerAvilable[0].wallet,
                 round: 1,
               })
-              console.log("fifthe console detail--?>")
+       
               sb_deduct = await roomModel.findOneAndUpdate(
                 {
                   _id: room._id,
@@ -709,20 +705,22 @@ export const preflopround = async (room, io) => {
         // if (bigBlindDeducted || smallBlindDeducted) {
         //   await roomModel.updateOne({ _id: room._id }, {bigBlindPosition,smallBlindPosition,pot:+bigBlindAmt+smallBlindAmt});
         // }
-        console.log('LINE 697 before going in preflop ', { _id: room._id })
+        console.log('LINE 697 before going in preflop ')
         prefloptimer(room._id, io)
         let updatedRoom = await roomModel.findOne({
           _id: room._id,
         })
         io.in(room._id.toString()).emit('preflopround', updatedRoom)
       } else {
-        console.log("io--->",io)
+        console.log("Line 715 only one playing player")
         io.in(room._id.toString()).emit('onlyOnePlayingPlayer', {
           msg: 'Game finished, Only one player left',
           roomdata: room,
         })
         if (room.gameType === 'pokerTournament_Tables') {
+          console.log("Line 721 finished table game")
           await finishedTableGame(room)
+          console.log("Line 721 room finished")
           io.in(room._id.toString()).emit('roomFinished', {
             msg: 'Game finished',
             finish: room.finish,
@@ -731,12 +729,13 @@ export const preflopround = async (room, io) => {
         }
       }
     } else {
+      console.log("Line 732 table stoped")
       io.in(room._id.toString()).emit('tablestopped', {
         msg: 'Game paused by host',
       })
     }
   } else {
-    console.log('table game finished-->', room)
+    console.log('Line 738 table game finished-->')
     io.in(room._id.toString()).emit('tablestopped', {
       msg: 'Table game has been finished',
     })
@@ -744,6 +743,7 @@ export const preflopround = async (room, io) => {
 }
 
 export const prefloptimer = async (roomid, io) => {
+  console.log("Line 746 preflop timer")
   const roomData = await roomModel.findOne({ _id: roomid })
   let totalPlayer = roomData.preflopround.length + roomData.eleminated.length
   const timer = async (i, maxPosition) => {
@@ -976,6 +976,7 @@ export const prefloptimer = async (roomid, io) => {
 }
 
 export const flopround = async (roomid, io) => {
+  console.log("Line 979 flop round")
   const roomData = await roomModel.findOne({ _id: roomid })
   // const tournamentConfig = await tournamentConfModel.findOne().sort({'_id': -1});
 
@@ -2271,11 +2272,13 @@ export const showdown = async (roomid, io) => {
             msg: 'Waiting to start game',
           })
         } else {
+          console.log('Line 2275 Game finished one player left')
           io.in(upRoom._id.toString()).emit('onlyOnePlayingPlayer', {
             msg: 'Game finished, Only one player left',
             roomdata: updatedRoomPlayers,
           })
           if (updatedRoomPlayers.gameType === 'pokerTournament_Tables') {
+            console.log('Line 2275 Game finished ')
             // await finishedTableGame(updatedRoomPlayers);
             io.in(updatedRoomPlayers._id.toString()).emit('roomFinished', {
               msg: 'Game finished',
@@ -2292,6 +2295,7 @@ export const showdown = async (roomid, io) => {
     }
     const roomUpdate = await roomModel.findOne({ _id: upRoom._id })
     if (roomUpdate.finish) {
+      console.log('Line 2298 Game finished ')
       io.in(roomUpdate._id.toString()).emit('roomFinished', {
         msg: 'Game finished',
         finish: roomUpdate.finish,
@@ -5161,7 +5165,7 @@ export const reArrangeTables = async (tournamentId, io) => {
 
         fullRooms = allAvilableRoom.filter(
           (el) =>
-            el.players.length <= 9 && el.players.length >= canPlayMinimum + 1,
+            el.players.length <= 4 && el.players.length >= canPlayMinimum + 1,
         )
 
         fullRooms.sort(function (a, b) {
@@ -5174,7 +5178,7 @@ export const reArrangeTables = async (tournamentId, io) => {
         //     fullRooms = allAvilableRoom.filter(el=>el.players.length === (canPlayMinimum+1));
         // }
         haveBlankSpots = allAvilableRoom.filter(
-          (el) => el.players.length < 9 && el.players.length > 0,
+          (el) => el.players.length < 4 && el.players.length > 0,
         )
         // console.log('fullRooms =>',fullRooms);
         // console.log('haveBlankSpots =>',haveBlankSpots);
@@ -5228,9 +5232,9 @@ export const reArrangeTables = async (tournamentId, io) => {
           let leftBlankTables = leftBlankTables4.concat(leftBlankTables3)
           // console.log("leftBlankTables ==> ", leftBlankTables);
           await destroyTable(mostBlnkRoom, leftBlankTables, io)
-          // console.log(
-          //   "+++++++++++++++++ Calling Rearrange Again ++++++++++++++++++"
-          // );
+          console.log(
+            "+++++++++++++++++ Calling Rearrange Again ++++++++++++++++++"
+          );
           await rearrange(tournamentData)
         } else if (haveMoreThnOne.length && fullRooms.length) {
           each(
@@ -5238,18 +5242,18 @@ export const reArrangeTables = async (tournamentId, io) => {
             async function (room, next) {
               let have = fullRooms.filter((el) => el._id === room.roomid)
               if (!have.length) {
-                // console.log(
-                //   "+++++++++++++++++ Calling fillSpot ++++++++++++++++++"
-                // );
+                console.log(
+                  "+++++++++++++++++ Calling fillSpot ++++++++++++++++++"
+                );
                 fullRooms = await fillSpot(room, fullRooms, canPlayMinimum, io)
               }
               next()
             },
             async function (err, transformedItems) {
               //Success callback
-              // console.log(
-              //   "+++++++++++++++++ Calling Rearrange Again ++++++++++++++++++"
-              // );
+              console.log(
+                "+++++++++++++++++Line 5255 Calling Rearrange Again ++++++++++++++++++"
+              );
               await rearrange(tournamentData)
             },
           )
@@ -5650,7 +5654,7 @@ export const joinRequest = async (data, socket, io) => {
         if (isExist.length) {
           socket.emit('alreadyJoin', '')
         } else {
-          if (room.players.length < 9) {
+          if (room.players.length < 4) {
             let ischecked = false
             let amt
             if (
@@ -5754,7 +5758,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
       if (
         (isRoomExist.gameType === 'poker1vs1_Tables' &&
           isRoomExist.players.length === 2) ||
-        isRoomExist.players.length >= 9
+        isRoomExist.players.length >= 4
       ) {
         if (isRoomExist.allowWatcher) {
           return socket.emit('newWatcher', {
@@ -5770,7 +5774,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
         if (room.table.public) {
           if (
             isRoomExist.gameType !== 'poker1vs1_Tables' &&
-            isRoomExist.players.length < 9 &&
+            isRoomExist.players.length < 4 &&
             !isRoomExist.players.find((ele) => ele.userid === user.userid)
           ) {
             user.isAdmin = false
@@ -5843,7 +5847,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
           } else if (
             !room.invPlayers.find((ele) => ele === user.userid) &&
             isRoomExist.gameType !== 'poker1vs1_Tables' &&
-            isRoomExist.players.length < 9
+            isRoomExist.players.length < 4
           ) {
             socket.emit('newUser', {
               _id: room.roomid,
@@ -5852,7 +5856,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
             })
           } else if (
             isRoomExist.gameType !== 'poker1vs1_Tables' &&
-            isRoomExist.players.length >= 9
+            isRoomExist.players.length >= 4
           ) {
             console.log('ROOM FULL 5716')
             socket.emit('roomFull', 'Room is full')
@@ -5995,7 +5999,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
         if (room.table.public) {
           if (
             isRoomExist.gameType !== 'poker1vs1_Tables' &&
-            isRoomExist.players.length < 9 &&
+            isRoomExist.players.length < 4 &&
             !room.players.find((ele) => ele === user.userid)
           ) {
             user.isAdmin = false
@@ -6398,7 +6402,7 @@ export const approveJoinRequest = async (data, socket, io) => {
             isWatcher: false,
           })
         }
-        if (room.players.length < 9) {
+        if (room.players.length < 4) {
           let joinPlayer = room.joinRequests.filter(
             (e) => e.userid.toString() === data.player.userid.toString(),
           )
@@ -7683,7 +7687,7 @@ const pushPlayerInRoom = async (
       .findById(checkTournament.rooms[checkTournament.rooms.length - 1])
       .lean()
   }
-  if (checkTournament?.rooms?.length && lastRoom?.players?.length < 9) {
+  if (checkTournament?.rooms?.length && lastRoom?.players?.length < 4) {
     console.log('push player to ==>', lastRoom._id)
     roomId = lastRoom._id
     let players = lastRoom.players
@@ -7768,10 +7772,8 @@ const pushPlayerInRoom = async (
 }
 
 export const activateTournament = async (io) => {
-  console.log('activatedTournament')
   const date = new Date().toISOString().split('T')[0]
   const time = `${new Date().getUTCHours()}:${new Date().getUTCMinutes()}:00`
-  console.log("tournament date and time",{date:date,time:time})
   const checkTournament = await tournamentModel
     .findOne(
         {
@@ -7796,6 +7798,7 @@ export const activateTournament = async (io) => {
             .findOne({ _id: checkTournament._id })
             .lean()
           if (updatedtournament.havePlayers > 1) {
+            consoel.log("Re arrange table")
             await reArrangeTables(checkTournament._id, io)
           } else {
             clearInterval(rearrangeInterval)
