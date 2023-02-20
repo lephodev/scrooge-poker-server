@@ -2687,7 +2687,7 @@ export const doSitOut = async (data, io, socket) => {
   const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
   let roomid;
-  console.log({ tableId, userid });
+  // console.log({ tableId, userid });
   const { isValid } = checkIfEmpty({ tableId, userid });
   let playingPlayer = [];
   let res = true;
@@ -7140,14 +7140,24 @@ export const doLeaveWatcher = async (data, io, socket) => {
   }
 };
 
-const createTransactionFromUsersArray = (roomId, users = []) => {
+const createTransactionFromUsersArray = async (roomId, users = []) => {
   console.log({ roomId, users: JSON.stringify(users) });
+  console.log("users ===>", users);
   let transactionObjectsArray = [];
   const rankModelUpdate = [];
+  let usersWalltAmt = [];
 
-  users.forEach((el, i) => {
+  for await (const user of users) {
+    const crrUser = await userModel.findOne({ _id: user.uid });
+    usersWalltAmt.push(crrUser.wallet);
+  }
+
+  console.log("users wallet amount ================>", usersWalltAmt);
+
+  users.forEach(async (el, i) => {
     console.log("7013", JSON.stringify(el));
-    let updatedAmount = el.coinsBeforeJoin;
+    let updatedAmount = el.coinsBeforeJoin; //el.wallet;
+    console.log("Coinsbefore join ----->", el.coinsBeforeJoin);
     const userId = el.uid;
 
     let totalWinAmount = 0;
@@ -7172,17 +7182,19 @@ const createTransactionFromUsersArray = (roomId, users = []) => {
         "update amount: ------------------------------------------------>",
         updatedAmount
       );
+
       const gameWinOrLoseamount =
         elem.action === "game-lose" ? -elem.amount : elem.amount;
       const lastAmount = updatedAmount;
       updatedAmount = updatedAmount + gameWinOrLoseamount;
+      console.log("updated amount ----->", updatedAmount);
       return {
         userId,
         roomId,
         amount: gameWinOrLoseamount,
         transactionDetails: {},
         prevWallet: lastAmount,
-        updatedWallet: updatedAmount,
+        updatedWallet: updatedAmount + usersWalltAmt[i],
         transactionType: "poker",
       };
     });
@@ -7277,7 +7289,7 @@ export const leaveApiCall = async (room, userId) => {
       });
     }
 
-    console.log({ allUsers });
+    console.log("allUsers =====>", allUsers);
     let users = [];
     allUsers.forEach((item) => {
       console.log({ item });
@@ -7305,6 +7317,7 @@ export const leaveApiCall = async (room, userId) => {
         hands: hands,
         coinsBeforeJoin: item.initialCoinBeforeStart,
         gameLeaveAt: new Date(),
+        wallet: item.wallet,
         gameJoinedAt: item.gameJoinedAt,
         isWatcher: room.watchers.find((ele) => ele.userid === uid)
           ? true
@@ -7312,7 +7325,7 @@ export const leaveApiCall = async (room, userId) => {
       });
     });
 
-    console.log("USERS => ", JSON.stringify(users));
+    console.log("USERS ===> ", users);
 
     let payload = {
       mode:
@@ -7329,11 +7342,10 @@ export const leaveApiCall = async (room, userId) => {
 
     // console.log("users1====>", users);
 
-    const [transactions, rankModelUpdate] = createTransactionFromUsersArray(
-      room._id,
-      users
-    );
+    const [transactions, rankModelUpdate] =
+      await createTransactionFromUsersArray(room._id, users);
 
+    console.log("transactions data ====>", transactions);
     // console.log("users2====>", users);
 
     const userBalancePromise = users.map((el) => {
@@ -7508,6 +7520,7 @@ export const checkForGameTable = async (data, socket, io) => {
         }
       );
       io.in(gameId).emit("updateGame", { game: gameUpdatedData });
+
       return;
     }
 
@@ -7525,9 +7538,11 @@ export const checkForGameTable = async (data, socket, io) => {
       userId,
       sitInAmount
     );
+
     console.log("updateRoom", Object.keys(updatedRoom));
     if (Object.keys(updatedRoom).length > 0) {
       addUserInSocket(io, socket, gameId, userId);
+      await userService.updateUserWallet(userId, user.wallet - sitInAmount);
       io.in(gameId).emit("updateGame", { game: updatedRoom });
       return;
     }

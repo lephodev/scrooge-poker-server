@@ -1,5 +1,5 @@
-import mongoose, { mongo } from 'mongoose';
-import User from '../landing-server/models/user.model.js';
+import mongoose, { mongo } from "mongoose";
+import User from "../landing-server/models/user.model.js";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
@@ -14,6 +14,7 @@ const updateUserWallet = async (userId, walletAmount = 0) => {
       { _id: convertMongoId(userId) },
       { wallet: walletAmount }
     );
+    console.log("updated wallet", walletAmount, " ", userId);
     return true;
   } catch (error) {
     throw new Error(false);
