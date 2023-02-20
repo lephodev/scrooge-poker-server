@@ -391,6 +391,7 @@ export const preflopround = async (room, io) => {
                     forceBigBlindAmt = walletAmt;
                   }
                   if (deductMissedAmt && player.wallet > deductMissedAmt) {
+                    console.log("update wallet amount first--->");
                     await roomModel.updateOne(
                       {
                         _id: room._id,
@@ -410,6 +411,7 @@ export const preflopround = async (room, io) => {
                     deductMissedAmt &&
                     player.wallet < deductMissedAmt
                   ) {
+                    console.log("update wallet amount second--->");
                     await roomModel.updateOne(
                       {
                         _id: room._id,
@@ -428,6 +430,7 @@ export const preflopround = async (room, io) => {
                   }
 
                   if (forceBigBlindAmt) {
+                    console.log("update wallet amount third--->");
                     await roomModel.updateOne(
                       {
                         _id: room._id,
@@ -472,6 +475,7 @@ export const preflopround = async (room, io) => {
             );
             let sb_deduct;
             if (playerAvilable[0].wallet > smallBlindAmt) {
+              console.log("fourth--->", smallBlindAmt);
               sb_deduct = await roomModel.updateOne(
                 {
                   _id: room._id,
@@ -497,6 +501,7 @@ export const preflopround = async (room, io) => {
                 wallet: playerAvilable[0].wallet,
                 round: 1,
               });
+              console.log("fifthe console detail--?>");
               sb_deduct = await roomModel.findOneAndUpdate(
                 {
                   _id: room._id,
@@ -587,6 +592,7 @@ export const preflopround = async (room, io) => {
           if (playerAvilable.length) {
             let Bb_deduct;
             if (playerAvilable[0].wallet > bigBlindAmt) {
+              console.log("check wallet update error seven");
               Bb_deduct = await roomModel.findOneAndUpdate(
                 {
                   _id: room._id,
@@ -614,6 +620,7 @@ export const preflopround = async (room, io) => {
                 wallet: playerAvilable[0].wallet,
                 round: 1,
               });
+              console.log("check wallet update error eight");
               Bb_deduct = await roomModel.findOneAndUpdate(
                 {
                   _id: room._id,
@@ -646,6 +653,7 @@ export const preflopround = async (room, io) => {
             let isPlayerSitOut = room.players.filter(
               (el) => el.position === bigBlindPosition && !el.playing
             );
+            console.log("check wallet update error nine");
             if (isPlayerSitOut.length) {
               await roomModel.updateOne(
                 {
@@ -676,6 +684,7 @@ export const preflopround = async (room, io) => {
               }
               bigLoopTime++;
             } else {
+              console.log("check wallet update error ten");
               await roomModel.findOneAndUpdate(
                 {
                   _id: room._id,
@@ -7734,7 +7743,7 @@ const pushPlayerInRoom = async (
       userid: _id,
       id: _id,
       photoURI: avatar ? avatar : profile ? profile : img,
-      wallet: tournamentAmount,
+      wallet: parseFloat(tournamentAmount),
       position: players.length,
       missedSmallBlind: false,
       missedBigBlind: false,
@@ -7775,7 +7784,7 @@ const pushPlayerInRoom = async (
           userid: _id,
           id: _id,
           photoURI: avatar ? avatar : profile ? profile : img,
-          wallet: tournamentAmount,
+          wallet: parseFloat(tournamentAmount),
           position: 0,
           missedSmallBlind: false,
           missedBigBlind: false,
