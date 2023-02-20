@@ -7844,7 +7844,7 @@ export const activateTournament = async (io) => {
           const updatedtournament = await tournamentModel
             .findOne({ _id: checkTournament._id })
             .lean();
-          if (updatedtournament.havePlayers > 1) {
+          if (updatedtournament?.havePlayers > 1) {
             await reArrangeTables(checkTournament._id, io);
           } else {
             clearInterval(rearrangeInterval);
