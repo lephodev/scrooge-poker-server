@@ -377,6 +377,12 @@ let returnSocket = (io) => {
       await emitTyping(data, socket, io);
     });
 
+    socket.on("startGame", async (data) => {
+      console.log("start game executed", data);
+      const { tableId } = data;
+      io.in(tableId).emit("roomGameStarted", { start: true });
+    });
+
     socket.on("joinTournament", async (data) => {
       await JoinTournament(data, socket, io);
     });
