@@ -270,7 +270,7 @@ export const preflopPlayerPush = async (players, roomid) => {
 };
 
 export const preflopround = async (room, io) => {
-  console.log("io", io);
+  // console.log("io", io);
   await updateRoomForNewHand(room._id, io);
   room = await roomModel.findOne(room._id).lean();
   let playingPlayer = room?.players?.filter(
@@ -5239,7 +5239,7 @@ export const reArrangeTables = async (tournamentId, io) => {
           );
           let leftBlankTables4 = leftBlankTables1.concat(leftBlankTables2);
           let leftBlankTables = leftBlankTables4.concat(leftBlankTables3);
-          // console.log("leftBlankTables ==> ", leftBlankTables);
+          console.log("leftBlankTables ==> ", leftBlankTables);
           await destroyTable(mostBlnkRoom, leftBlankTables, io);
           // console.log(
           //   "+++++++++++++++++ Calling Rearrange Again ++++++++++++++++++"
@@ -7779,12 +7779,22 @@ const pushPlayerInRoom = async (
       { $inc: { havePlayers: 1 } },
       { new: true }
     );
+    console.log("updatedTournament", updatedTournament);
+
     await User.findOneAndUpdate(
       { _id: userData._id },
       { $push: { tournaments: { tournamentId, roomId } } },
       { upsert: true, new: true }
     );
   } else {
+    const updatedTournaments = await tournamentModel.findOne({
+      _id: tournamentId,
+    });
+
+    console.log("updatedTournaments", updatedTournaments);
+    let smallBlind = updatedTournaments?.levels?.smallBlind?.amount;
+    let bigBlind = updatedTournaments?.levels?.bigBlind?.amount;
+    console.log("smallBlind", smallBlind);
     const payload = {
       players: [
         {
@@ -7805,6 +7815,8 @@ const pushPlayerInRoom = async (
       ],
       tournament: tournamentId,
       autoNextHand: true,
+      smallBlind: smallBlind || 100,
+      bigBlind: bigBlind || 200,
     };
 
     const roomData = new roomModel(payload);

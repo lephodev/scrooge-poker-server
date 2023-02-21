@@ -253,6 +253,7 @@ export const refillWallet = async (req, res) => {
 
     res.status(200).send({ msg: "Success", roomData });
   } catch (error) {
+    console.log("error", error);
     res.status(500).send({ msg: "Internel server error" });
     console.log(error);
   }
