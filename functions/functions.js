@@ -716,7 +716,7 @@ export const preflopround = async (room, io) => {
         });
         io.in(room._id.toString()).emit("preflopround", updatedRoom);
       } else {
-        console.log("io--->", io);
+        // console.log("io--->", io);
         io.in(room._id.toString()).emit("onlyOnePlayingPlayer", {
           msg: "Game finished, Only one player left",
           roomdata: room,
@@ -765,7 +765,7 @@ export const prefloptimer = async (roomid, io) => {
         { new: true }
       );
       if (cPlayer.length) {
-        if (tempRoomData.runninground === 1) {
+        if (tempRoomData?.runninground === 1) {
           await roomModel.findOneAndUpdate(
             {
               _id: roomid,
@@ -1100,7 +1100,7 @@ export const flopTimer = async (roomid, io) => {
       );
 
       if (cPlayer.length) {
-        if (tempRoomData.runninground === 2) {
+        if (tempRoomData?.runninground === 2) {
           await roomModel.findOneAndUpdate(
             {
               _id: roomid,
@@ -2256,6 +2256,7 @@ export const showdown = async (roomid, io) => {
     //  });
     //  finishedTableGame(roomUpdate);
     //} else {
+    await elemination(roomid, io);
     await updateRoomForNewHand(roomid, io);
     let updatedRoomPlayers = await roomModel.findOne({
       _id: roomid,
@@ -2515,6 +2516,8 @@ export const elemination = async (roomid, io) => {
     roomId: roomData._id,
     data: roomData,
   });
+
+  console.log("roomDataroomDataroomData", roomData);
   const savedHistory = await roomhistoryData.save();
 
   let eleminated_players = roomData.eleminated;
@@ -2548,6 +2551,7 @@ export const elemination = async (roomid, io) => {
         stats: el.stats,
         hands: el.hands,
         meetingToken: el.meetingToken,
+        playing: true,
       });
     }
   });
@@ -2555,14 +2559,18 @@ export const elemination = async (roomid, io) => {
   if (eleminated_players.length === 0) {
     eleminated_players = roomData.eleminated;
   }
-
+  console.log(
+    "eleminated_players",
+    JSON.parse(JSON.stringify(eleminated_players))
+  );
+  console.log("newHandPlayer", newHandPlayer);
   const upRoom = await roomModel.findOneAndUpdate(
     {
       _id: roomid,
     },
     {
       players: newHandPlayer,
-      eleminated: eleminated_players,
+      eleminated: JSON.parse(JSON.stringify(eleminated_players)),
       preflopround: [],
       flopround: [],
       turnround: [],
@@ -2593,12 +2601,12 @@ export const elemination = async (roomid, io) => {
       new: true,
     }
   );
-
+  console.log("upRoomdddatatat", upRoom);
   io.in(upRoom._id.toString()).emit("newhand", { updatedRoom: upRoom });
 
-  setTimeout(() => {
-    preflopround(upRoom, io);
-  }, 2000);
+  // setTimeout(() => {
+  //   preflopround(upRoom, io);
+  // }, 2000);
 };
 
 export const doPauseGame = async (data, io, socket) => {
@@ -3084,9 +3092,9 @@ export const doLeaveTable = async (data, io, socket) => {
       if (roomdata) {
         console.log("IN ROOM DATA");
         roomid = roomdata._id;
-        if (roomdata.hostId.toString() === userid.toString()) {
+        if (roomdata?.hostId?.toString() === userid?.toString()) {
           let p = roomdata.players.filter(
-            (ele) => ele.userid.toString() !== userid.toString()
+            (ele) => ele?.userid?.toString() !== userid.toString()
           )[0];
 
           if (p) {
@@ -3176,8 +3184,8 @@ export const doFold = async (roomid, playerid, io) => {
   console.log("playerid ===>" + playerid);
   console.log("roomdata ==>" + roomData);
   if (
-    roomData.timerPlayer &&
-    roomData.timerPlayer.toString() === playerid.toString()
+    roomData?.timerPlayer &&
+    roomData?.timerPlayer?.toString() === playerid?.toString()
   ) {
     switch (roomData.runninground) {
       case 1:
@@ -4764,6 +4772,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
   io.in(updatedRoom._id.toString()).emit("winner", { updatedRoom });
   // await finishHandApiCall(updatedRoom);
   handleWatcherWinner(updatedRoom, io);
+  // await elemination(roomid, io);
   // findLoserAndWinner(updatedRoom);
   setTimeout(async () => {
     let firstGameTime = new Date(updatedRoom.firstGameTime);
@@ -4778,7 +4787,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     //  });
     //  finishedTableGame(roomUpdate);
     //} else {
-
+    await elemination(roomid, io);
     await updateRoomForNewHand(roomid, io);
     let updatedRoomPlayers = await roomModel.findOne({
       _id: roomid,
@@ -5113,7 +5122,7 @@ export const reArrangeTables = async (tournamentId, io) => {
     const tData = await tournamentModel
       .findById(tournamentId, { rooms: 1, destroyedRooms: 1, havePlayers: 1 })
       .lean();
-    // console.log('tournamentData => ',tournamentData);
+    // console.log("tournamentData => ", tournamentData);
     const rearrange = async (tournamentData) => {
       if (tournamentData) {
         // let allAvilableRoom = tournamentData.rooms;
@@ -7529,7 +7538,6 @@ export const checkForGameTable = async (data, socket, io) => {
         }
       );
       io.in(gameId).emit("updateGame", { game: gameUpdatedData });
-
       return;
     }
 
@@ -7844,7 +7852,8 @@ export const activateTournament = async (io) => {
           const updatedtournament = await tournamentModel
             .findOne({ _id: checkTournament._id })
             .lean();
-          if (updatedtournament.havePlayers > 1) {
+          console.log("updatedtournament", updatedtournament);
+          if (updatedtournament?.havePlayers > 1) {
             await reArrangeTables(checkTournament._id, io);
           } else {
             clearInterval(rearrangeInterval);
