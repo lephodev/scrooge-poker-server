@@ -42,6 +42,7 @@ const findAvailablePosition = async (playerList) => {
 };
 
 const pushUserInRoom = async (roomId, userId, position, sitInAmount) => {
+  console.log("push user in room executed ====== >");
   try {
     const userData = await userService.getUserById(userId);
     const { username, wallet, email, _id, avatar, profile } = userData;
@@ -63,7 +64,7 @@ const pushUserInRoom = async (roomId, userId, position, sitInAmount) => {
               missedBigBlind: false,
               forceBigBlind: false,
               playing: true,
-              initialCoinBeforeStart: wallet,
+              initialCoinBeforeStart: sitInAmount,
               gameJoinedAt: new Date(),
               hands: [],
             },
