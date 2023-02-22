@@ -4793,7 +4793,11 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     //  });
     //  finishedTableGame(roomUpdate);
     //} else {
-    await elemination(roomid, io);
+    console.log("checkRoom", checkRoom?.tournament);
+    if (checkRoom?.tournament) {
+      await elemination(roomid, io);
+    }
+
     await updateRoomForNewHand(roomid, io);
     let updatedRoomPlayers = await roomModel.findOne({
       _id: roomid,
