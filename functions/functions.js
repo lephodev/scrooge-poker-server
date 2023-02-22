@@ -2257,6 +2257,9 @@ export const showdown = async (roomid, io) => {
     //  });
     //  finishedTableGame(roomUpdate);
     //} else {
+      console.log("check elimination in the showdown---->")
+    await elemination(roomid, io);
+    console.log("after check elimination in the showdown---->")
     await updateRoomForNewHand(roomid, io)
     let updatedRoomPlayers = await roomModel.findOne({
       _id: roomid,
@@ -2318,6 +2321,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
       let buyin = roomData?.buyin;
       const bigBlindAmt = roomData.bigBlind;
       const smallBlindAmt = roomData.smallBlind;
+      console.log("elemination in update room for new hand",roomData)
       let playerData = [];
       switch (roomData.runninground) {
         case 0:
@@ -2450,6 +2454,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
         },
         async function (err, transformedItems) {
           //Success callback
+          console.log("callllllllll------->")
           try {
             newHandPlayer = await anyNewPlayer(newHandPlayer, roomData.players)
             const upRoom = await roomModel.findOneAndUpdate(
@@ -2458,7 +2463,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
               },
               {
                 players: newHandPlayer,
-                eleminated: [],
+                //eleminated: [],
                 preflopround: [],
                 flopround: [],
                 turnround: [],
@@ -2487,6 +2492,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 buyin: buyin,
                 sitin: sitin,
                 leavereq: leavereq,
+                autoNextHand:true // i am update here
               },
               {
                 new: true,
@@ -2495,6 +2501,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
             // io.in(upRoom._id.toString()).emit('newhand', {
             //   updatedRoom: upRoom,
             // });
+            console.log("update new hand elin two--->",upRoom)
             resolve()
           } catch (error) {
             console.log('Error in transformedItems', err)
@@ -2510,6 +2517,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
 }
 
 export const elemination = async (roomid, io) => {
+  console.log("check elimination--->")
   const roomData = await roomModel
     .findOne({ _id: roomid })
     .populate('tournament')
@@ -2538,9 +2546,10 @@ export const elemination = async (roomid, io) => {
         stats: el.stats,
         hands: el.hands,
         meetingToken: el.meetingToken,
+
       })
     } else {
-      newHandPlayer.push({
+        newHandPlayer.push({
         userid: el.id,
         name: el.name,
         photoURI: el.photoURI,
@@ -2550,11 +2559,13 @@ export const elemination = async (roomid, io) => {
         stats: el.stats,
         hands: el.hands,
         meetingToken: el.meetingToken,
+        playing:true
       })
     }
   })
 
   if (eleminated_players.length === 0) {
+    console.log("Here in eliminated")
     eleminated_players = roomData.eleminated
   }
 
@@ -2595,12 +2606,13 @@ export const elemination = async (roomid, io) => {
       new: true,
     },
   )
+  console.log("Console.logUpdated rooom------->",upRoom)
+  // io.in(upRoom._id.toString()).emit('newhand', { updatedRoom: upRoom })
 
-  io.in(upRoom._id.toString()).emit('newhand', { updatedRoom: upRoom })
-
-  setTimeout(() => {
-    preflopround(upRoom, io)
-  }, 2000)
+  // setTimeout(() => {
+  //   console.log("TImed out detail--->")
+  //   preflopround(upRoom, io)
+  // }, 2000)
 }
 
 export const doPauseGame = async (data, io, socket) => {
@@ -4776,7 +4788,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     //  });
     //  finishedTableGame(roomUpdate);
     //} else {
-
+    await elemination(roomid, io);
     await updateRoomForNewHand(roomid, io)
     ///dgs
     let updatedRoomPlayers = await roomModel.findOne({
@@ -5125,6 +5137,7 @@ export const reArrangeTables = async (tournamentId, io) => {
       })
       .populate('rooms', null, { gamestart: false })
       .lean()
+      console.log("tournament data --->--->",tournamentData)
     const tData = await tournamentModel
       .findById(tournamentId, { rooms: 1, destroyedRooms: 1, havePlayers: 1 })
       .lean()
@@ -5136,12 +5149,13 @@ export const reArrangeTables = async (tournamentId, io) => {
         const updatedDestroyed = await tournamentModel
           .findById(tournamentData._id, { destroyedRooms: 1 })
           .lean()
+          console.log("Updated destroyed table -->",updatedDestroyed.destroyedRooms)
         const notDestroyedYet = tournamentData.rooms.filter((el) => {
           let r = true
           const have = updatedDestroyed.destroyedRooms.filter(
             (e) => e.toString() === el._id.toString(),
           )
-          console.log("<<<==== Have length ====>>>",have.length)
+          console.log("<<<==== Have length ====>>>",have)
           if (have.length) {
             r = false
           }
@@ -5149,7 +5163,7 @@ export const reArrangeTables = async (tournamentId, io) => {
         })
         console.log('++++++ notDestroyedYet ++++++ ==>', notDestroyedYet);
         let allAvilableRoom = await getRoomsUpdatedData(notDestroyedYet)
-        // console.log("updated Rooms Data ==> ", allAvilableRoom);
+        console.log("updated Rooms Data ==> ", allAvilableRoom);
         let fullRooms = []
         let haveBlankSpots = []
         let blankSpots = []
@@ -5158,34 +5172,34 @@ export const reArrangeTables = async (tournamentId, io) => {
         let canPlayMinimum = 4
         console.log("room length detail",tData.rooms.length-updatedDestroyed.destroyedRooms.length)
         if (tData.rooms.length - updatedDestroyed.destroyedRooms.length >= 4) {
-          console.log('canPlayMinimum==>', canPlayMinimum);
+          console.log('canPlayMinimum first ==>', canPlayMinimum);
           canPlayMinimum = 4
         } else if (
           tData.rooms.length - updatedDestroyed.destroyedRooms.length <= 8 &&
           tData.rooms.length - updatedDestroyed.destroyedRooms.length >= 5
         ) {
-          console.log('canPlayMinimum==>', canPlayMinimum);
+          console.log('canPlayMinimum second==>', canPlayMinimum);
           canPlayMinimum = 8
         } else if (
           tData.rooms.length - updatedDestroyed.destroyedRooms.length <= 4 &&
-          tData.rooms.length - updatedDestroyed.destroyedRooms.length >= 3
+          tData.rooms.length - updatedDestroyed.destroyedRooms.length >= 1
         ) {
-          console.log('canPlayMinimum==>', canPlayMinimum);
+          console.log('canPlayMinimum third==>', canPlayMinimum);
           canPlayMinimum = 7
         } else if (
           tData.rooms.length - updatedDestroyed.destroyedRooms.length ===
           2
         ) {
-          console.log('canPlayMinimum==>', canPlayMinimum);
+          console.log('canPlayMinimum fourth==>', canPlayMinimum);
           canPlayMinimum = 5
         } else if (
           tData.rooms.length - updatedDestroyed.destroyedRooms.length ===
           1
         ) {
-          console.log('canPlayMinimum==>', canPlayMinimum);
+          console.log('canPlayMinimum fifth==>', canPlayMinimum);
           canPlayMinimum = 2
         }
-
+       console.log("can play minimum--->",canPlayMinimum)
         fullRooms = allAvilableRoom.filter(
           (el) =>
             el.players.length <= 4 && el.players.length >= canPlayMinimum + 1,
@@ -5196,20 +5210,22 @@ export const reArrangeTables = async (tournamentId, io) => {
           // DESC -> b.length - a.length
           return b.players.length - a.players.length
         })
-
+        console.log("Full room --->",fullRooms)
         if (fullRooms.length===0) {
             fullRooms = allAvilableRoom.filter(el=>el.players.length === (canPlayMinimum+1));
         }
+        console.log("Available room--->",allAvilableRoom)
         haveBlankSpots = allAvilableRoom.filter(
           (el) => el.players.length < 4 && el.players.length > 0,
         )
-        // console.log('fullRooms =>',fullRooms);
-        // console.log('haveBlankSpots =>',haveBlankSpots);
+         console.log('fullRooms =>',fullRooms);
+         console.log('haveBlankSpots =>',haveBlankSpots);
         let mostBlnkRoom = { roomid: null, totalSpots: 0 }
         console.log("have blank spot-->",haveBlankSpots)
         let totalEliminated = 0
         haveBlankSpots.forEach((el) => {
           if (el.eleminated.length) {
+            console.log("elemen---->")
             let position = []
             el.eleminated.forEach((e) => {
               position.push(e.position)
@@ -5238,11 +5254,13 @@ export const reArrangeTables = async (tournamentId, io) => {
         // let mxLength = 10
         // if (fullRooms.length === 0 ) {
         //     mxLength = canPlayMinimum+1;
-
+        console.log("haveMoreThnOne---->",haveMoreThnOne.length,fullRooms.length)
+        console.log("total eleminated player--->",totalEliminated,mostBlnkRoom.totalSpots)
         if (
           totalEliminated - mostBlnkRoom.totalSpots >=
           4 - mostBlnkRoom.totalSpots
         ) {
+          console.log("first condition we choose ---> for check blank")
           let leftBlankTables1 = haveMoreThnOne.filter(
             (el) => el.roomid !== mostBlnkRoom.roomid,
           )
@@ -5254,7 +5272,7 @@ export const reArrangeTables = async (tournamentId, io) => {
           )
           let leftBlankTables4 = leftBlankTables1.concat(leftBlankTables2)
           let leftBlankTables = leftBlankTables4.concat(leftBlankTables3)
-          // console.log("leftBlankTables ==> ", leftBlankTables);
+           console.log("leftBlankTables ==> ", leftBlankTables);
           await destroyTable(mostBlnkRoom, leftBlankTables, io)
           console.log(
             "+++++++++++++++++ Calling Rearrange Again ++++++++++++++++++"
@@ -7823,6 +7841,7 @@ export const activateTournament = async (io) => {
           const updatedtournament = await tournamentModel
             .findOne({ _id: checkTournament._id })
             .lean()
+            console.log("updated tournament in rearrange Interval",updatedtournament)
           if (updatedtournament.havePlayers > 1) {
             console.log("Re arrange table")
             await reArrangeTables(checkTournament._id, io)
