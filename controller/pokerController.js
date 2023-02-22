@@ -203,6 +203,7 @@ export const refillWallet = async (req, res) => {
     const user = req.user;
     let { tableId, amount } = req.body;
     console.log("req.bod", req.body, user);
+    // console.log("req.bod", parseInt(req.body.amount));
 
     if (!tableId || !amount) {
       return res.status(403).send({ msg: "Invalid data" });
@@ -226,7 +227,7 @@ export const refillWallet = async (req, res) => {
       {
         $inc: {
           "players.$.wallet": amount,
-          "players.$.initialCoinBeforeStart": amount,
+          // "players.$.initialCoinBeforeStart": 100,
         },
       }
     );
@@ -253,6 +254,7 @@ export const refillWallet = async (req, res) => {
 
     res.status(200).send({ msg: "Success", roomData });
   } catch (error) {
+    console.log("error", error);
     res.status(500).send({ msg: "Internel server error" });
     console.log(error);
   }
