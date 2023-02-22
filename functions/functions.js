@@ -7196,7 +7196,6 @@ const createTransactionFromUsersArray = async (roomId, users = []) => {
     let totalLossAmount = 0;
     let totalWin = 0;
     let totalLose = 0;
-
     const handsTransaction = el.hands.map((elem) => {
       console.log({ elem });
       if (elem.action === "game-lose") {
@@ -7209,6 +7208,7 @@ const createTransactionFromUsersArray = async (roomId, users = []) => {
         totalWin++;
       }
 
+      updatedAmount -= elem.amount;
       // Get each transaction last and update wallet amount
       console.log(
         "update amount: ------------------------------------------------>",
@@ -7218,7 +7218,7 @@ const createTransactionFromUsersArray = async (roomId, users = []) => {
       const gameWinOrLoseamount =
         elem.action === "game-lose" ? -elem.amount : elem.amount;
       const lastAmount = updatedAmount;
-      updatedAmount = updatedAmount + gameWinOrLoseamount;
+      // updatedAmount = updatedAmount + gameWinOrLoseamount;
       console.log("updated amount ----->", updatedAmount);
       return {
         userId,
@@ -7382,11 +7382,16 @@ export const leaveApiCall = async (room, userId) => {
 
     const userBalancePromise = users.map((el) => {
       console.log(`Updated amount for user ${el.uid} is ${el.newBalance}`);
+      let totalTicketWon = 0;
+      el.hands.forEach((hand) => {
+        if (hand.action === "game-win") totalTicketWon += Number(hand.amount);
+      });
+      console.log("total tickets token", totalTicketWon);
       return userModel.updateOne(
         {
           _id: convertMongoId(el.uid),
         },
-        { $inc: { wallet: el.newBalance } }
+        { $inc: { wallet: el.newBalance, ticket: totalTicketWon } }
       );
     });
 
