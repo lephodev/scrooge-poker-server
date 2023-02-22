@@ -7387,11 +7387,18 @@ export const leaveApiCall = async (room, userId) => {
         if (hand.action === "game-win") totalTicketWon += Number(hand.amount);
       });
       console.log("total tickets token", totalTicketWon);
+      const newBalnce = el.newBalance > 0 ? el.newBalance : 0;
+      console.log("newBalnce =====>", newBalnce, el.newBalance);
       return userModel.updateOne(
         {
           _id: convertMongoId(el.uid),
         },
-        { $inc: { wallet: el.newBalance, ticket: totalTicketWon } }
+        {
+          $inc: {
+            wallet: newBalnce,
+            ticket: totalTicketWon,
+          },
+        }
       );
     });
 
