@@ -2256,7 +2256,13 @@ export const showdown = async (roomid, io) => {
     //  });
     //  finishedTableGame(roomUpdate);
     //} else {
-    await elemination(roomid, io);
+    let checkRoom = await roomModel.findOne({
+      _id: roomid,
+    });
+    console.log("checkRoom", checkRoom?.tournament);
+    if (checkRoom?.tournament) {
+      await elemination(roomid, io);
+    }
     await updateRoomForNewHand(roomid, io);
     let updatedRoomPlayers = await roomModel.findOne({
       _id: roomid,
