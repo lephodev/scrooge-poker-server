@@ -54,7 +54,7 @@ app.use(
     extended: false,
   })
 );
-app.use(cors(corsOptions));
+app.use(cors());
 mongoConnect();
 
 // Auth functions
