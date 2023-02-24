@@ -2257,6 +2257,10 @@ export const showdown = async (roomid, io) => {
     //  });
     //  finishedTableGame(roomUpdate);
     //} else {
+      if(upRoom.tournament){
+        await elemination(roomid, io);
+        await reArrangeTables(upRoom.tournament, io)
+      }
     await updateRoomForNewHand(roomid, io)
     let updatedRoomPlayers = await roomModel.findOne({
       _id: roomid,
@@ -2458,7 +2462,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
               },
               {
                 players: newHandPlayer,
-                eleminated: [],
+                eleminated:  JSON.parse(JSON.stringify(roomData.eleminated)),
                 preflopround: [],
                 flopround: [],
                 turnround: [],
@@ -2487,6 +2491,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 buyin: buyin,
                 sitin: sitin,
                 leavereq: leavereq,
+                autoNextHand:true
               },
               {
                 new: true,
@@ -2564,7 +2569,7 @@ export const elemination = async (roomid, io) => {
     },
     {
       players: newHandPlayer,
-      eleminated: eleminated_players,
+      eleminated:  JSON.parse(JSON.stringify(eleminated_players)),
       preflopround: [],
       flopround: [],
       turnround: [],
@@ -2595,7 +2600,12 @@ export const elemination = async (roomid, io) => {
       new: true,
     },
   )
-
+  if(eleminated_players.length >0 && roomData.tournament && roomData.tournament.havePlayers >0){
+    const availablePlayer=parseInt(roomData.tournament.havePlayers)-parseInt(eleminated_players?.length)
+    await tournamentModel.updateOne({_id:roomData.tournament._id},{
+      havePlayers:parseInt(availablePlayer)
+    })
+  }
   io.in(upRoom._id.toString()).emit('newhand', { updatedRoom: upRoom })
 
   setTimeout(() => {
@@ -4776,7 +4786,10 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     //  });
     //  finishedTableGame(roomUpdate);
     //} else {
-
+      if(updatedRoom.tournament){
+        await elemination(roomid, io);
+        await reArrangeTables(updatedRoom.tournament, io)
+      }
     await updateRoomForNewHand(roomid, io)
     ///dgs
     let updatedRoomPlayers = await roomModel.findOne({
@@ -5125,9 +5138,6 @@ export const reArrangeTables = async (tournamentId, io) => {
       })
       .populate('rooms', null, { gamestart: false })
       .lean()
-    const tData = await tournamentModel
-      .findById(tournamentId, { rooms: 1, destroyedRooms: 1, havePlayers: 1 })
-      .lean()
     // console.log('tournamentData => ',tournamentData);
     const rearrange = async (tournamentData) => {
       console.log('++++++ start re arranging ++++++ ==>');
@@ -5154,37 +5164,7 @@ export const reArrangeTables = async (tournamentId, io) => {
         let haveBlankSpots = []
         let blankSpots = []
         let extraBlankfordestroy = []
-
-        let canPlayMinimum = 4
-        console.log("room length detail",tData.rooms.length-updatedDestroyed.destroyedRooms.length)
-        if (tData.rooms.length - updatedDestroyed.destroyedRooms.length >= 4) {
-          console.log('canPlayMinimum==>', canPlayMinimum);
-          canPlayMinimum = 4
-        } else if (
-          tData.rooms.length - updatedDestroyed.destroyedRooms.length <= 8 &&
-          tData.rooms.length - updatedDestroyed.destroyedRooms.length >= 5
-        ) {
-          console.log('canPlayMinimum==>', canPlayMinimum);
-          canPlayMinimum = 8
-        } else if (
-          tData.rooms.length - updatedDestroyed.destroyedRooms.length <= 4 &&
-          tData.rooms.length - updatedDestroyed.destroyedRooms.length >= 3
-        ) {
-          console.log('canPlayMinimum==>', canPlayMinimum);
-          canPlayMinimum = 7
-        } else if (
-          tData.rooms.length - updatedDestroyed.destroyedRooms.length ===
-          2
-        ) {
-          console.log('canPlayMinimum==>', canPlayMinimum);
-          canPlayMinimum = 5
-        } else if (
-          tData.rooms.length - updatedDestroyed.destroyedRooms.length ===
-          1
-        ) {
-          console.log('canPlayMinimum==>', canPlayMinimum);
-          canPlayMinimum = 2
-        }
+       let canPlayMinimum=await findCanPlayMinimum(tournamentData.havePlayers)
 
         fullRooms = allAvilableRoom.filter(
           (el) =>
@@ -5203,7 +5183,7 @@ export const reArrangeTables = async (tournamentId, io) => {
         haveBlankSpots = allAvilableRoom.filter(
           (el) => el.players.length < 4 && el.players.length > 0,
         )
-        // console.log('fullRooms =>',fullRooms);
+         console.log('fullRooms =>',fullRooms);
         // console.log('haveBlankSpots =>',haveBlankSpots);
         let mostBlnkRoom = { roomid: null, totalSpots: 0 }
         console.log("have blank spot-->",haveBlankSpots)
@@ -5221,24 +5201,12 @@ export const reArrangeTables = async (tournamentId, io) => {
             blankSpots.push({ roomid: el._id, spots: position })
           }
         })
+        console.log("blankspot---->",blankSpots)
         let haveOnespot = blankSpots.filter((el) => el.spots.length === 1)
         let haveMoreThnOne = blankSpots.filter((el) => {
           return el.spots.length > 4 - canPlayMinimum
         })
-
-        fullRooms.forEach((el) => {
-          console.log(
-            'full rooms id ==> ',
-            el._id,
-            ' players.length => ',
-            el.players.length,
-          )
-        })
-
-        // let mxLength = 10
-        // if (fullRooms.length === 0 ) {
-        //     mxLength = canPlayMinimum+1;
-
+    console.log("Have more than one -->",haveMoreThnOne.length,fullRooms.length)
         if (
           totalEliminated - mostBlnkRoom.totalSpots >=
           4 - mostBlnkRoom.totalSpots
@@ -7818,24 +7786,73 @@ export const activateTournament = async (io) => {
         await preflopround(room, io)
         next()
       },
-      async function (err, transformedItems) {
-        let rearrangeInterval = setInterval(async () => {
-          const updatedtournament = await tournamentModel
-            .findOne({ _id: checkTournament._id })
-            .lean()
-          if (updatedtournament.havePlayers > 1) {
-            console.log("Re arrange table")
-            await reArrangeTables(checkTournament._id, io)
-          } else {
-            clearInterval(rearrangeInterval)
-            console.log('We got tournament winner.')
-          }
-        }, 120000)
-        startLevelInterval(checkTournament._id)
-      },
+      // async function (err, transformedItems) {
+      //   let rearrangeInterval = setInterval(async () => {
+      //     const updatedtournament = await tournamentModel
+      //       .findOne({ _id: checkTournament._id })
+      //       .lean()
+      //     if (updatedtournament.havePlayers > 1) {
+      //       console.log("Re arrange table")
+      //       await reArrangeTables(checkTournament._id, io)
+      //     } else {
+      //       clearInterval(rearrangeInterval)
+      //       console.log('We got tournament winner.')
+      //     }
+      //   }, 120000)
+      //   startLevelInterval(checkTournament._id)
+      // },
     )
   } else {
     console.log('Tournament not found----->')
   }
   //console.log("checkTournament", checkTournament);
+}
+const findCanPlayMinimum=async(totalPlayer)=>{
+  // console.log("findCanPlayMinimum called with total player =>", totalPlayer);
+  let fulltable = 0;
+  let playerOnTable = 4;
+  let leftPlayer= totalPlayer;
+  let minPlayerCanPlay = 2;
+  const y = async() =>{
+      // console.log("function y called" );
+      fulltable = Math.floor(leftPlayer/playerOnTable);
+      leftPlayer = leftPlayer%playerOnTable;
+      if (leftPlayer === 0 ) {
+          // console.log("can play minimum 1=>", playerOnTable-1)
+          minPlayerCanPlay = playerOnTable-1
+      } else {
+          if (leftPlayer%(playerOnTable-1) === 0) {
+              // console.log("can play minimum 2=>", playerOnTable-1)
+              minPlayerCanPlay = playerOnTable-1
+          } else {
+              const x = async()=>{
+                  // console.log("function x called" );
+                  if (fulltable>0) {
+                      leftPlayer+=playerOnTable;
+                      fulltable-=1;
+                      if (leftPlayer%(playerOnTable-1) ===0) {
+                          // console.log("can play minimum 3=>", playerOnTable-1)
+                          minPlayerCanPlay = playerOnTable-1
+                      }else{
+                          await x();
+                      }
+                  } else {
+                      playerOnTable-=1;
+                      leftPlayer= totalPlayer;
+                      // console.log("calling y again");
+                      await y();
+                  }
+                  
+              }
+              await x();
+          }
+      }
+  }
+  await y();
+  console.log("full Tables =>", fulltable)
+  console.log("Players on full Tables =>", playerOnTable)
+  let otherTables = (totalPlayer-(fulltable*playerOnTable))/minPlayerCanPlay;
+  console.log("other Tables =>", otherTables)
+  console.log("minPlayerCanPlay =>", minPlayerCanPlay)
+  return minPlayerCanPlay;
 }
