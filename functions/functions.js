@@ -1074,18 +1074,18 @@ export const flopround = async (roomid, io) => {
 export const flopTimer = async (roomid, io) => {
   const roomData = await roomModel.findOne({ _id: roomid });
 
-  let totalPlayer = roomData.flopround.length + roomData.eleminated.length;
+  let totalPlayer = roomData?.flopround?.length + roomData?.eleminated?.length;
 
   const timer = async (i, maxPosition) => {
-    let j = roomData.timer;
+    let j = roomData?.timer;
     let t = "timer";
-    let tx = roomData.timer;
+    let tx = roomData?.timer;
     const udata = await roomModel.findOne({ _id: roomid });
 
     if (i < maxPosition) {
       // let playerinterval = roomData.players[i].userid;
 
-      let cPlayer = roomData.players.filter((el) => el.position === i);
+      let cPlayer = roomData?.players?.filter((el) => el.position === i);
       let cp = null;
       if (cPlayer.length) {
         cp = cPlayer[0].userid;
@@ -1112,9 +1112,9 @@ export const flopTimer = async (roomid, io) => {
           );
           let playerinterval = setInterval(async () => {
             const data = await roomModel.findOne({ _id: roomid });
-            let flopData = data.flopround;
+            let flopData = data?.flopround;
 
-            let filteredData = flopData.filter((e) => e.position === i);
+            let filteredData = flopData?.filter((e) => e.position === i);
 
             let intervalPlayer = filteredData;
             if (j <= 0) {
@@ -2321,10 +2321,10 @@ export const updateRoomForNewHand = async (roomid, io) => {
         .populate("tournament");
       let newHandPlayer = [];
       let buyin = roomData?.buyin;
-      const bigBlindAmt = roomData.bigBlind;
-      const smallBlindAmt = roomData.smallBlind;
+      const bigBlindAmt = roomData?.bigBlind;
+      const smallBlindAmt = roomData?.smallBlind;
       let playerData = [];
-      switch (roomData.runninground) {
+      switch (roomData?.runninground) {
         case 0:
           playerData = roomData.players;
           break;
