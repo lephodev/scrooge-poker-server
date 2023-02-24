@@ -4066,7 +4066,7 @@ export const doRaise = async (roomid, playerid, io, amt) => {
           (el) => el.id.toString() === playerid.toString()
         );
         amt = amt - roundData[0].pot;
-        p = roomData.turnround;
+        p = roomData.riverround;
         p.forEach((e) => {
           if (
             e.tentativeAction &&
@@ -4182,7 +4182,7 @@ export const doCheck = async (roomid, playerid, io) => {
   //   (el) => el?.userid.toString() === roomData?.timerPlayer?.toString()
   // );
 
-  if (roomData?.timerPlayer.toString() === playerid.toString()) {
+  if (roomData?.timerPlayer?.toString() === playerid?.toString()) {
     switch (roomData.runninground) {
       case 1:
         updatedRoom = await roomModel.findOneAndUpdate(
