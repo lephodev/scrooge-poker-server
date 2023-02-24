@@ -7230,7 +7230,6 @@ const createTransactionFromUsersArray = async (roomId, users = []) => {
         transactionType: "poker",
       };
     });
-
     console.log({ totalWin, totalLose, totalWinAmount, totalLossAmount });
 
     if (totalWin || totalLose || totalWinAmount || totalLossAmount) {
@@ -7379,7 +7378,6 @@ export const leaveApiCall = async (room, userId) => {
 
     console.log("transactions data ====>", transactions);
     // console.log("users2====>", users);
-
     const userBalancePromise = users.map((el) => {
       console.log(`Updated amount for user ${el.uid} is ${el.newBalance}`);
       let totalTicketWon = 0;
@@ -7389,6 +7387,7 @@ export const leaveApiCall = async (room, userId) => {
       console.log("total tickets token", totalTicketWon);
       const newBalnce = el.newBalance > 0 ? el.newBalance : 0;
       console.log("newBalnce =====>", newBalnce, el.newBalance);
+
       return userModel.updateOne(
         {
           _id: convertMongoId(el.uid),
