@@ -4066,7 +4066,7 @@ export const doRaise = async (roomid, playerid, io, amt) => {
           (el) => el.id.toString() === playerid.toString()
         );
         amt = amt - roundData[0].pot;
-        p = roomData.turnround;
+        p = roomData.riverround;
         p.forEach((e) => {
           if (
             e.tentativeAction &&
