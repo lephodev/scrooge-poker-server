@@ -7600,6 +7600,31 @@ export const checkForGameTable = async (data, socket, io) => {
   }
 };
 
+export const checkAlreadyInGame = async (data, socket, io) => {
+  try {
+    console.log("data", data);
+    const { userId, tableId } = data;
+    const checkIfInOtherGame = await gameService.checkIfUserInGame(
+      userId,
+      tableId
+    );
+    if (checkIfInOtherGame) {
+      console.log("User in the other table");
+      return socket.emit("userAlreadyInGame", {
+        message: "You are also on other table.",
+        join: false,
+      });
+    } else {
+      return socket.emit("userAlreadyInGame", {
+        message: "You can join this game.",
+        join: true,
+      });
+    }
+  } catch (err) {
+    console.log("error in check aleady in game function", err);
+  }
+};
+
 // playerTentativeAction
 export const playerTentativeAction = async (data, socket, io) => {
   try {

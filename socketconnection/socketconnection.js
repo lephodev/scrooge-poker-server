@@ -28,6 +28,7 @@ import {
   updateSeenBy,
   emitTyping,
   JoinTournament,
+  checkAlreadyInGame,
 } from "../functions/functions";
 import mongoose from "mongoose";
 import roomModel from "../models/room";
@@ -64,8 +65,17 @@ let returnSocket = (io) => {
         console.log("Error in checkTable =>", err.message);
       }
     });
+
     socket.on("joinGame", async (data) => {
       await joinRequest(data, socket, io);
+    });
+
+    socket.on("checkAlreadyInGame", async (data) => {
+      try {
+        await checkAlreadyInGame(data, socket, io);
+      } catch (err) {
+        console.log("error in checkAlreadyInGame", err);
+      }
     });
 
     socket.on("leaveWatcherJoinPlayer", async (data) => {
@@ -260,8 +270,8 @@ let returnSocket = (io) => {
     socket.on("showCard", (data) => {
       io.in(data.gameId).emit("showCard", data);
     });
-    socket.on('hideCard', (data) => {
-      io.in(data.gameId).emit('hideCard', data);
+    socket.on("hideCard", (data) => {
+      io.in(data.gameId).emit("hideCard", data);
     });
 
     socket.on("disconnect", async () => {
