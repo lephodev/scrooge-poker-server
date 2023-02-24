@@ -4182,7 +4182,7 @@ export const doCheck = async (roomid, playerid, io) => {
   //   (el) => el?.userid.toString() === roomData?.timerPlayer?.toString()
   // );
 
-  if (roomData?.timerPlayer.toString() === playerid.toString()) {
+  if (roomData?.timerPlayer?.toString() === playerid?.toString()) {
     switch (roomData.runninground) {
       case 1:
         updatedRoom = await roomModel.findOneAndUpdate(
