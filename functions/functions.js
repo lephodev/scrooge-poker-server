@@ -4157,7 +4157,7 @@ export const socketDoRaise = async (dta, io, socket) => {
         } else {
           socket.emit("actionError", {
             code: 400,
-            msg: `Raise amount must be minimum ${data.raiseAmount * 2}`,
+            msg: `Raise amount must be minimum ${data.raiseAmount}`,
           });
         }
       } else {
