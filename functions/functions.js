@@ -2396,12 +2396,12 @@ export const updateRoomForNewHand = async (roomid, io) => {
             );
             if (haveBuyin.length) {
               haveBuyin.forEach((x) => {
-                buyinchips += parseInt(x.chips);
+                buyinchips += parseInt(x.wallet);
                 x.redeem = 1;
 
                 stripeBuy.push({
                   action: "buy-coins",
-                  amount: x.chips,
+                  amount: x.wallet,
                   date: new Date(),
                   isWatcher: false,
                   usd: x.usd,

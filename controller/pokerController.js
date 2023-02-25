@@ -198,61 +198,126 @@ export const getTablePlayers = async (req, res) => {
   }
 };
 
+// export const refillWallet = async (req, res) => {
+//   try {
+//     const user = req.user;
+//     let { tableId, amount } = req.body;
+//     console.log("req.bod", req.body, user);
+//     // console.log("req.bod", parseInt(req.body.amount));
+
+//     if (!tableId || !amount) {
+//       return res.status(403).send({ msg: "Invalid data" });
+//     }
+
+//     amount = parseInt(amount);
+
+//     if (amount > user.wallet) {
+//       return res
+//         .status(403)
+//         .send({ msg: "You dont have balance in your wallet" });
+//     }
+
+//     await roomModel.updateOne(
+//       {
+//         $and: [
+//           { _id: tableId },
+//           { players: { $elemMatch: { id: mongoose.Types.ObjectId(user.id) } } },
+//         ],
+//       },
+//       {
+//         $inc: {
+//           "players.$.wallet": amount,
+//           // "players.$.initialCoinBeforeStart": 100,
+//         },
+//       }
+//     );
+
+//     const roomData = await roomModel.findOne({
+//       $and: [
+//         { _id: tableId },
+//         {
+//           players: { $elemMatch: { userid: mongoose.Types.ObjectId(user.id) } },
+//         },
+//       ],
+//     });
+
+//     // if (roomData) {
+//     //   io.in(tableId).emit("updateRoom", roomData);
+//     // }
+
+//     console.log({ roomData });
+
+//     await User.updateOne(
+//       { _id: mongoose.Types.ObjectId(user.id) },
+//       { $inc: { wallet: -amount } }
+//     );
+
+//     res.status(200).send({ msg: "Success", roomData });
+//   } catch (error) {
+//     console.log("error", error);
+//     res.status(500).send({ msg: "Internel server error" });
+//     console.log(error);
+//   }
+// };
+
 export const refillWallet = async (req, res) => {
   try {
     const user = req.user;
     let { tableId, amount } = req.body;
-    console.log("req.bod", req.body, user);
-    // console.log("req.bod", parseInt(req.body.amount));
-
-    if (!tableId || !amount) {
-      return res.status(403).send({ msg: "Invalid data" });
-    }
-
     amount = parseInt(amount);
-
-    if (amount > user.wallet) {
-      return res
-        .status(403)
-        .send({ msg: "You dont have balance in your wallet" });
-    }
-
-    await roomModel.updateOne(
-      {
-        $and: [
-          { _id: tableId },
-          { players: { $elemMatch: { id: mongoose.Types.ObjectId(user.id) } } },
-        ],
-      },
-      {
-        $inc: {
-          "players.$.wallet": amount,
-          // "players.$.initialCoinBeforeStart": 100,
-        },
-      }
-    );
-
-    const roomData = await roomModel.findOne({
-      $and: [
-        { _id: tableId },
-        {
-          players: { $elemMatch: { userid: mongoose.Types.ObjectId(user.id) } },
-        },
-      ],
+    let room = await roomModel.findOne({
+      _id: tableId,
     });
 
-    // if (roomData) {
-    //   io.in(tableId).emit("updateRoom", roomData);
-    // }
-
-    console.log({ roomData });
-
-    await User.updateOne(
-      { _id: mongoose.Types.ObjectId(user.id) },
-      { $inc: { wallet: -amount } }
-    );
-
-    res.status(200).send({ msg: "Success", roomData });
+    if (room != null) {
+      const playerExist = room.players.filter(
+        (el) =>
+          mongoose.Types.ObjectId(el.userid).toString() === user.id.toString()
+      );
+      if (playerExist?.length) {
+        const userData = await User.findById(user.id).lean();
+        let buyinrequest = room.buyinrequest;
+        let buyin = {
+          userid: user.id,
+          name: userData?.username,
+          wallet: amount,
+          redeem: 0,
+        };
+        buyinrequest.push(buyin);
+        await roomModel.findByIdAndUpdate(room._id, {
+          buyin: buyinrequest,
+        });
+        const roomId = room._id.toString();
+        const updatedRoom = await roomModel.findById(roomId);
+        console.log("updatedRoom", updatedRoom);
+        console.log("room id==>", roomId);
+        const roomData = await roomModel.findOne({
+          $and: [
+            { _id: tableId },
+            {
+              players: {
+                $elemMatch: { userid: mongoose.Types.ObjectId(user.id) },
+              },
+            },
+          ],
+        });
+        await User.updateOne(
+          { _id: mongoose.Types.ObjectId(user.id) },
+          { $inc: { wallet: -amount } }
+        );
+        res.status(200).send({ msg: "Success" });
+      } else {
+        res.send({
+          code: 404,
+          msg: "Player not exist in this teble.",
+        });
+      }
+    } else {
+      res.send({
+        code: 404,
+        msg: "Room not found",
+      });
+    }
   } catch (error) {
     console.log("error", error);
     res.status(500).send({ msg: "Internel server error" });
