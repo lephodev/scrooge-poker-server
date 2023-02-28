@@ -7867,6 +7867,7 @@ const pushPlayerInRoom = async (
       autoNextHand: true,
       smallBlind: smallBlind || 100,
       bigBlind: bigBlind || 200,
+      gameType: "poker-tournament",
     };
 
     const roomData = new roomModel(payload);

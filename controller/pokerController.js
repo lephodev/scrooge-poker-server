@@ -61,14 +61,15 @@ export const createTable = async (req, res) => {
       return res.status(403).send({ message: "You don't have enough balance" });
     }
 
-    if (checkInGame) {
-      return res.status(403).send({ message: "You are already in a game." });
-    }
+    // if (checkInGame) {
+    //   return res.status(403).send({ message: "You are already in a game." });
+    // }
 
     const bigBlind = minchips * 2;
     const invitetedPlayerUserId = invitedUsers.map((el) => el.value);
     const roomData = await roomModel.create({
       gameName,
+      gameType: "poker",
       autoNextHand: autohand,
       invPlayers: invitetedPlayerUserId,
       public: isPublic,
