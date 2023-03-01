@@ -128,8 +128,9 @@ const joinRoomByUserId = async (game, userId, sitInAmount) => {
 // leave roomId empty if you want exclude any room to come in search
 // Because in check game function we want to exclude it from there
 const checkIfUserInGame = async (userId, roomId = "") => {
+  console.log("userId----", userId);
   try {
-    let query = { tournament: null, "players.userid": converMongoId(userId) };
+    let query = { gameType: "poker", "players.userid": converMongoId(userId) };
 
     if (roomId) {
       query["_id"] = { $ne: converMongoId(roomId) };

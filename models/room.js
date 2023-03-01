@@ -34,6 +34,8 @@ const roomSchema = new Schema({
   isCircleCompleted: { type: Boolean, default: false },
   allinPlayers: [],
   tournament: { type: Schema.Types.ObjectId, ref: "tournament" },
+  gameType: { type: String },
+
   joinRequests: [],
   eleminated: [],
   timer: { type: Number, default: 15 },
