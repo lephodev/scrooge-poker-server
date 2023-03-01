@@ -165,8 +165,6 @@ export const checkIfUserInTable = async (req, res) => {
       _id: mongoose.Types.ObjectId(tableId),
       "players.id": mongoose.Types.ObjectId(user.id),
     });
-
-    console.log("checkTable", checkTable);
     if (!checkTable) {
       return res.status(200).send({ inTable: false });
     }
@@ -320,7 +318,6 @@ export const refillWallet = async (req, res) => {
       });
     }
   } catch (error) {
-    console.log("error", error);
     res.status(500).send({ msg: "Internel server error" });
     console.log(error);
   }
