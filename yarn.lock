@@ -38,7 +38,7 @@
   "resolved" "https://registry.npmjs.org/@babel/compat-data/-/compat-data-7.20.1.tgz"
   "version" "7.20.1"
 
-"@babel/core@^7.4.5":
+"@babel/core@^7.0.0", "@babel/core@^7.0.0-0", "@babel/core@^7.12.0", "@babel/core@^7.13.0", "@babel/core@^7.4.0-0", "@babel/core@^7.4.5":
   "integrity" "sha512-w7DbG8DtMrJcFOi4VrLm+8QM4az8Mo+PuLBKLp2zrYRCow8W/f9xiXm5sN53C8HksCyDQwCKha9JiDoIyPjT2g=="
   "resolved" "https://registry.npmjs.org/@babel/core/-/core-7.20.2.tgz"
   "version" "7.20.2"
@@ -958,6 +958,11 @@
   "resolved" "https://registry.npmjs.org/@firebase/app-types/-/app-types-0.6.2.tgz"
   "version" "0.6.2"
 
+"@firebase/app-types@0.x":
+  "integrity" "sha512-AeweANOIo0Mb8GiYm3xhTEBVCmPwTYAu9Hcd2qSkLuga/6+j9b1Jskl5bpiSQWy9eJ/j5pavxj6eYogmnuzm+Q=="
+  "resolved" "https://registry.npmjs.org/@firebase/app-types/-/app-types-0.9.0.tgz"
+  "version" "0.9.0"
+
 "@firebase/auth-interop-types@0.1.6":
   "integrity" "sha512-etIi92fW3CctsmR9e3sYM3Uqnoq861M0Id9mdOPF6PWIg38BXL5k4upCNBggGUpLIS0H1grMOvy/wn1xymwe2g=="
   "resolved" "https://registry.npmjs.org/@firebase/auth-interop-types/-/auth-interop-types-0.1.6.tgz"
@@ -996,7 +1001,7 @@
   "resolved" "https://registry.npmjs.org/@firebase/logger/-/logger-0.2.6.tgz"
   "version" "0.2.6"
 
-"@firebase/util@1.1.0":
+"@firebase/util@1.1.0", "@firebase/util@1.x":
   "integrity" "sha512-lfuSASuPKNdfebuFR8rjFamMQUPH9iiZHcKS755Rkm/5gRT0qC7BMhCh3ZkHf7NVbplzIc/GhmX2jM+igDRCag=="
   "resolved" "https://registry.npmjs.org/@firebase/util/-/util-1.1.0.tgz"
   "version" "1.1.0"
@@ -2251,7 +2256,7 @@
   dependencies:
     "fill-range" "^7.0.1"
 
-"browserslist@^4.21.3", "browserslist@^4.21.4":
+"browserslist@^4.21.3", "browserslist@^4.21.4", "browserslist@>= 4.21.0":
   "integrity" "sha512-CBHJJdDmgjl3daYjN5Cp5kbTf1mUhZoS+beLklHIvkOWscs83YAhLlF3Wsh/lciQYAcbBJgTOD44VtG31ZM4Hw=="
   "resolved" "https://registry.npmjs.org/browserslist/-/browserslist-4.21.4.tgz"
   "version" "4.21.4"
@@ -3320,11 +3325,6 @@
   "resolved" "https://registry.npmjs.org/fs.realpath/-/fs.realpath-1.0.0.tgz"
   "version" "1.0.0"
 
-"fsevents@~2.3.1":
-  "integrity" "sha512-YR47Eg4hChJGAB1O3yEAOkGO+rlzutoICGqGo9EZ4lKWokzZRSyIW1QmTzqjtw8MJdj9srP869CuWw/hyzSiBw=="
-  "resolved" "https://registry.npmjs.org/fsevents/-/fsevents-2.3.1.tgz"
-  "version" "2.3.1"
-
 "ftp@~0.3.10":
   "integrity" "sha1-kZfYYa2BQvPmPVqDv+TFn3MwiF0= sha512-faFVML1aBx2UoDStmLwv2Wptt4vw5x03xxX172nhA5Y5HBshW5JweqQ2W4xL4dezQTG8inJsuYcpPHHU3X5OTQ=="
   "resolved" "https://registry.npmjs.org/ftp/-/ftp-0.3.10.tgz"
@@ -4375,7 +4375,7 @@
   "resolved" "https://registry.npmjs.org/mongoose-legacy-pluralize/-/mongoose-legacy-pluralize-1.0.2.tgz"
   "version" "1.0.2"
 
-"mongoose@^5.6.0":
+"mongoose@*", "mongoose@^5.6.0":
   "integrity" "sha512-sDI5/i1C9JD3ysDbVGqQG4N6vMC3ZOY7sH/bT63/+3vJub2Nys//JegL4y4iS7v8Vgvje3sNA3ladMSsVnv6TQ=="
   "resolved" "https://registry.npmjs.org/mongoose/-/mongoose-5.11.14.tgz"
   "version" "5.11.14"

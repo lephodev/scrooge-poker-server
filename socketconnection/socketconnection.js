@@ -28,6 +28,7 @@ import {
   updateSeenBy,
   emitTyping,
   JoinTournament,
+  checkAlreadyInGame,
 } from "../functions/functions";
 import mongoose from "mongoose";
 import roomModel from "../models/room";
@@ -57,15 +58,24 @@ let returnSocket = (io) => {
     });
 
     socket.on("checkTable", async (data) => {
-      console.log("---------------CHECK TABLE-------------------", { data });
+      console.log("---------------CHECK TABLE-------------------");
       try {
         await checkForGameTable(data, socket, io);
       } catch (err) {
         console.log("Error in checkTable =>", err.message);
       }
     });
+
     socket.on("joinGame", async (data) => {
       await joinRequest(data, socket, io);
+    });
+
+    socket.on("checkAlreadyInGame", async (data) => {
+      try {
+        await checkAlreadyInGame(data, socket, io);
+      } catch (err) {
+        console.log("error in checkAlreadyInGame", err);
+      }
     });
 
     socket.on("leaveWatcherJoinPlayer", async (data) => {
@@ -104,7 +114,10 @@ let returnSocket = (io) => {
       });
       console.log("dofold");
       data.roomid = room._id;
-      await socketDoFold(data, io, socket);
+      process.nextTick(async() => {
+        await socketDoFold(data, io, socket);
+      })
+      
     });
 
     socket.on("docall", async (data) => {
@@ -260,8 +273,8 @@ let returnSocket = (io) => {
     socket.on("showCard", (data) => {
       io.in(data.gameId).emit("showCard", data);
     });
-    socket.on('hideCard', (data) => {
-      io.in(data.gameId).emit('hideCard', data);
+    socket.on("hideCard", (data) => {
+      io.in(data.gameId).emit("hideCard", data);
     });
 
     socket.on("disconnect", async () => {
@@ -375,6 +388,12 @@ let returnSocket = (io) => {
     socket.on("typingOnChat", async (data) => {
       console.log("typing on chat", data);
       await emitTyping(data, socket, io);
+    });
+
+    socket.on("startGame", async (data) => {
+      console.log("start game executed", data);
+      const { tableId } = data;
+      io.in(tableId).emit("roomGameStarted", { start: true });
     });
 
     socket.on("joinTournament", async (data) => {

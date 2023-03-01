@@ -164,8 +164,6 @@ export const checkIfUserInTable = async (req, res) => {
       _id: mongoose.Types.ObjectId(tableId),
       "players.id": mongoose.Types.ObjectId(user.id),
     });
-
-    console.log("checkTable", checkTable);
     if (!checkTable) {
       return res.status(200).send({ inTable: false });
     }
