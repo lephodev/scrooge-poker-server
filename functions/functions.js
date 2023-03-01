@@ -2493,7 +2493,6 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 buyin: buyin,
                 sitin: sitin,
                 leavereq: leavereq,
-                autoNextHand:true
               },
               {
                 new: true,
@@ -2602,20 +2601,21 @@ export const elemination = async (roomid, io) => {
       isCircleCompleted: false,
       allinPlayers: [],
       tournament: roomData.tournament,
-      eliminationCount:eleminated_players?.length
+      eliminationCount:eleminated_players?.length,
+      autoNextHand:true
     },
     {
       new: true,
     },
   )
-  io.in(upRoom._id).emit("eleminated", { roomDetail: upRoom })
+  // io.in(upRoom._id).emit("eleminated", { roomDetail: upRoom })
   if(eleminated_players.length >0 &&  roomData.tournament.havePlayers >0 && roomData?.eliminationCount !==upRoom?.eliminationCount){
     const availablePlayer=parseInt(roomData.tournament.havePlayers)-parseInt(upRoom?.eliminationCount)
     await tournamentModel.updateOne({_id:roomData.tournament._id},{
       havePlayers:parseInt(availablePlayer)
     })
   }
-  // io.in(upRoom._id.toString()).emit('newhand', { updatedRoom: upRoom })
+   io.in(upRoom._id.toString()).emit('newhand', { updatedRoom: upRoom })
 
   // setTimeout(() => {
   //   preflopround(upRoom, io);
@@ -7921,9 +7921,9 @@ export const activateTournament = async (io) => {
 const findCanPlayMinimum=async(totalPlayer)=>{
   // console.log("findCanPlayMinimum called with total player =>", totalPlayer);
   let fulltable = 0;
-  let playerOnTable = 4;
+  let playerOnTable = 9;
   let leftPlayer= totalPlayer;
-  let minPlayerCanPlay = 2;
+  let minPlayerCanPlay = 4;
   const y = async() =>{
        console.log("function y called" );
       fulltable = Math.floor(leftPlayer/playerOnTable);
