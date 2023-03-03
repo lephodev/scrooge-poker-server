@@ -58,7 +58,7 @@ let returnSocket = (io) => {
     });
 
     socket.on("checkTable", async (data) => {
-      console.log("---------------CHECK TABLE-------------------", { data });
+      console.log("---------------CHECK TABLE-------------------");
       try {
         await checkForGameTable(data, socket, io);
       } catch (err) {
@@ -114,7 +114,10 @@ let returnSocket = (io) => {
       });
       console.log("dofold");
       data.roomid = room._id;
-      await socketDoFold(data, io, socket);
+      process.nextTick(async() => {
+        await socketDoFold(data, io, socket);
+      })
+      
     });
 
     socket.on("docall", async (data) => {
