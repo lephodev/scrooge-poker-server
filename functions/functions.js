@@ -2706,7 +2706,8 @@ export const doResumeGame = async (data, io, socket) => {
 };
 
 export const doSitOut = async (data, io, socket) => {
-  console.log("doSitOut API called ");
+  console.log("doSitOut API called", data);
+  const { action } = data;
   const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
   let roomid;
@@ -2752,12 +2753,13 @@ export const doSitOut = async (data, io, socket) => {
               },
               { new: true }
             );
-
-            io.in(updatedData._id.toString()).emit("notification", {
-              id: userid,
-              action: "SitOut",
-              msg: "",
-            });
+            if (action !== "Leave") {
+              io.in(updatedData._id.toString()).emit("notification", {
+                id: userid,
+                action: "SitOut",
+                msg: "",
+              });
+            }
             if (socket) socket.emit("sitInOut", { updatedRoom: updatedData });
             break;
 
@@ -2807,10 +2809,12 @@ export const doSitOut = async (data, io, socket) => {
               );
               res = false;
             }
-            io.in(updatedData._id.toString()).emit("notification", {
-              id: userid,
-              action: "SitOut",
-            });
+            if (action !== "Leave") {
+              io.in(updatedData._id.toString()).emit("notification", {
+                id: userid,
+                action: "SitOut",
+              });
+            }
             if (socket) {
               socket.emit("sitInOut", { updatedRoom: updatedData });
             }
@@ -2862,10 +2866,12 @@ export const doSitOut = async (data, io, socket) => {
               );
               res = false;
             }
-            io.in(updatedData._id.toString()).emit("notification", {
-              id: userid,
-              action: "SitOut",
-            });
+            if (action !== "Leave") {
+              io.in(updatedData._id.toString()).emit("notification", {
+                id: userid,
+                action: "SitOut",
+              });
+            }
             if (socket) {
               socket.emit("sitInOut", { updatedRoom: updatedData });
             }
@@ -2917,10 +2923,12 @@ export const doSitOut = async (data, io, socket) => {
               );
               res = false;
             }
-            io.in(updatedData._id.toString()).emit("notification", {
-              id: userid,
-              action: "SitOut",
-            });
+            if (action !== "Leave") {
+              io.in(updatedData._id.toString()).emit("notification", {
+                id: userid,
+                action: "SitOut",
+              });
+            }
             if (socket) {
               socket.emit("sitInOut", { updatedRoom: updatedData });
             }
@@ -2972,10 +2980,12 @@ export const doSitOut = async (data, io, socket) => {
               );
               res = false;
             }
-            io.in(updatedData._id.toString()).emit("notification", {
-              id: userid,
-              action: "SitOut",
-            });
+            if (action !== "Leave") {
+              io.in(updatedData._id.toString()).emit("notification", {
+                id: userid,
+                action: "SitOut",
+              });
+            }
             if (socket) {
               socket.emit("sitInOut", { updatedRoom: updatedData });
             }
@@ -2999,11 +3009,12 @@ export const doSitOut = async (data, io, socket) => {
               },
               { new: true }
             );
-
-            io.in(updatedData._id.toString()).emit("notification", {
-              id: userid,
-              action: "SitOut",
-            });
+            if (action !== "Leave") {
+              io.in(updatedData._id.toString()).emit("notification", {
+                id: userid,
+                action: "SitOut",
+              });
+            }
             if (socket) socket.emit("sitInOut", { updatedRoom: updatedData });
             break;
 
@@ -3077,6 +3088,7 @@ export const doSitIn = async (data, io, socket) => {
 };
 
 export const doLeaveTable = async (data, io, socket) => {
+  console.log("datadatadata", data);
   const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
   let roomid;
