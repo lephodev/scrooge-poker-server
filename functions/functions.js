@@ -2307,11 +2307,13 @@ export const showdown = async (roomid, io) => {
 }
 
 export const updateRoomForNewHand = async (roomid, io) => {
+  
   return new Promise(async (resolve, reject) => {
     try {
       const roomData = await roomModel
         .findOne({ _id: convertMongoId(roomid) })
         .populate('tournament')
+        console.log("Room Data for update new hand",roomData)
       let newHandPlayer = []
       let buyin = roomData?.buyin
       const bigBlindAmt = roomData?.bigBlind
@@ -2365,7 +2367,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
           )
         })
       }
-      let sitin = roomData.sitin
+      let sitin = roomData?.sitin || 0
       let leavereq = roomData.leavereq
 
       each(
@@ -5115,10 +5117,11 @@ const fillSpot = async (allRooms, io) => {
           )
           console.log("Updated room in fill spot-->",updatedRoom)
           await roomModel.deleteOne({ _id: allRooms[i]._id })
-          await tournamentModel.findOneAndUpdate(
+         const tournament= await tournamentModel.findOneAndUpdate(
             { _id: allRooms[i].tournament },
             { $push: { destroyedRooms: allRooms[i]._id } },
-          )
+          ).populate('rooms', null)
+          .lean()
           io.in(allRooms[j]._id.toString()).emit('newhand', {
             updatedRoom: updatedRoom,
           })
@@ -5126,7 +5129,7 @@ const fillSpot = async (allRooms, io) => {
             userid: userId,
             newRoomId: allRooms[j]._id,
           })
-          console.log("room changed-->")
+          console.log("room changed tournament detail-->",tournament)
         }
       }
     }
