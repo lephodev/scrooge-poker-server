@@ -1,5 +1,3 @@
-//imports
-
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import pathDirectory from 'path'
@@ -2709,10 +2707,11 @@ export const doResumeGame = async (data, io, socket) => {
 }
 
 export const doSitOut = async (data, io, socket) => {
-  console.log('doSitOut API called ')
-  const userid = convertMongoId(data.userId)
-  let tableId = convertMongoId(data.tableId)
-  let roomid
+  console.log("doSitOut API called", data);
+  const { action } = data;
+  const userid = convertMongoId(data.userId);
+  let tableId = convertMongoId(data.tableId);
+  let roomid;
   // console.log({ tableId, userid });
   const { isValid } = checkIfEmpty({ tableId, userid })
   let playingPlayer = []
@@ -2753,16 +2752,17 @@ export const doSitOut = async (data, io, socket) => {
                 'players.$.forceBigBlind': true,
                 sitin: sitin,
               },
-              { new: true },
-            )
-
-            io.in(updatedData._id.toString()).emit('notification', {
-              id: userid,
-              action: 'SitOut',
-              msg: '',
-            })
-            if (socket) socket.emit('sitInOut', { updatedRoom: updatedData })
-            break
+              { new: true }
+            );
+            if (action !== "Leave") {
+              io.in(updatedData._id.toString()).emit("notification", {
+                id: userid,
+                action: "SitOut",
+                msg: "",
+              });
+            }
+            if (socket) socket.emit("sitInOut", { updatedRoom: updatedData });
+            break;
 
           case 1:
             sitOut.push(
@@ -2810,10 +2810,12 @@ export const doSitOut = async (data, io, socket) => {
               )
               res = false
             }
-            io.in(updatedData._id.toString()).emit('notification', {
-              id: userid,
-              action: 'SitOut',
-            })
+            if (action !== "Leave") {
+              io.in(updatedData._id.toString()).emit("notification", {
+                id: userid,
+                action: "SitOut",
+              });
+            }
             if (socket) {
               socket.emit('sitInOut', { updatedRoom: updatedData })
             }
@@ -2865,10 +2867,12 @@ export const doSitOut = async (data, io, socket) => {
               )
               res = false
             }
-            io.in(updatedData._id.toString()).emit('notification', {
-              id: userid,
-              action: 'SitOut',
-            })
+            if (action !== "Leave") {
+              io.in(updatedData._id.toString()).emit("notification", {
+                id: userid,
+                action: "SitOut",
+              });
+            }
             if (socket) {
               socket.emit('sitInOut', { updatedRoom: updatedData })
             }
@@ -2920,10 +2924,12 @@ export const doSitOut = async (data, io, socket) => {
               )
               res = false
             }
-            io.in(updatedData._id.toString()).emit('notification', {
-              id: userid,
-              action: 'SitOut',
-            })
+            if (action !== "Leave") {
+              io.in(updatedData._id.toString()).emit("notification", {
+                id: userid,
+                action: "SitOut",
+              });
+            }
             if (socket) {
               socket.emit('sitInOut', { updatedRoom: updatedData })
             }
@@ -2975,10 +2981,12 @@ export const doSitOut = async (data, io, socket) => {
               )
               res = false
             }
-            io.in(updatedData._id.toString()).emit('notification', {
-              id: userid,
-              action: 'SitOut',
-            })
+            if (action !== "Leave") {
+              io.in(updatedData._id.toString()).emit("notification", {
+                id: userid,
+                action: "SitOut",
+              });
+            }
             if (socket) {
               socket.emit('sitInOut', { updatedRoom: updatedData })
             }
@@ -3000,15 +3008,16 @@ export const doSitOut = async (data, io, socket) => {
                 'riverround.$.forceBigBlind': true,
                 sitin: sitin,
               },
-              { new: true },
-            )
-
-            io.in(updatedData._id.toString()).emit('notification', {
-              id: userid,
-              action: 'SitOut',
-            })
-            if (socket) socket.emit('sitInOut', { updatedRoom: updatedData })
-            break
+              { new: true }
+            );
+            if (action !== "Leave") {
+              io.in(updatedData._id.toString()).emit("notification", {
+                id: userid,
+                action: "SitOut",
+              });
+            }
+            if (socket) socket.emit("sitInOut", { updatedRoom: updatedData });
+            break;
 
           default:
             break
@@ -3080,9 +3089,10 @@ export const doSitIn = async (data, io, socket) => {
 }
 
 export const doLeaveTable = async (data, io, socket) => {
-  const userid = convertMongoId(data.userId)
-  let tableId = convertMongoId(data.tableId)
-  let roomid
+  console.log("datadatadata", data);
+  const userid = convertMongoId(data.userId);
+  let tableId = convertMongoId(data.tableId);
+  let roomid;
 
   const { isValid } = checkIfEmpty({ tableId, userid })
   try {
@@ -5069,7 +5079,7 @@ const fillSpot = async (allRooms, io) => {
     console.log('ith  player room-->', allRooms[i].players)
     if (allRooms[i].players.length <= 4) {
       for (let j = i + 1; j < allRooms.length; j++) {
-        console.log('second room-->', allRooms[j])
+        console.log('second room player-->', allRooms[j])
         if (allRooms[j].players.length >= 9) {
           break
         }
@@ -5103,6 +5113,7 @@ const fillSpot = async (allRooms, io) => {
               new: true,
             },
           )
+          console.log("Updated room in fill spot-->",updatedRoom)
           await roomModel.deleteOne({ _id: allRooms[i]._id })
           await tournamentModel.findOneAndUpdate(
             { _id: allRooms[i].tournament },
@@ -5115,6 +5126,7 @@ const fillSpot = async (allRooms, io) => {
             userid: userId,
             newRoomId: allRooms[j]._id,
           })
+          console.log("room changed-->")
         }
       }
     }
