@@ -2787,7 +2787,7 @@ export const doResumeGame = async (data, io, socket) => {
 };
 
 export const doSitOut = async (data, io, socket) => {
-  console.log("doSitOut API called", data);
+
   const { action } = data;
   const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
@@ -5197,91 +5197,100 @@ export const nextWeekdayDate = (date, day_in_week) => {
   }
 };
 export const reArrangeTables = async (tournamentId, io) => {
-  try {
-    const tournamentData = await tournamentModel
-      .findOne(
-        { _id: tournamentId },
-        { rooms: 1, destroyedRooms: 1, havePlayers: 1 }
+  try{
+  const tournamentData = await tournamentModel
+    .findOne(
+      { _id: tournamentId },
+      { rooms: 1, destroyedRooms: 1, havePlayers: 1 },
+    )
+    .populate('rooms', null)
+    .lean()
+  if (tournamentData) {
+    const notDestroyedYet = tournamentData.rooms.filter((el) => {
+      let r = true;
+      const have = tournamentData.destroyedRooms.filter(
+        (e) => e.toString() === el._id.toString(),
       )
-      .populate("rooms", null)
-      .lean();
-    if (tournamentData) {
-      console.log("tournaments rooms--->", tournamentData.rooms);
-      const allRooms = tournamentData.rooms.sort((a, b) => {
-        // ASC  -> a.length - b.length
-        // DESC -> b.length - a.length
-        return b.players.length - a.players.length;
-      });
-      if (allRooms.length > 0) {
-        await fillSpot(allRooms, io);
+      if (have.length) {
+        r = false;
       }
+      return r
+    })
+    const allRooms = notDestroyedYet.sort((a, b) => {
+      // ASC  -> a.length - b.length
+      // DESC -> b.length - a.length
+      return b.players.length - a.players.length
+    })
+    if (allRooms.length > 0) {
+      await fillSpot(allRooms, io)
     }
+  }
   } catch (error) {
     console.log("mmyyyyyy sttatat", error);
   }
 };
 const fillSpot = async (allRooms, io) => {
-  try {
-    for (let i = 0; i < allRooms.length - 1; i++) {
-      console.log("ith  player room-->", allRooms[i].players);
-      if (allRooms[i].players.length <= 4) {
-        for (let j = i + 1; j < allRooms.length; j++) {
-          console.log("second room player-->", allRooms[j]);
-          if (allRooms[j].players.length >= 9) {
-            break;
-          }
-          if (allRooms[j].players.length <= 5) {
-            let currentPlayer = [...allRooms[j].players];
-            let userId;
-            console.log("current player room-->", currentPlayer);
-            for await (let player of allRooms[i].players) {
-              const position = await findAvailablePosition(currentPlayer);
-              currentPlayer.push({ ...player, position });
-              userId = player.userid;
-              const userData = await userModel.findOneAndUpdate(
-                {
-                  _id: userId,
-                  "tournaments.tournamentId": allRooms[j].tournament,
-                },
-                {
-                  "tournaments.$.roomId": allRooms[j]._id,
-                },
-                { new: true }
-              );
-            }
-            const updatedRoom = await roomModel.findOneAndUpdate(
+  try{
+  for (let i = 0; i < allRooms.length - 1; i++) {
+    console.log('ith  player room-->', allRooms[i].players)
+    if (allRooms[i].players.length <= 5) {
+      for (let j = i + 1; j < allRooms.length; j++) {
+        console.log('second room player-->', allRooms[j])
+        // if (allRooms[j].players.length >= 5) {
+        //   continue
+        // }
+        if (allRooms[j].players.length <=4) {
+          let currentPlayer = [...allRooms[j].players]
+          let userIds = []
+          console.log('current player room-->', currentPlayer)
+          for await (let player of allRooms[i].players) {
+            const position = await findAvailablePosition(currentPlayer)
+            currentPlayer.push({ ...player, position })
+            userIds.push(player.userid)
+            const userData = await userModel.findOneAndUpdate(
               {
-                _id: allRooms[j]._id,
+                _id: player.userid,
+                'tournaments.tournamentId': allRooms[j].tournament,
               },
               {
                 players: currentPlayer,
               },
-              {
-                new: true,
-              }
-            );
-            console.log("Updated room in fill spot-->", updatedRoom);
-            await roomModel.deleteOne({ _id: allRooms[i]._id });
-            const tournament = await tournamentModel
-              .findOneAndUpdate(
-                { _id: allRooms[i].tournament },
-                { $push: { destroyedRooms: allRooms[i]._id } }
-              )
-              .populate("rooms", null)
-              .lean();
-            io.in(allRooms[j]._id.toString()).emit("newhand", {
-              updatedRoom: updatedRoom,
-            });
-            io.in(allRooms[j]._id.toString()).emit("roomchanged", {
-              userid: userId,
-              newRoomId: allRooms[j]._id,
-            });
-            console.log("room changed tournament detail-->", tournament);
+              { new: true },
+            )
+            
           }
+          const updatedRoom = await roomModel.findOneAndUpdate(
+            {
+              _id: allRooms[j]._id,
+            },
+            {
+              players: currentPlayer,
+            },
+            {
+              new: true,
+            },
+          )
+          io.in(allRooms[i]._id.toString()).emit('roomchanged', {
+            changeIds: userIds,
+            newRoomId: allRooms[j]._id,
+          })
+          io.in(allRooms[j]._id.toString()).emit('newhand', {
+            updatedRoom: updatedRoom,
+          })
+          //await roomModel.deleteOne({ _id: allRooms[i]._id })
+           const tournament= await tournamentModel.updateOne(
+            { _id: allRooms[j].tournament },
+            { $push: { destroyedRooms: allRooms[i]._id } },
+            {
+              new: true,
+            },
+          )  
+          await preflopround(allRooms[j], io)           
         }
       }
     }
-  } catch (error) {
+  }
+} catch (error) {
     console.log("errtrtrt", error);
   }
 };
@@ -5305,17 +5314,17 @@ const fillSpot = async (allRooms, io) => {
 //         const updatedDestroyed = await tournamentModel
 //           .findById(tournamentData._id, { destroyedRooms: 1 })
 //           .lean();
-//         const notDestroyedYet = tournamentData.rooms.filter((el) => {
-//           let r = true;
-//           const have = updatedDestroyed.destroyedRooms.filter(
-//             (e) => e.toString() === el._id.toString(),
-//           )
-//           console.log("<<<==== Have length ====>>>",have.length)
-//           if (have.length) {
-//             r = false;
-//           }
-//           return r
-//         })
+        // const notDestroyedYet = tournamentData.rooms.filter((el) => {
+        //   let r = true;
+        //   const have = updatedDestroyed.destroyedRooms.filter(
+        //     (e) => e.toString() === el._id.toString(),
+        //   )
+        //   console.log("<<<==== Have length ====>>>",have.length)
+        //   if (have.length) {
+        //     r = false;
+        //   }
+        //   return r
+        // })
 //         console.log("Destroyed room-->",updatedDestroyed.destroyedRooms)
 //         // const notDestroyedYet = tournamentData.rooms.filter((el) => {
 //         //   if(updatedDestroyed.destroyedRooms.length >0&&updatedDestroyed.destroyedRooms.find((e)=>e.toString() !==el._id.toString())){
@@ -7717,11 +7726,12 @@ export const checkForGameTable = async (data, socket, io) => {
           "players.userid": convertMongoId(userId),
         },
         {
-          "players.$.playing": true,
-        }
-      );
-      io.in(gameId).emit("updateGame", { game: gameUpdatedData });
-      return;
+          'players.$.playing': true,
+        },
+      )
+      console.log("Game update data---",gameUpdatedData)
+      io.in(gameId).emit('updateGame', { game: gameUpdatedData })
+      return
     }
 
     const checkIfInOtherGame = await gameService.checkIfUserInGame(userId);
@@ -7872,8 +7882,8 @@ export const JoinTournament = async (data, socket) => {
     const { userId, tournamentId, fees } = data;
     const checkTable = await roomModel.findOne({
       tournament: mongoose.Types.ObjectId(tournamentId),
-      "players.id": mongoose.Types.ObjectId(userId),
-    });
+      'players.userid': mongoose.Types.ObjectId(userId),
+    })
 
     if (!checkTable) {
       const userData = await User.findById(userId).lean();

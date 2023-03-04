@@ -163,7 +163,7 @@ export const checkIfUserInTable = async (req, res) => {
     const tableId = req.params.tableId;
     const checkTable = await roomModel.findOne({
       _id: mongoose.Types.ObjectId(tableId),
-      "players.id": mongoose.Types.ObjectId(user.id),
+      "players.userid": mongoose.Types.ObjectId(user._id),
     });
     if (!checkTable) {
       return res.status(200).send({ inTable: false });
