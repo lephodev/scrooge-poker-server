@@ -126,7 +126,7 @@ export const createTable = async (req, res) => {
 
     res.status(200).send({ roomData });
   } catch (error) {
-    console.log(error);
+    console.log("Eroor In create Table", error);
     res.status(500).send({ message: "Internal server error" });
   }
 };
@@ -138,7 +138,7 @@ export const getAllGame = async (req, res) => {
       .populate("players.userid");
     return res.status(200).send({ rooms: getAllRunningRoom || [] });
   } catch (error) {
-    console.log(error);
+    console.log("error in Get All Game", error);
     res.status(500).send({ message: "Internal server error" });
   }
 };
@@ -152,7 +152,7 @@ export const getAllUsers = async (req, res) => {
 
     return res.status(200).send({ allUsers });
   } catch (error) {
-    console.log(error);
+    console.log("error in Get All user", error);
     res.status(500).send({ message: "Internal server error" });
   }
 };
@@ -171,6 +171,8 @@ export const checkIfUserInTable = async (req, res) => {
 
     return res.status(200).send({ inTable: true, players: checkTable.players });
   } catch (error) {
+    console.log("error in checkIfUserInTable", error);
+
     console.log(error);
     res.status(500).send({ message: "Internal server error" });
   }
@@ -192,7 +194,8 @@ export const getTablePlayers = async (req, res) => {
 
     res.status(200).send({ players: roomData.players });
   } catch (error) {
-    console.log(error);
+    console.log("getTablePlayers", error);
+
     res.status(500).send({ message: "Internal server error" });
   }
 };
@@ -318,6 +321,7 @@ export const refillWallet = async (req, res) => {
       });
     }
   } catch (error) {
+    console.log("error in  refillWallet", error);
     res.status(500).send({ msg: "Internel server error" });
     console.log(error);
   }
