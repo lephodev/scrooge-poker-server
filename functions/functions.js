@@ -2358,10 +2358,10 @@ export const showdown = async (roomid, io) => {
         });
       }
       const roomUpdate = await roomModel.findOne({ _id: upRoom._id });
-      if (roomUpdate.finish) {
+      if (roomUpdate?.finish) {
         io.in(roomUpdate._id.toString()).emit("roomFinished", {
           msg: "Game finished",
-          finish: roomUpdate.finish,
+          finish: roomUpdate?.finish,
           roomdata: roomUpdate,
         });
       } else
@@ -4903,11 +4903,11 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         });
       }
       const roomUpdate = await roomModel.findOne({ _id: updatedRoom._id });
-      if (roomUpdate.finish) {
+      if (roomUpdate?.finish) {
         await finishedTableGame(roomUpdate, playerid);
         io.in(roomUpdate._id.toString()).emit("roomFinished", {
           msg: "Room Finished",
-          finish: roomUpdate.finish,
+          finish: roomUpdate?.finish,
           roomdata: roomUpdate,
         });
       } else
