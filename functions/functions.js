@@ -2254,15 +2254,22 @@ export const showdown = async (roomid, io) => {
     //} else {
     if (upRoom.tournament) {
       await elemination(upRoom, io)
-      await reArrangeTables(upRoom.tournament, io)
+         await reArrangeTables(upRoom.tournament, io)
     }
-    await updateRoomForNewHand(roomid, io)
+
+      await updateRoomForNewHand(roomid, io)
+
+    
     let updatedRoomPlayers = await roomModel.findOne({
       _id: roomid,
     })
-    if (!upRoom.pause) {
-      if (upRoom.autoNextHand) {
-        preflopround(upRoom, io)
+    console.log("updated room player --->",updatedRoomPlayers)
+    if(!updatedRoomPlayers){
+      return;
+    }
+    if (!updatedRoomPlayers.pause) {
+      if (updatedRoomPlayers.autoNextHand) {
+        preflopround(updatedRoomPlayers, io)
       } else {
         let havemoney = updatedRoomPlayers.players.filter((el) => el.wallet > 0)
         if (havemoney.length > 1) {
@@ -2313,7 +2320,9 @@ export const updateRoomForNewHand = async (roomid, io) => {
       const roomData = await roomModel
         .findOne({ _id: convertMongoId(roomid) })
         .populate('tournament')
-        console.log("Room Data for update new hand",roomData)
+      if(!roomData){
+        return;
+      }
       let newHandPlayer = []
       let buyin = roomData?.buyin
       const bigBlindAmt = roomData?.bigBlind
@@ -2368,7 +2377,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
         })
       }
       let sitin = roomData?.sitin || 0
-      let leavereq = roomData.leavereq
+      let leavereq = roomData?.leavereq
 
       each(
         playerData,
@@ -2595,7 +2604,7 @@ export const elemination = async (roomData, io) => {
       },
     )
     .populate('tournament')
-  // io.in(upRoom._id).emit("eleminated", { roomDetail: upRoom })
+   ///io.in(upRoom._id).emit("eleminated", { eleminated: upRoom.eleminated })
   if (
     eleminated_players.length > 0 &&
     upRoom.tournament.havePlayers > 0 &&
@@ -2611,7 +2620,7 @@ export const elemination = async (roomData, io) => {
       },
     )
   }
-  //io.in(upRoom._id.toString()).emit('newhand', { updatedRoom: upRoom })
+  io.in(upRoom._id.toString()).emit('newhand', { updatedRoom: upRoom })
 
   // setTimeout(() => {
   //   preflopround(upRoom, io);
@@ -2709,7 +2718,7 @@ export const doResumeGame = async (data, io, socket) => {
 }
 
 export const doSitOut = async (data, io, socket) => {
-  console.log("doSitOut API called", data);
+
   const { action } = data;
   const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
@@ -4586,7 +4595,7 @@ export const socketDoAllin = async (dta, io, socket) => {
 
 const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
   const roomData = await roomModel.findOne({ _id: roomid })
-  console.log('ROOM DATA PLAYERS ', roomData.players)
+
   let winnerAmount = 0
   let showDownPlayers = []
   let playerData = null
@@ -4717,16 +4726,19 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     //  });
     //  finishedTableGame(roomUpdate);
     //} else {
+ 
     if (updatedRoom.tournament) {
       await elemination(updatedRoom, io)
-      await reArrangeTables(updatedRoom.tournament, io)
+     await reArrangeTables(updatedRoom.tournament, io)
     }
-    await updateRoomForNewHand(roomid, io)
+      await updateRoomForNewHand(roomid, io)
+   
+    
     ///dgs
     let updatedRoomPlayers = await roomModel.findOne({
       _id: roomid,
     })
-    console.log('I am here--- for check re arrange table', updatedRoomPlayers)
+   console.log("updated room second-->",updatedRoomPlayers)
     //check table tournament type ?
     // if(updatedRoomPlayers?.tournament){
     //   let rearrangeInterval = setInterval(async () => {
@@ -4743,6 +4755,9 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     //   }, 120000)
     //   startLevelInterval(checkTournament._id)
     // }
+    if(!updatedRoomPlayers){
+      return;
+    }
     console.log('auto hand 1--->')
     if (!updatedRoom.pause) {
       console.log('auto hand 2--->')
@@ -5065,8 +5080,17 @@ export const reArrangeTables = async (tournamentId, io) => {
     .populate('rooms', null)
     .lean()
   if (tournamentData) {
-    console.log('tournaments rooms--->', tournamentData.rooms)
-    const allRooms = tournamentData.rooms.sort((a, b) => {
+    const notDestroyedYet = tournamentData.rooms.filter((el) => {
+      let r = true;
+      const have = tournamentData.destroyedRooms.filter(
+        (e) => e.toString() === el._id.toString(),
+      )
+      if (have.length) {
+        r = false;
+      }
+      return r
+    })
+    const allRooms = notDestroyedYet.sort((a, b) => {
       // ASC  -> a.length - b.length
       // DESC -> b.length - a.length
       return b.players.length - a.players.length
@@ -5079,23 +5103,23 @@ export const reArrangeTables = async (tournamentId, io) => {
 const fillSpot = async (allRooms, io) => {
   for (let i = 0; i < allRooms.length - 1; i++) {
     console.log('ith  player room-->', allRooms[i].players)
-    if (allRooms[i].players.length <= 4) {
+    if (allRooms[i].players.length <= 5) {
       for (let j = i + 1; j < allRooms.length; j++) {
         console.log('second room player-->', allRooms[j])
-        if (allRooms[j].players.length >= 9) {
-          break
-        }
-        if (allRooms[j].players.length <=5) {
+        // if (allRooms[j].players.length >= 5) {
+        //   continue
+        // }
+        if (allRooms[j].players.length <=4) {
           let currentPlayer = [...allRooms[j].players]
-          let userId
+          let userIds = []
           console.log('current player room-->', currentPlayer)
           for await (let player of allRooms[i].players) {
             const position = await findAvailablePosition(currentPlayer)
             currentPlayer.push({ ...player, position })
-            userId = player.userid
+            userIds.push(player.userid)
             const userData = await userModel.findOneAndUpdate(
               {
-                _id: userId,
+                _id: player.userid,
                 'tournaments.tournamentId': allRooms[j].tournament,
               },
               {
@@ -5103,6 +5127,7 @@ const fillSpot = async (allRooms, io) => {
               },
               { new: true },
             )
+            
           }
           const updatedRoom = await roomModel.findOneAndUpdate(
             {
@@ -5115,21 +5140,22 @@ const fillSpot = async (allRooms, io) => {
               new: true,
             },
           )
-          console.log("Updated room in fill spot-->",updatedRoom)
-          await roomModel.deleteOne({ _id: allRooms[i]._id })
-         const tournament= await tournamentModel.findOneAndUpdate(
-            { _id: allRooms[i].tournament },
-            { $push: { destroyedRooms: allRooms[i]._id } },
-          ).populate('rooms', null)
-          .lean()
+          io.in(allRooms[i]._id.toString()).emit('roomchanged', {
+            changeIds: userIds,
+            newRoomId: allRooms[j]._id,
+          })
           io.in(allRooms[j]._id.toString()).emit('newhand', {
             updatedRoom: updatedRoom,
           })
-          io.in(allRooms[j]._id.toString()).emit('roomchanged', {
-            userid: userId,
-            newRoomId: allRooms[j]._id,
-          })
-          console.log("room changed tournament detail-->",tournament)
+          //await roomModel.deleteOne({ _id: allRooms[i]._id })
+           const tournament= await tournamentModel.updateOne(
+            { _id: allRooms[j].tournament },
+            { $push: { destroyedRooms: allRooms[i]._id } },
+            {
+              new: true,
+            },
+          )  
+          await preflopround(allRooms[j], io)           
         }
       }
     }
@@ -5155,17 +5181,17 @@ const fillSpot = async (allRooms, io) => {
 //         const updatedDestroyed = await tournamentModel
 //           .findById(tournamentData._id, { destroyedRooms: 1 })
 //           .lean();
-//         const notDestroyedYet = tournamentData.rooms.filter((el) => {
-//           let r = true;
-//           const have = updatedDestroyed.destroyedRooms.filter(
-//             (e) => e.toString() === el._id.toString(),
-//           )
-//           console.log("<<<==== Have length ====>>>",have.length)
-//           if (have.length) {
-//             r = false;
-//           }
-//           return r
-//         })
+        // const notDestroyedYet = tournamentData.rooms.filter((el) => {
+        //   let r = true;
+        //   const have = updatedDestroyed.destroyedRooms.filter(
+        //     (e) => e.toString() === el._id.toString(),
+        //   )
+        //   console.log("<<<==== Have length ====>>>",have.length)
+        //   if (have.length) {
+        //     r = false;
+        //   }
+        //   return r
+        // })
 //         console.log("Destroyed room-->",updatedDestroyed.destroyedRooms)
 //         // const notDestroyedYet = tournamentData.rooms.filter((el) => {
 //         //   if(updatedDestroyed.destroyedRooms.length >0&&updatedDestroyed.destroyedRooms.find((e)=>e.toString() !==el._id.toString())){
@@ -5633,7 +5659,7 @@ export const findAvailablePosition = async (playerList) => {
     try {
       let i = 0
       let isFound = false
-      while (i < 9 && !isFound) {
+      while (i < 5 && !isFound) {
         let have = playerList.filter((el) => el.position === i)
         if (!have.length) {
           isFound = true
@@ -7534,6 +7560,7 @@ export const checkForGameTable = async (data, socket, io) => {
           'players.$.playing': true,
         },
       )
+      console.log("Game update data---",gameUpdatedData)
       io.in(gameId).emit('updateGame', { game: gameUpdatedData })
       return
     }
@@ -7686,7 +7713,7 @@ export const JoinTournament = async (data, socket) => {
     const { userId, tournamentId, fees } = data
     const checkTable = await roomModel.findOne({
       tournament: mongoose.Types.ObjectId(tournamentId),
-      'players.id': mongoose.Types.ObjectId(userId),
+      'players.userid': mongoose.Types.ObjectId(userId),
     })
 
     if (!checkTable) {
@@ -7829,6 +7856,7 @@ const pushPlayerInRoom = async (
       smallBlind: smallBlind || 100,
       bigBlind: bigBlind || 200,
       gameType: 'poker-tournament',
+      autoNextHand:true
     }
 
     const roomData = new roomModel(payload)
