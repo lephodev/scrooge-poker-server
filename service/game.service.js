@@ -191,7 +191,7 @@ const playerTentativeActionSelection = async (game, userId, actionType) => {
 const subSubtractTimeForSendMail = (tournamentDate, startDate) => {
   const currentDate = new Date().toISOString().split("T")[0];
   const oldTime = new Date(tournamentDate);
-  const newTime = oldTime.setMinutes(oldTime.getUTCMinutes() - 2);
+  const newTime = oldTime.setUTCMinutes(oldTime.getUTCMinutes() - 2);
   const beforeTime = `${new Date(newTime).getUTCHours()}:${new Date(
     newTime
   ).getUTCMinutes()}:00`;
@@ -212,7 +212,7 @@ const findRoom = (rooms) => {
   });
   return { players: data, roomId };
 };
-const sendAcknowledgementForJoinTournament = async () => {
+const sendAcknowledgementForJoinTournament = async (io) => {
   try {
     const findTournament = await tournamentModel
       .find({})
@@ -221,15 +221,20 @@ const sendAcknowledgementForJoinTournament = async () => {
       })
       .exec();
     if (findTournament?.length > 0) {
-      findTournament.forEach((el) => {
+      findTournament.forEach(async(el) => {
         const matched = subSubtractTimeForSendMail(
           el.tournamentDate,
           el.startDate
         );
         if (matched) {
-          console.log("client url--->", process.env.CLIENTURL);
+           await tournamentModel.updateOne(
+            {_id:el._id},
+            {showButton:true},
+            { new: true }
+          );
+          io.emit('tournamentUpdate',{updateTournament:true})
           const room = findRoom(el.rooms);
-          const { players, roomId } = room;
+          const { players, roomId } = room; 
           if (players && players?.length > 0) {
             players.forEach(async (player) => {
               const payload = {
@@ -238,6 +243,7 @@ const sendAcknowledgementForJoinTournament = async () => {
                 message: "Poker tournament start in 2 minutes",
                 url: `${process.env.CLIENTURL}/table?gamecollection=poker&tableid=${roomId}`,
               };
+            
               await Notification.create(payload);
             });
           }

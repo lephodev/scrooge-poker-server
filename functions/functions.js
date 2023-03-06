@@ -27,7 +27,6 @@ var Hand = require("pokersolver").Hand;
 const admin = require("firebase-admin");
 import MessageModal from "../models/messageModal";
 import Notification from "../models/notificationModal";
-import { log } from "console";
 import User from "../landing-server/models/user.model";
 
 const gameRestartSeconds = 7000;
@@ -5259,6 +5258,7 @@ const fillSpot = async (allRooms, io) => {
             )
             
           }
+          console.log("jth room id--->",allRooms[j]._id)
           const updatedRoom = await roomModel.findOneAndUpdate(
             {
               _id: allRooms[j]._id,
@@ -5270,6 +5270,8 @@ const fillSpot = async (allRooms, io) => {
               new: true,
             },
           )
+          console.log("updated room---->",updatedRoom)
+          
           io.in(allRooms[i]._id.toString()).emit('roomchanged', {
             changeIds: userIds,
             newRoomId: allRooms[j]._id,
@@ -5277,8 +5279,8 @@ const fillSpot = async (allRooms, io) => {
           io.in(allRooms[j]._id.toString()).emit('newhand', {
             updatedRoom: updatedRoom,
           })
-          //await roomModel.deleteOne({ _id: allRooms[i]._id })
-           const tournament= await tournamentModel.updateOne(
+          await roomModel.deleteOne({ _id: allRooms[i]._id })
+          await tournamentModel.updateOne(
             { _id: allRooms[j].tournament },
             { $push: { destroyedRooms: allRooms[i]._id } },
             {
@@ -6686,7 +6688,7 @@ export const approveJoinRequest = async (data, socket, io) => {
             }
           }
         } else {
-          console.log("ROOM FULL 6491");
+          console.log("ROOM FULL 6451");
           socket.emit("roomFull", "Room is Already Full");
         }
       } else {
@@ -7729,7 +7731,7 @@ export const checkForGameTable = async (data, socket, io) => {
           'players.$.playing': true,
         },
       )
-      console.log("Game update data---",gameUpdatedData)
+
       io.in(gameId).emit('updateGame', { game: gameUpdatedData })
       return
     }
