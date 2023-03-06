@@ -37,6 +37,8 @@ const whitelist = [
   "http://localhost:3000",
   "http://localhost:3001",
   "https://poker.scrooge.casino",
+  "https://devpoker.scrooge.casino",
+  "https://betapoker.scrooge.casino",
 ];
 const corsOptions = {
   origin: function (origin, callback) {
