@@ -8,7 +8,7 @@ import moment from "moment";
 import Notification from "../models/notificationModal.js";
 
 const converMongoId = (id) => mongoose.Types.ObjectId(id);
-const maxPlayer = 9;
+const maxPlayer = 3;
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
 
@@ -89,7 +89,7 @@ const joinRoomByUserId = async (game, userId, sitInAmount) => {
   // if public table -
   // check empty slot for table else return slot full,
   // join user in game if there is empty slot
-  if (game.public && game.players.length < 9) {
+  if (game.public && game.players.length < 3) {
     const availblePosition = await findAvailablePosition(game.players);
     if (!availblePosition.isFound) {
       return null;
@@ -105,7 +105,7 @@ const joinRoomByUserId = async (game, userId, sitInAmount) => {
     // join user in game if there is empty slot else return slot full
   } else if (
     game.invPlayers.find((uId) => uId.toString() === userId.toString()) &&
-    game.players.length < 9
+    game.players.length < 3
   ) {
     const availblePosition = await findAvailablePosition(game.players);
     if (!availblePosition.isFound) {
@@ -118,7 +118,7 @@ const joinRoomByUserId = async (game, userId, sitInAmount) => {
       sitInAmount
     );
     return room;
-  } else if (game.public && game.players.length >= 9) {
+  } else if (game.public && game.players.length >= 3) {
     return null;
   } else {
     return null;
@@ -221,20 +221,20 @@ const sendAcknowledgementForJoinTournament = async (io) => {
       })
       .exec();
     if (findTournament?.length > 0) {
-      findTournament.forEach(async(el) => {
+      findTournament.forEach(async (el) => {
         const matched = subSubtractTimeForSendMail(
           el.tournamentDate,
           el.startDate
         );
         if (matched) {
-           await tournamentModel.updateOne(
-            {_id:el._id},
-            {showButton:true},
+          await tournamentModel.updateOne(
+            { _id: el._id },
+            { showButton: true },
             { new: true }
           );
-          io.emit('tournamentUpdate',{updateTournament:true})
+          io.emit("tournamentUpdate", { updateTournament: true });
           const room = findRoom(el.rooms);
-          const { players, roomId } = room; 
+          const { players, roomId } = room;
           if (players && players?.length > 0) {
             players.forEach(async (player) => {
               const payload = {
@@ -243,7 +243,7 @@ const sendAcknowledgementForJoinTournament = async (io) => {
                 message: "Poker tournament start in 2 minutes",
                 url: `${process.env.CLIENTURL}/table?gamecollection=poker&tableid=${roomId}`,
               };
-            
+
               await Notification.create(payload);
             });
           }

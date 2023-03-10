@@ -114,10 +114,9 @@ let returnSocket = (io) => {
       });
       console.log("dofold");
       data.roomid = room._id;
-      process.nextTick(async() => {
+      process.nextTick(async () => {
         await socketDoFold(data, io, socket);
-      })
-      
+      });
     });
 
     socket.on("docall", async (data) => {
@@ -336,9 +335,9 @@ let returnSocket = (io) => {
             }
           }, 120000);
         }
-        console.log({ socketToRoom, idSocket: socket.id });
+        console.log("sockkkettt", { socketToRoom, idSocket: socket.id });
         const roomID = socketToRoom[socket.id];
-        console.log({ roomID });
+        console.log("roomIdddd", { roomID });
         let room = users[roomID];
         if (room) {
           room = room.filter((el) => el.socketid !== socket.id);
