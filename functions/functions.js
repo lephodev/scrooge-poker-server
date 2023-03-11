@@ -814,8 +814,8 @@ export const prefloptimer = async (roomid, io) => {
             );
             let playerinterval = setInterval(async () => {
               const data = await roomModel.findOne({ _id: roomid });
-              let preflopData = data.preflopround;
-              let filteredData = preflopData.filter((e) => e.position === i);
+              let preflopData = data?.preflopround;
+              let filteredData = preflopData?.filter((e) => e.position === i);
               let intervalPlayer = filteredData;
               if (j <= 0) {
                 if (intervalPlayer[0].timebank > 1) {
