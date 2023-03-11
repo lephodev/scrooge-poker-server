@@ -487,8 +487,11 @@ export const preflopround = async (room, io) => {
           };
 
           let allinPlayer = room.allinPlayers;
-
           while (smallBlindDeducted < 1) {
+            console.log(
+              "while small blind deducted executed",
+              new Date().getMilliseconds()
+            );
             let playerAvilable = room.players.filter(
               (el) =>
                 el.position === smallBlindPosition &&
@@ -611,6 +614,10 @@ export const preflopround = async (room, io) => {
           let bigBlindDeducted = 0;
           let bigLoopTime = 0;
           while (bigBlindDeducted < 1) {
+            console.log(
+              "while big blind deducted executed",
+              new Date().getMilliseconds()
+            );
             let playerAvilable = room.players.filter(
               (el) =>
                 el.position === bigBlindPosition && el.playing && el.wallet > 0
@@ -6749,12 +6756,15 @@ export const rejectJoinRequest = async (data, socket, io) => {
 export const startPreflopRound = async (data, socket, io) => {
   try {
     console.log("INSIDE PREFOLP ROUND");
+    console.log("line 6752 ==>", new Date().getMilliseconds());
     let room = await gameService.getGameById(data.tableId);
     // console.log({ room: JSON.stringify(room) })
     if (room && room.players.length === 1) {
       return socket.emit("OnlyOne", room);
     }
+    console.log("line 6758 ==>", new Date().getMilliseconds());
     if (room && !room.gamestart) {
+      console.log("line 6760 ==>", new Date().getMilliseconds());
       await roomModel.findOneAndUpdate(
         { _id: convertMongoId(data._id) },
         {
@@ -6765,6 +6775,7 @@ export const startPreflopRound = async (data, socket, io) => {
       console.log("Before preflopround function");
       await preflopround(room, io);
     }
+    console.log("line 6771 ==>", new Date().getMilliseconds());
   } catch (e) {
     console.log("error : ", e);
     socket.emit("actionError", "Action Error");
