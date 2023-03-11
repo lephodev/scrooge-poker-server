@@ -12,6 +12,7 @@ const tournamentSchema = new Schema({
   startTime: { type: String, required: true},
   active: { type: Boolean, default: false },
   isFinished: { type: Boolean, default: false },
+  showButton: { type: Boolean, default: false },
   havePlayers: { type: Number, default: 0 },
   rooms: [{ type: Schema.Types.ObjectId, ref: 'rooms'}],
   destroyedRooms: [{ type: Schema.Types.ObjectId, ref: 'rooms' }],

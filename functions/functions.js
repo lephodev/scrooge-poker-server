@@ -27,7 +27,6 @@ var Hand = require("pokersolver").Hand;
 const admin = require("firebase-admin");
 import MessageModal from "../models/messageModal";
 import Notification from "../models/notificationModal";
-import { log } from "console";
 import User from "../landing-server/models/user.model";
 
 const gameRestartSeconds = 7000;
@@ -336,10 +335,10 @@ export const preflopround = async (room, io) => {
     if (!room.finish && !room.gamestart) {
       console.log("CHECK 308");
       if (room.runninground === 0 && !room.pause) {
-        console.log("CHECK 310");
+        console.log("CHECK 310", room.runninground);
 
         if (playingPlayer.length > 1) {
-          console.log("CHECK 316");
+          console.log("CHECK 316", playingPlayer);
           await roomModel.updateOne(
             {
               _id: room._id,
@@ -356,6 +355,7 @@ export const preflopround = async (room, io) => {
             { _id: 1, preflopround: 1, smallBlind: 1, bigBlind: 1 }
           );
 
+          console.log("after player push");
           const smallBlindAmt = room1111.smallBlind;
           const bigBlindAmt = room1111.bigBlind;
           let smallBlindDeducted = 0;
@@ -373,6 +373,7 @@ export const preflopround = async (room, io) => {
           }
 
           if (room.bigBlindPosition === null) {
+            console.log("postion");
             bigBlindPosition = 1;
           } else if (room.bigBlindPosition < totalplayer - 1) {
             bigBlindPosition = room.bigBlindPosition + 1;
@@ -486,8 +487,11 @@ export const preflopround = async (room, io) => {
           };
 
           let allinPlayer = room.allinPlayers;
-
           while (smallBlindDeducted < 1) {
+            console.log(
+              "while small blind deducted executed",
+              new Date().getMilliseconds()
+            );
             let playerAvilable = room.players.filter(
               (el) =>
                 el.position === smallBlindPosition &&
@@ -610,6 +614,10 @@ export const preflopround = async (room, io) => {
           let bigBlindDeducted = 0;
           let bigLoopTime = 0;
           while (bigBlindDeducted < 1) {
+            console.log(
+              "while big blind deducted executed",
+              new Date().getMilliseconds()
+            );
             let playerAvilable = room.players.filter(
               (el) =>
                 el.position === bigBlindPosition && el.playing && el.wallet > 0
@@ -806,8 +814,8 @@ export const prefloptimer = async (roomid, io) => {
             );
             let playerinterval = setInterval(async () => {
               const data = await roomModel.findOne({ _id: roomid });
-              let preflopData = data.preflopround;
-              let filteredData = preflopData.filter((e) => e.position === i);
+              let preflopData = data?.preflopround;
+              let filteredData = preflopData?.filter((e) => e.position === i);
               let intervalPlayer = filteredData;
               if (j <= 0) {
                 if (intervalPlayer[0].timebank > 1) {
@@ -2787,7 +2795,6 @@ export const doResumeGame = async (data, io, socket) => {
 };
 
 export const doSitOut = async (data, io, socket) => {
-
   const { action } = data;
   const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
@@ -5197,100 +5204,102 @@ export const nextWeekdayDate = (date, day_in_week) => {
   }
 };
 export const reArrangeTables = async (tournamentId, io) => {
-  try{
-  const tournamentData = await tournamentModel
-    .findOne(
-      { _id: tournamentId },
-      { rooms: 1, destroyedRooms: 1, havePlayers: 1 },
-    )
-    .populate('rooms', null)
-    .lean()
-  if (tournamentData) {
-    const notDestroyedYet = tournamentData.rooms.filter((el) => {
-      let r = true;
-      const have = tournamentData.destroyedRooms.filter(
-        (e) => e.toString() === el._id.toString(),
+  try {
+    const tournamentData = await tournamentModel
+      .findOne(
+        { _id: tournamentId },
+        { rooms: 1, destroyedRooms: 1, havePlayers: 1 }
       )
-      if (have.length) {
-        r = false;
+      .populate("rooms", null)
+      .lean();
+    if (tournamentData) {
+      const notDestroyedYet = tournamentData.rooms.filter((el) => {
+        let r = true;
+        const have = tournamentData.destroyedRooms.filter(
+          (e) => e.toString() === el._id.toString()
+        );
+        if (have.length) {
+          r = false;
+        }
+        return r;
+      });
+      const allRooms = notDestroyedYet.sort((a, b) => {
+        // ASC  -> a.length - b.length
+        // DESC -> b.length - a.length
+        return b.players.length - a.players.length;
+      });
+      if (allRooms.length > 0) {
+        await fillSpot(allRooms, io);
       }
-      return r
-    })
-    const allRooms = notDestroyedYet.sort((a, b) => {
-      // ASC  -> a.length - b.length
-      // DESC -> b.length - a.length
-      return b.players.length - a.players.length
-    })
-    if (allRooms.length > 0) {
-      await fillSpot(allRooms, io)
     }
-  }
   } catch (error) {
     console.log("mmyyyyyy sttatat", error);
   }
 };
 const fillSpot = async (allRooms, io) => {
-  try{
-  for (let i = 0; i < allRooms.length - 1; i++) {
-    console.log('ith  player room-->', allRooms[i].players)
-    if (allRooms[i].players.length <= 5) {
-      for (let j = i + 1; j < allRooms.length; j++) {
-        console.log('second room player-->', allRooms[j])
-        // if (allRooms[j].players.length >= 5) {
-        //   continue
-        // }
-        if (allRooms[j].players.length <=4) {
-          let currentPlayer = [...allRooms[j].players]
-          let userIds = []
-          console.log('current player room-->', currentPlayer)
-          for await (let player of allRooms[i].players) {
-            const position = await findAvailablePosition(currentPlayer)
-            currentPlayer.push({ ...player, position })
-            userIds.push(player.userid)
-            const userData = await userModel.findOneAndUpdate(
+  try {
+    for (let i = 0; i < allRooms.length - 1; i++) {
+      console.log("ith  player room-->", allRooms[i].players);
+      if (allRooms[i].players.length <= 5) {
+        for (let j = i + 1; j < allRooms.length; j++) {
+          console.log("second room player-->", allRooms[j]);
+          // if (allRooms[j].players.length >= 5) {
+          //   continue
+          // }
+          if (allRooms[j].players.length <= 4) {
+            let currentPlayer = [...allRooms[j].players];
+            let userIds = [];
+            console.log("current player room-->", currentPlayer);
+            for await (let player of allRooms[i].players) {
+              const position = await findAvailablePosition(currentPlayer);
+              currentPlayer.push({ ...player, position });
+              userIds.push(player.userid);
+              const userData = await userModel.findOneAndUpdate(
+                {
+                  _id: player.userid,
+                  "tournaments.tournamentId": allRooms[j].tournament,
+                },
+                {
+                  players: currentPlayer,
+                },
+                { new: true }
+              );
+            }
+            console.log("jth room id--->", allRooms[j]._id);
+            const updatedRoom = await roomModel.findOneAndUpdate(
               {
-                _id: player.userid,
-                'tournaments.tournamentId': allRooms[j].tournament,
+                _id: allRooms[j]._id,
               },
               {
                 players: currentPlayer,
               },
-              { new: true },
-            )
-            
+              {
+                new: true,
+              }
+            );
+            console.log("updated room---->", updatedRoom);
+
+            io.in(allRooms[i]._id.toString()).emit("roomchanged", {
+              changeIds: userIds,
+              newRoomId: allRooms[j]._id,
+            });
+            io.in(allRooms[j]._id.toString()).emit("newhand", {
+              updatedRoom: updatedRoom,
+            });
+            await roomModel.deleteOne({ _id: allRooms[i]._id });
+            await tournamentModel.updateOne(
+              { _id: allRooms[j].tournament },
+              { $push: { destroyedRooms: allRooms[i]._id } },
+              {
+                new: true,
+              }
+            );
+            await preflopround(allRooms[j], io);
           }
-          const updatedRoom = await roomModel.findOneAndUpdate(
-            {
-              _id: allRooms[j]._id,
-            },
-            {
-              players: currentPlayer,
-            },
-            {
-              new: true,
-            },
-          )
-          io.in(allRooms[i]._id.toString()).emit('roomchanged', {
-            changeIds: userIds,
-            newRoomId: allRooms[j]._id,
-          })
-          io.in(allRooms[j]._id.toString()).emit('newhand', {
-            updatedRoom: updatedRoom,
-          })
-          //await roomModel.deleteOne({ _id: allRooms[i]._id })
-           const tournament= await tournamentModel.updateOne(
-            { _id: allRooms[j].tournament },
-            { $push: { destroyedRooms: allRooms[i]._id } },
-            {
-              new: true,
-            },
-          )  
-          await preflopround(allRooms[j], io)           
         }
       }
     }
-  }
-} catch (error) {
+  } catch (error) {
     console.log("errtrtrt", error);
   }
 };
@@ -5314,17 +5323,17 @@ const fillSpot = async (allRooms, io) => {
 //         const updatedDestroyed = await tournamentModel
 //           .findById(tournamentData._id, { destroyedRooms: 1 })
 //           .lean();
-        // const notDestroyedYet = tournamentData.rooms.filter((el) => {
-        //   let r = true;
-        //   const have = updatedDestroyed.destroyedRooms.filter(
-        //     (e) => e.toString() === el._id.toString(),
-        //   )
-        //   console.log("<<<==== Have length ====>>>",have.length)
-        //   if (have.length) {
-        //     r = false;
-        //   }
-        //   return r
-        // })
+// const notDestroyedYet = tournamentData.rooms.filter((el) => {
+//   let r = true;
+//   const have = updatedDestroyed.destroyedRooms.filter(
+//     (e) => e.toString() === el._id.toString(),
+//   )
+//   console.log("<<<==== Have length ====>>>",have.length)
+//   if (have.length) {
+//     r = false;
+//   }
+//   return r
+// })
 //         console.log("Destroyed room-->",updatedDestroyed.destroyedRooms)
 //         // const notDestroyedYet = tournamentData.rooms.filter((el) => {
 //         //   if(updatedDestroyed.destroyedRooms.length >0&&updatedDestroyed.destroyedRooms.find((e)=>e.toString() !==el._id.toString())){
@@ -5735,7 +5744,7 @@ export const destroyTable = async (mostBlnkRoom, leftBlankTables, io) => {
                       (el) => !el.spots.includes(player.position)
                     );
                   } else {
-                    if (i < 9) {
+                    if (i < 3) {
                       await sit(player, ++i);
                     } else {
                       await sit(player, 0);
@@ -5803,7 +5812,7 @@ export const findAvailablePosition = async (playerList) => {
     try {
       let i = 0;
       let isFound = false;
-      while (i < 9 && !isFound) {
+      while (i < 3 && !isFound) {
         let have = playerList.filter((el) => el.position === i);
         if (!have.length) {
           isFound = true;
@@ -5836,7 +5845,7 @@ export const joinRequest = async (data, socket, io) => {
         if (isExist.length) {
           socket.emit("alreadyJoin", "");
         } else {
-          if (room.players.length < 9) {
+          if (room.players.length < 3) {
             let ischecked = false;
             let amt;
             if (
@@ -5940,7 +5949,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
       if (
         (isRoomExist.gameType === "poker1vs1_Tables" &&
           isRoomExist.players.length === 2) ||
-        isRoomExist.players.length >= 9
+        isRoomExist.players.length >= 3
       ) {
         if (isRoomExist.allowWatcher) {
           return socket.emit("newWatcher", {
@@ -5956,7 +5965,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
         if (room.table.public) {
           if (
             isRoomExist.gameType !== "poker1vs1_Tables" &&
-            isRoomExist.players.length < 9 &&
+            isRoomExist.players.length < 3 &&
             !isRoomExist.players.find((ele) => ele.userid === user.userid)
           ) {
             user.isAdmin = false;
@@ -6029,7 +6038,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
           } else if (
             !room.invPlayers.find((ele) => ele === user.userid) &&
             isRoomExist.gameType !== "poker1vs1_Tables" &&
-            isRoomExist.players.length < 9
+            isRoomExist.players.length < 3
           ) {
             socket.emit("newUser", {
               _id: room.roomid,
@@ -6038,7 +6047,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
             });
           } else if (
             isRoomExist.gameType !== "poker1vs1_Tables" &&
-            isRoomExist.players.length >= 9
+            isRoomExist.players.length >= 3
           ) {
             console.log("ROOM FULL 5716");
             socket.emit("roomFull", "Room is full");
@@ -6184,7 +6193,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
         if (room.table.public) {
           if (
             isRoomExist.gameType !== "poker1vs1_Tables" &&
-            isRoomExist.players.length < 9 &&
+            isRoomExist.players.length < 3 &&
             !room.players.find((ele) => ele === user.userid)
           ) {
             user.isAdmin = false;
@@ -6593,7 +6602,7 @@ export const approveJoinRequest = async (data, socket, io) => {
             isWatcher: false,
           });
         }
-        if (room.players.length < 9) {
+        if (room.players.length < 3) {
           let joinPlayer = room.joinRequests.filter(
             (e) => e.userid.toString() === data.player.userid.toString()
           );
@@ -6686,7 +6695,7 @@ export const approveJoinRequest = async (data, socket, io) => {
             }
           }
         } else {
-          console.log("ROOM FULL 6491");
+          console.log("ROOM FULL 6451");
           socket.emit("roomFull", "Room is Already Full");
         }
       } else {
@@ -6747,12 +6756,15 @@ export const rejectJoinRequest = async (data, socket, io) => {
 export const startPreflopRound = async (data, socket, io) => {
   try {
     console.log("INSIDE PREFOLP ROUND");
+    console.log("line 6752 ==>", new Date().getMilliseconds());
     let room = await gameService.getGameById(data.tableId);
     // console.log({ room: JSON.stringify(room) })
     if (room && room.players.length === 1) {
       return socket.emit("OnlyOne", room);
     }
+    console.log("line 6758 ==>", new Date().getMilliseconds());
     if (room && !room.gamestart) {
+      console.log("line 6760 ==>", new Date().getMilliseconds());
       await roomModel.findOneAndUpdate(
         { _id: convertMongoId(data._id) },
         {
@@ -6763,6 +6775,7 @@ export const startPreflopRound = async (data, socket, io) => {
       console.log("Before preflopround function");
       await preflopround(room, io);
     }
+    console.log("line 6771 ==>", new Date().getMilliseconds());
   } catch (e) {
     console.log("error : ", e);
     socket.emit("actionError", "Action Error");
@@ -7726,12 +7739,12 @@ export const checkForGameTable = async (data, socket, io) => {
           "players.userid": convertMongoId(userId),
         },
         {
-          'players.$.playing': true,
-        },
-      )
-      console.log("Game update data---",gameUpdatedData)
-      io.in(gameId).emit('updateGame', { game: gameUpdatedData })
-      return
+          "players.$.playing": true,
+        }
+      );
+
+      io.in(gameId).emit("updateGame", { game: gameUpdatedData });
+      return;
     }
 
     const checkIfInOtherGame = await gameService.checkIfUserInGame(userId);
@@ -7882,8 +7895,8 @@ export const JoinTournament = async (data, socket) => {
     const { userId, tournamentId, fees } = data;
     const checkTable = await roomModel.findOne({
       tournament: mongoose.Types.ObjectId(tournamentId),
-      'players.userid': mongoose.Types.ObjectId(userId),
-    })
+      "players.userid": mongoose.Types.ObjectId(userId),
+    });
 
     if (!checkTable) {
       const userData = await User.findById(userId).lean();
@@ -7955,7 +7968,7 @@ const pushPlayerInRoom = async (
         .findById(checkTournament.rooms[checkTournament.rooms.length - 1])
         .lean();
     }
-    if (checkTournament?.rooms?.length && lastRoom?.players?.length < 9) {
+    if (checkTournament?.rooms?.length && lastRoom?.players?.length < 3) {
       roomId = lastRoom._id;
       let players = lastRoom.players;
       players.push({
