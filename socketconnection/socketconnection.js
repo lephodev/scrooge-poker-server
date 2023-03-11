@@ -88,7 +88,9 @@ let returnSocket = (io) => {
     });
 
     socket.on("newBet", async (data) => {
-      await handleNewBet(data, socket, io);
+      process.nextTick(async () => {
+        await handleNewBet(data, socket, io);
+      });
     });
 
     socket.on("acceptBet", async (data) => {
@@ -109,79 +111,96 @@ let returnSocket = (io) => {
     });
 
     socket.on("dofold", async (data) => {
-      let room = await roomModel.findOne({
-        _id: convertMongoId(data.roomid),
-      });
-      console.log("dofold");
-      data.roomid = room._id;
+      // let room = await roomModel.findOne({
+      //   _id: convertMongoId(data.roomid),
+      // });
+      // console.log("dofold");
+      // data.roomid = room._id;
       process.nextTick(async () => {
         await socketDoFold(data, io, socket);
       });
     });
 
     socket.on("docall", async (data) => {
-      let room = await roomModel.findOne({
-        _id: data.roomid,
+      // let room = await roomModel.findOne({
+      //   _id: data.roomid,
+      // });
+      // data.roomid = room._id;
+      process.nextTick(async () => {
+        await socketDoCall(data, io, socket);
       });
-      data.roomid = room._id;
-      await socketDoCall(data, io, socket);
     });
 
     socket.on("dobet", async (data) => {
-      let room = await roomModel.findOne({
-        _id: convertMongoId(data.roomid),
+      // let room = await roomModel.findOne({
+      //   _id: convertMongoId(data.roomid),
+      // });
+      // data.roomid = room._id;
+      process.nextTick(async () => {
+        await socketDoBet(data, io, socket);
       });
-      data.roomid = room._id;
-      await socketDoBet(data, io, socket);
     });
 
     socket.on("doraise", async (data) => {
-      let room = await roomModel.findOne({
-        _id: data.roomid,
+      // let room = await roomModel.findOne({
+      //   _id: data.roomid,
+      // });
+      // data.roomid = room._id;
+      process.nextTick(async () => {
+        await socketDoRaise(data, io, socket);
       });
-      data.roomid = room._id;
-      await socketDoRaise(data, io, socket);
     });
 
     socket.on("docheck", async (data) => {
-      let room = await roomModel.findOne({
-        _id: convertMongoId(data.roomid),
+      // let room = await roomModel.findOne({
+      //   _id: convertMongoId(data.roomid),
+      // });
+      // data.roomid = room._id;
+      process.nextTick(async () => {
+        await socketDoCheck(data, io, socket);
       });
-      data.roomid = room._id;
-      await socketDoCheck(data, io, socket);
     });
 
     socket.on("doallin", async (data) => {
       console.log("INSIDE ALL IN", data);
-      let room = await roomModel.findOne({
-        _id: data.roomid,
+      // let room = await roomModel.findOne({
+      //   _id: data.roomid,
+      // });
+      // data.roomid = room._id;
+      process.nextTick(async () => {
+        await socketDoAllin(data, io, socket);
       });
-      data.roomid = room._id;
-      await socketDoAllin(data, io, socket);
     });
 
     socket.on("dopausegame", async (data) => {
-      let room = await roomModel.findOne({
-        _id: data.roomid,
+      // let room = await roomModel.findOne({
+      //   _id: data.roomid,
+      // });
+      // data.roomid = room._id;
+      process.nextTick(async () => {
+        await doPauseGame(data, io, socket);
       });
-      data.roomid = room._id;
-      await doPauseGame(data, io, socket);
     });
 
     socket.on("dofinishgame", async (data) => {
-      let room = await roomModel.findOne({
-        _id: convertMongoId(data.roomid),
+      // let room = await roomModel.findOne({
+      //   _id: convertMongoId(data.roomid),
+      // });
+      // data.roomid = room._id;
+      process.nextTick(async () => {
+        await doFinishGame(data, io, socket);
       });
-      data.roomid = room._id;
-      await doFinishGame(data, io, socket);
     });
 
     socket.on("doresumegame", async (data) => {
-      let room = await roomModel.findOne({
-        _id: data.roomid,
+      // let room = await roomModel.findOne({
+      //   _id: data.roomid,
+      // });
+      // data.roomid = room._id;
+
+      process.nextTick(async () => {
+        await doResumeGame(data, io, socket);
       });
-      data.roomid = room._id;
-      await doResumeGame(data, io, socket);
     });
 
     socket.on("dositout", async (data) => {
