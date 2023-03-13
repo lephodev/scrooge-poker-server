@@ -742,7 +742,7 @@ export const preflopround = async (room, io) => {
           // if (bigBlindDeducted || smallBlindDeducted) {
           //   await roomModel.updateOne({ _id: room._id }, {bigBlindPosition,smallBlindPosition,pot:+bigBlindAmt+smallBlindAmt});
           // }
-          console.log("LINE 697 before going in preflop ");
+          console.log("LINE 697 before going in preflop", room._id);
           prefloptimer(room._id, io);
           let updatedRoom = await roomModel.findOne({
             _id: room._id,
@@ -863,7 +863,7 @@ export const prefloptimer = async (roomid, io) => {
               ) {
                 clearInterval(playerinterval);
                 timer(++i, maxPosition);
-              } else if (data.isGameRunning) {
+              } else if (data?.isGameRunning) {
                 // filteredData[0].playerchance = j;
                 j--;
                 if (j === 120 && !data.displayTimer) {
@@ -1195,6 +1195,7 @@ export const flopTimer = async (roomid, io) => {
                     });
                     await doSitOut(data, io);
                     if (isContinue) {
+                      !data?.isGameRunning;
                       timer(++i, maxPosition);
                     }
                   }
@@ -5744,7 +5745,7 @@ export const destroyTable = async (mostBlnkRoom, leftBlankTables, io) => {
                       (el) => !el.spots.includes(player.position)
                     );
                   } else {
-                    if (i < 3) {
+                    if (i < 9) {
                       await sit(player, ++i);
                     } else {
                       await sit(player, 0);
@@ -5812,7 +5813,7 @@ export const findAvailablePosition = async (playerList) => {
     try {
       let i = 0;
       let isFound = false;
-      while (i < 3 && !isFound) {
+      while (i < 9 && !isFound) {
         let have = playerList.filter((el) => el.position === i);
         if (!have.length) {
           isFound = true;
@@ -5845,7 +5846,7 @@ export const joinRequest = async (data, socket, io) => {
         if (isExist.length) {
           socket.emit("alreadyJoin", "");
         } else {
-          if (room.players.length < 3) {
+          if (room.players.length < 9) {
             let ischecked = false;
             let amt;
             if (
@@ -5949,7 +5950,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
       if (
         (isRoomExist.gameType === "poker1vs1_Tables" &&
           isRoomExist.players.length === 2) ||
-        isRoomExist.players.length >= 3
+        isRoomExist.players.length >= 9
       ) {
         if (isRoomExist.allowWatcher) {
           return socket.emit("newWatcher", {
@@ -5965,7 +5966,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
         if (room.table.public) {
           if (
             isRoomExist.gameType !== "poker1vs1_Tables" &&
-            isRoomExist.players.length < 3 &&
+            isRoomExist.players.length < 9 &&
             !isRoomExist.players.find((ele) => ele.userid === user.userid)
           ) {
             user.isAdmin = false;
@@ -6038,7 +6039,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
           } else if (
             !room.invPlayers.find((ele) => ele === user.userid) &&
             isRoomExist.gameType !== "poker1vs1_Tables" &&
-            isRoomExist.players.length < 3
+            isRoomExist.players.length < 9
           ) {
             socket.emit("newUser", {
               _id: room.roomid,
@@ -6047,7 +6048,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
             });
           } else if (
             isRoomExist.gameType !== "poker1vs1_Tables" &&
-            isRoomExist.players.length >= 3
+            isRoomExist.players.length >= 9
           ) {
             console.log("ROOM FULL 5716");
             socket.emit("roomFull", "Room is full");
@@ -6193,7 +6194,7 @@ export const checkRoomForConnectedUser = async (data, socket, io) => {
         if (room.table.public) {
           if (
             isRoomExist.gameType !== "poker1vs1_Tables" &&
-            isRoomExist.players.length < 3 &&
+            isRoomExist.players.length < 9 &&
             !room.players.find((ele) => ele === user.userid)
           ) {
             user.isAdmin = false;
@@ -6602,7 +6603,7 @@ export const approveJoinRequest = async (data, socket, io) => {
             isWatcher: false,
           });
         }
-        if (room.players.length < 3) {
+        if (room.players.length < 9) {
           let joinPlayer = room.joinRequests.filter(
             (e) => e.userid.toString() === data.player.userid.toString()
           );
@@ -7968,7 +7969,7 @@ const pushPlayerInRoom = async (
         .findById(checkTournament.rooms[checkTournament.rooms.length - 1])
         .lean();
     }
-    if (checkTournament?.rooms?.length && lastRoom?.players?.length < 3) {
+    if (checkTournament?.rooms?.length && lastRoom?.players?.length < 9) {
       roomId = lastRoom._id;
       let players = lastRoom.players;
       players.push({
