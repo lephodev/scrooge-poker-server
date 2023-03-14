@@ -292,17 +292,17 @@ export const preflopPlayerPush = async (players, roomid) => {
 };
 
 export const preflopround = async (room, io) => {
-  console.log("preflop round room--->",room)
+  console.log("preflop round room--->", room);
   try {
     // console.log("io", io);
     console.log("Line 297 ===>", new Date().getMilliseconds());
-    await updateRoomForNewHand(room._id, io);
+    // await updateRoomForNewHand(room._id, io);
 
     // console.log("io", io);
     console.log("Line 301 ===>", new Date().getMilliseconds());
     room = await roomModel.findOne(room._id).lean();
-    if(!room){
-      return
+    if (!room) {
+      return;
     }
     let playingPlayer = room?.players?.filter(
       (el) => el.playing && el.wallet > 0
@@ -2439,9 +2439,9 @@ export const updateRoomForNewHand = async (roomid, io) => {
             playerData = roomData.showdown;
             break;
         }
-       if (!playerData){
-        return
-       }
+        if (!playerData) {
+          return;
+        }
         const anyNewPlayer = async (playerData, plrs) => {
           return new Promise((resolve, reject) => {
             let data = playerData;
@@ -2565,7 +2565,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 },
                 {
                   players: newHandPlayer,
-                  eleminated:  [],
+                  eleminated: [],
                   preflopround: [],
                   flopround: [],
                   turnround: [],
@@ -2599,7 +2599,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                   new: true,
                 }
               );
-              io.in(upRoom._id.toString()).emit('newhand', {
+              io.in(upRoom._id.toString()).emit("newhand", {
                 updatedRoom: upRoom,
               });
               resolve();
@@ -2721,7 +2721,7 @@ export const elemination = async (roomData, io) => {
         }
       );
     }
-    io.in(upRoom._id.toString()).emit('newhand', { updatedRoom: upRoom })
+    io.in(upRoom._id.toString()).emit("newhand", { updatedRoom: upRoom });
 
     // setTimeout(() => {
     //   preflopround(upRoom, io);
@@ -3301,10 +3301,11 @@ export const doLeaveTable = async (data, io, socket) => {
   }
 };
 
-export const doFold = async (roomid, playerid, io) => {
+export const doFold = async (roomData, playerid, io) => {
   try {
     console.log("----doFold-----");
-    const roomData = await roomModel.findOne({ _id: roomid });
+    // const roomData = await roomModel.findOne({ _id: roomid });
+    const roomid = roomData._id;
     let updatedRoom = null;
     let playingPlayer = [];
     let res = true;
@@ -3636,14 +3637,14 @@ export const socketDoFold = async (dta, io, socket) => {
           {
             _id: roomid,
             "players.userid": playerid,
-          },
-          { _id: 1 }
+          }
+          // { _id: 1 }
         )
         .lean();
       console.log("3424===");
       if (data !== null) {
         console.log("===");
-        await doFold(roomid, playerid, io);
+        await doFold(data, playerid, io);
       } else {
         socket.emit("actionError", { code: 400, msg: "Data not found" });
       }
@@ -3656,10 +3657,11 @@ export const socketDoFold = async (dta, io, socket) => {
   }
 };
 
-export const doCall = async (roomid, playerid, io, amt) => {
+export const doCall = async (roomData, playerid, io, amt) => {
   console.log("do call executed");
   try {
-    const roomData = await roomModel.findOne({ _id: roomid });
+    // const roomData = await roomModel.findOne({ _id: roomid });
+    const roomid = roomData._id;
     let updatedRoom = null;
     let res = true;
     let filterData = null;
@@ -3728,10 +3730,10 @@ export const doCall = async (roomid, playerid, io, amt) => {
 
         case 2: {
           console.log("case 2 executed in do callback");
-          roundData = roomData.flopround.filter(
+          roundData = roomData.flopround.find(
             (el) => el.id.toString() === playerid.toString()
           );
-          amt = amt - roundData[0].pot;
+          amt = amt - roundData.pot;
 
           let floprnd = [...roomData.flopround];
           floprnd = floprnd.map((flprnd) => {
@@ -3921,15 +3923,15 @@ export const socketDoCall = async (dta, io, socket) => {
           {
             _id: roomid,
             "players.userid": playerid,
-          },
-          { _id: 1, raiseAmount: 1 }
+          }
+          // { _id: 1, raiseAmount: 1 }
         )
         .lean();
       if (data !== null) {
         if (data.raiseAmount == amt) {
-          const walletAmt = await getPlayerwallet(roomid, playerid);
+          const walletAmt = await getPlayerwallet(data, playerid);
           if (walletAmt >= amt) {
-            await doCall(roomid, playerid, io, amt);
+            await doCall(data, playerid, io, amt);
           } else {
             socket.emit("actionError", {
               code: 400,
@@ -3954,9 +3956,10 @@ export const socketDoCall = async (dta, io, socket) => {
   }
 };
 
-export const doBet = async (roomid, playerid, io, amt) => {
+export const doBet = async (roomData, playerid, io, amt) => {
   try {
-    const roomData = await roomModel.findOne({ _id: roomid });
+    // const roomData = await roomModel.findOne({ _id: roomid });
+    const roomid = roomData._id;
     let updatedRoom = null;
     let res = true;
     let filterData = null;
@@ -4256,16 +4259,16 @@ export const socketDoBet = async (dta, io, socket) => {
           {
             _id: roomid,
             "players.userid": playerid,
-          },
-          { _id: 1, raiseAmount: 1, bigBlind: 1 }
+          }
+          // { _id: 1, raiseAmount: 1, bigBlind: 1 }
         )
         .lean();
 
       if (data !== null) {
         if (data.raiseAmount <= amt) {
-          const walletAmt = await getPlayerwallet(roomid, playerid);
+          const walletAmt = await getPlayerwallet(data, playerid);
           if (walletAmt >= amt) {
-            await doBet(roomid, playerid, io, amt);
+            await doBet(data, playerid, io, amt);
           } else {
             socket.emit("actionError", {
               code: 400,
@@ -4290,11 +4293,12 @@ export const socketDoBet = async (dta, io, socket) => {
   }
 };
 
-export const doRaise = async (roomid, playerid, io, amt) => {
+export const doRaise = async (roomData, playerid, io, amt) => {
   try {
     console.log("amt==== 3874>>");
     console.log("do raise amount ===== >", amt);
-    const roomData = await roomModel.findOne({ _id: roomid });
+    // const roomData = await roomModel.findOne({ _id: roomid });
+    const roomid = roomData._id;
     let updatedRoom = null;
     let res = true;
     let filterData = null;
@@ -4661,16 +4665,16 @@ export const socketDoRaise = async (dta, io, socket) => {
           {
             _id: roomid,
             "players.userid": playerid,
-          },
-          { _id: 1, raiseAmount: 1 }
+          }
+          // { _id: 1, raiseAmount: 1 }
         )
         .lean();
 
       if (data !== null) {
         if (data.raiseAmount <= amt) {
-          const walletAmt = await getPlayerwallet(roomid, playerid);
+          const walletAmt = await getPlayerwallet(data, playerid);
           if (walletAmt >= amt) {
-            await doRaise(roomid, playerid, io, amt);
+            await doRaise(data, playerid, io, amt);
           } else {
             socket.emit("actionError", {
               code: 400,
@@ -4695,9 +4699,10 @@ export const socketDoRaise = async (dta, io, socket) => {
   }
 };
 
-export const doCheck = async (roomid, playerid, io) => {
+export const doCheck = async (roomData, playerid, io) => {
   try {
-    const roomData = await roomModel.findOne({ _id: roomid });
+    // const roomData = await roomModel.findOne({ _id: roomid });
+    const roomid = roomData._id;
     let updatedRoom = null;
     let res = true;
     let filterData = null;
@@ -4897,12 +4902,12 @@ export const socketDoCheck = async (dta, io, socket) => {
           {
             _id: roomid,
             "players.userid": convertMongoId(playerid),
-          },
-          { _id: 1, raiseAmount: 1, lastAction: 1 }
+          }
+          // { _id: 1, raiseAmount: 1, lastAction: 1 }
         )
         .lean();
       if (data !== null) {
-        await doCheck(roomid, playerid, io);
+        await doCheck(data, playerid, io);
       } else {
         socket.emit("actionError", { code: 404, msg: "Data not found" });
       }
@@ -4915,15 +4920,16 @@ export const socketDoCheck = async (dta, io, socket) => {
   }
 };
 
-export const doAllin = async (roomid, playerid, io) => {
+export const doAllin = async (roomData, playerid, io) => {
   try {
-    console.log("Player Id room Id---->", playerid, roomid);
-    const roomData = await roomModel.findOne({ _id: roomid });
+    let roomid = roomData._id;
+    // const roomData = await roomModel.findOne({ _id: roomid });
     playerid = convertMongoId(playerid);
+    roomid = roomData._id;
     roomid = convertMongoId(roomid);
 
-    let updatedRoom = null;
-    let res = true;
+    // let updatedRoom = null;
+    // let res = true;
     let roundData = null;
     let raiseAmount = roomData.raiseAmount;
     let raisePlayerPosition = roomData.raisePlayerPosition;
@@ -4961,8 +4967,8 @@ export const doAllin = async (roomid, playerid, io) => {
             console.log("player ====>", el);
             if (el.id.toString() === playerid.toString()) {
               prevWallt = el.wallet;
-              el.wallet = el.wallet - roundData[0].wallet;
               el.pot = el.pot + roundData[0].wallet;
+              el.wallet = el.wallet - roundData[0].wallet;
               el.action = true;
               el.actionType = "all-in";
               el.tentativeAction = null;
@@ -5037,8 +5043,8 @@ export const doAllin = async (roomid, playerid, io) => {
           p = p.map((el) => {
             if (el.id.toString() === playerid.toString()) {
               prevWallt = el.wallet;
-              el.wallet = el.wallet - roundData[0].wallet;
               el.pot = el.pot + roundData[0].wallet;
+              el.wallet = el.wallet - roundData[0].wallet;
               // udpatedRaiseAmt = el.pot;
               el.action = true;
               el.actionType = "all-in";
@@ -5109,8 +5115,8 @@ export const doAllin = async (roomid, playerid, io) => {
           p = p.map((el) => {
             if (el.id.toString() === playerid.toString()) {
               prevWallt = el.wallet;
-              el.wallet = el.wallet - roundData[0].wallet;
               el.pot = el.pot + roundData[0].wallet;
+              el.wallet = el.wallet - roundData[0].wallet;
               el.action = true;
               el.actionType = "all-in";
               el.tentativeAction = null;
@@ -5180,8 +5186,8 @@ export const doAllin = async (roomid, playerid, io) => {
           p = p.map((el) => {
             if (el.id.toString() === playerid.toString()) {
               prevWallt = el.wallet;
-              el.wallet = el.wallet - roundData[0].wallet;
               el.pot = el.pot + roundData[0].wallet;
+              el.wallet = el.wallet - roundData[0].wallet;
               el.action = true;
               el.actionType = "all-in";
               el.tentativeAction = null;
@@ -5253,14 +5259,14 @@ export const socketDoAllin = async (dta, io, socket) => {
           {
             _id: roomid,
             "players.userid": playerid,
-          },
-          { _id: 1, raiseAmount: 1 }
+          }
+          // { _id: 1, raiseAmount: 1 }
         )
         .lean();
       console.log({ data });
       if (data !== null) {
         console.log("=================== ALLIN 4420");
-        await doAllin(roomid, playerid, io);
+        await doAllin(data, playerid, io);
       } else {
         console.log("=================== ALLIN 4442");
         socket.emit("actionError", { code: 404, msg: "Data not found" });
@@ -5502,9 +5508,9 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
   }
 };
 
-export const getPlayerwallet = async (roomid, playerid) => {
+export const getPlayerwallet = async (roomData, playerid) => {
   try {
-    const roomData = await roomModel.findOne({ _id: roomid });
+    // const roomData = await roomModel.findOne({ _id: roomid });
     let res = null;
     let filterData = null;
 
@@ -5778,6 +5784,7 @@ export const nextWeekdayDate = (date, day_in_week) => {
     console.log("hgfgfgfgh", error);
   }
 };
+
 export const reArrangeTables = async (tournamentId, io) => {
   try {
     const tournamentData = await tournamentModel
@@ -5811,6 +5818,7 @@ export const reArrangeTables = async (tournamentId, io) => {
     console.log("mmyyyyyy sttatat", error);
   }
 };
+
 const fillSpot = async (allRooms, io) => {
   try {
     for (let i = 0; i < allRooms.length - 1; i++) {
@@ -5857,8 +5865,7 @@ const fillSpot = async (allRooms, io) => {
             io.in(allRooms[i]._id.toString()).emit("roomchanged", {
               changeIds: userIds,
               newRoomId: allRooms[j]._id,
-              updatedRoom:updatedRoom
-
+              updatedRoom: updatedRoom,
             });
             // io.in(allRooms[j]._id.toString()).emit("newhand", {
             //   updatedRoom: updatedRoom,
