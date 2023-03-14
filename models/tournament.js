@@ -16,6 +16,7 @@ const tournamentSchema = new Schema({
   havePlayers: { type: Number, default: 0 },
   rooms: [{ type: Schema.Types.ObjectId, ref: 'rooms'}],
   destroyedRooms: [{ type: Schema.Types.ObjectId, ref: 'rooms' }],
+  incBlindTime: { type: Number, required: true}
 },{timestamps:true});
 const tournamentModel = mongoose.model('tournament', tournamentSchema);
 

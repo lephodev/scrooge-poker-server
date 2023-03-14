@@ -89,7 +89,7 @@ const joinRoomByUserId = async (game, userId, sitInAmount) => {
   // if public table -
   // check empty slot for table else return slot full,
   // join user in game if there is empty slot
-  if (game.public && game.players.length < 9) {
+  if (game.public && game.players.length < 3) {
     const availblePosition = await findAvailablePosition(game.players);
     if (!availblePosition.isFound) {
       return null;
@@ -105,7 +105,7 @@ const joinRoomByUserId = async (game, userId, sitInAmount) => {
     // join user in game if there is empty slot else return slot full
   } else if (
     game.invPlayers.find((uId) => uId.toString() === userId.toString()) &&
-    game.players.length < 9
+    game.players.length < 3
   ) {
     const availblePosition = await findAvailablePosition(game.players);
     if (!availblePosition.isFound) {
@@ -118,7 +118,7 @@ const joinRoomByUserId = async (game, userId, sitInAmount) => {
       sitInAmount
     );
     return room;
-  } else if (game.public && game.players.length >= 9) {
+  } else if (game.public && game.players.length >= 3) {
     return null;
   } else {
     return null;
