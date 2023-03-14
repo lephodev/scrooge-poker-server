@@ -296,7 +296,7 @@ export const preflopround = async (room, io) => {
   try {
     // console.log("io", io);
     console.log("Line 297 ===>", new Date().getMilliseconds());
-    // await updateRoomForNewHand(room._id, io);
+    await updateRoomForNewHand(room._id, io);
 
     // console.log("io", io);
     console.log("Line 301 ===>", new Date().getMilliseconds());
@@ -2348,7 +2348,7 @@ export const showdown = async (roomid, io) => {
       //  finishedTableGame(roomUpdate);
       //} else {
       if (upRoom.tournament) {
-       // await calculateTournamentPrize(upRoom?.tournament)
+        // await calculateTournamentPrize(upRoom?.tournament)
         await elemination(upRoom, io);
         await reArrangeTables(upRoom.tournament, io);
       }
@@ -2730,67 +2730,68 @@ export const elemination = async (roomData, io) => {
     console.log("uuuuu", error);
   }
 };
-export const calculateTournamentPrize=async(tournamentId)=>{
-  try{
-     const tournamentData=await tournamentModel.findOne({_id:tournamentId}).populate("rooms", null)
-     .lean();
-      const totalPlayer=tournamentData?.havePlayers
-      let winnerPlayer=[]
-      if(totalPlayer <=tournamentData?.winTotalPlayer){
-        tournamentData?.rooms?.forEach((el)=>{
-          winnerPlayer.push([...el?.players])
-         })
-         if(winnerPlayer.length >0){
-          const sortedWinner= winnerPlayer.sort((a, b) => {
-            return a.wallet - b.wallet;
-          });
+export const calculateTournamentPrize = async (tournamentId) => {
+  try {
+    const tournamentData = await tournamentModel
+      .findOne({ _id: tournamentId })
+      .populate("rooms", null)
+      .lean();
+    const totalPlayer = tournamentData?.havePlayers;
+    let winnerPlayer = [];
+    if (totalPlayer <= tournamentData?.winTotalPlayer) {
+      tournamentData?.rooms?.forEach((el) => {
+        winnerPlayer.push([...el?.players]);
+      });
+      if (winnerPlayer.length > 0) {
+        const sortedWinner = winnerPlayer.sort((a, b) => {
+          return a.wallet - b.wallet;
+        });
 
-          if(sortedWinner.length>0){
-              
-          }
-         }
+        if (sortedWinner.length > 0) {
+        }
       }
+    }
     //  let allplayer=0
     //  let winnerArr=[]
     //  if(tournamentData){
     //   tournamentData?.rooms?.forEach((el)=>{
     //    allplayer+=el?.players?.length
     //   if(tournamentData.winners === allplayer){
-      //  const newPl= el.players.sort((a, b) => {
-      //     return a.wallet - b.wallet;
-      //   });  
+    //  const newPl= el.players.sort((a, b) => {
+    //     return a.wallet - b.wallet;
+    //   });
     //     winnerArr.push(newPl)
     //    }
     //   })
     //  }
     //  if(winnerArr.length >0){
-      // sortedWinner.map(async(el,i)=>{
-      //   if(i===0){
-      //     payload={
-      //        ...payload,['first.userId']:el.id
-      //     }
-      //   }
-      //   if(i===1){
-      //     payload={
-      //       ...payload,['second.userId']:el.id
-      //    }
-      //   }
-      //   if(i===2){
-      //     payload={
-      //       ...payload,['third.userId']:el.id
-      //    }
-      //   }
-      //   if(i>3 && i<=9){
-      //     payload={
-      //       ...payload,['410'].push(el.id)
-      //    }
-      //   }
-      // })
+    // sortedWinner.map(async(el,i)=>{
+    //   if(i===0){
+    //     payload={
+    //        ...payload,['first.userId']:el.id
+    //     }
+    //   }
+    //   if(i===1){
+    //     payload={
+    //       ...payload,['second.userId']:el.id
+    //    }
+    //   }
+    //   if(i===2){
+    //     payload={
+    //       ...payload,['third.userId']:el.id
+    //    }
+    //   }
+    //   if(i>3 && i<=9){
+    //     payload={
+    //       ...payload,['410'].push(el.id)
+    //    }
+    //   }
+    // })
     //  }
-  }catch(err){
-    console.log("Error in prize calculation--->",err)
+  } catch (err) {
+    console.log("Error in prize calculation--->", err);
   }
-}
+};
 
 export const doPauseGame = async (data, io, socket) => {
   const userid = data.userid;
@@ -5056,7 +5057,7 @@ export const doAllin = async (roomData, playerid, io) => {
             roundData[0].wallet
           );
 
-          updatedRoom = await roomModel.findOneAndUpdate(
+          await roomModel.findOneAndUpdate(
             {
               _id: roomid,
               "preflopround.id": playerid,
