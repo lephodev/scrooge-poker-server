@@ -292,10 +292,14 @@ export const preflopPlayerPush = async (players, roomid) => {
 };
 
 export const preflopround = async (room, io) => {
+  console.log("preflop round room--->",room)
   try {
     // console.log("io", io);
     await updateRoomForNewHand(room._id, io);
     room = await roomModel.findOne(room._id).lean();
+    if(!room){
+      return
+    }
     let playingPlayer = room?.players?.filter(
       (el) => el.playing && el.wallet > 0
     );
@@ -863,7 +867,7 @@ export const prefloptimer = async (roomid, io) => {
               ) {
                 clearInterval(playerinterval);
                 timer(++i, maxPosition);
-              } else if (data.isGameRunning) {
+              } else if (data?.isGameRunning) {
                 // filteredData[0].playerchance = j;
                 j--;
                 if (j === 120 && !data.displayTimer) {
@@ -2414,7 +2418,9 @@ export const updateRoomForNewHand = async (roomid, io) => {
             playerData = roomData.showdown;
             break;
         }
-
+       if (!playerData){
+        return
+       }
         const anyNewPlayer = async (playerData, plrs) => {
           return new Promise((resolve, reject) => {
             let data = playerData;
@@ -2538,7 +2544,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 },
                 {
                   players: newHandPlayer,
-                  // eleminated:  JSON.parse(JSON.stringify(roomData.eleminated)),
+                  eleminated:  [],
                   preflopround: [],
                   flopround: [],
                   turnround: [],
@@ -2572,9 +2578,9 @@ export const updateRoomForNewHand = async (roomid, io) => {
                   new: true,
                 }
               );
-              // io.in(upRoom._id.toString()).emit('newhand', {
-              //   updatedRoom: upRoom,
-              // });
+              io.in(upRoom._id.toString()).emit('newhand', {
+                updatedRoom: upRoom,
+              });
               resolve();
             } catch (error) {
               console.log("Error in transformedItems", err);
@@ -2694,7 +2700,7 @@ export const elemination = async (roomData, io) => {
         }
       );
     }
-    //io.in(upRoom._id.toString()).emit('newhand', { updatedRoom: upRoom })
+    io.in(upRoom._id.toString()).emit('newhand', { updatedRoom: upRoom })
 
     // setTimeout(() => {
     //   preflopround(upRoom, io);
@@ -3309,7 +3315,7 @@ export const doFold = async (roomid, playerid, io) => {
             }
           );
           console.log("updatedroom 3200===>");
-          filterData = updatedRoom.preflopround.filter(
+          filterData = updatedRoom?.preflopround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
 
@@ -4470,11 +4476,11 @@ export const doAllin = async (roomid, playerid, io) => {
     let raisePlayerPosition = roomData.raisePlayerPosition;
     let allinPlayer = roomData.allinPlayers;
 
-    const filterDta = roomData.players.filter(
-      (el) => el.userid.toString() === roomData.timerPlayer.toString()
-    );
+    // const filterDta = roomData.players.filter(
+    //   (el) => el?.userid?.toString() === roomData?.timerPlayer?.toString()
+    // );
 
-    if (roomData.timerPlayer.toString() === playerid.toString()) {
+    if (roomData?.timerPlayer?.toString() === playerid?.toString()) {
       console.log("=================== ALLIN 4328");
       switch (roomData.runninground) {
         case 1:
@@ -5240,13 +5246,13 @@ const fillSpot = async (allRooms, io) => {
   try {
     for (let i = 0; i < allRooms.length - 1; i++) {
       console.log("ith  player room-->", allRooms[i].players);
-      if (allRooms[i].players.length <= 5) {
+      if (allRooms[i].players.length <= 2) {
         for (let j = i + 1; j < allRooms.length; j++) {
           console.log("second room player-->", allRooms[j]);
           // if (allRooms[j].players.length >= 5) {
           //   continue
           // }
-          if (allRooms[j].players.length <= 4) {
+          if (allRooms[j].players.length <= 1) {
             let currentPlayer = [...allRooms[j].players];
             let userIds = [];
             console.log("current player room-->", currentPlayer);
@@ -5282,11 +5288,12 @@ const fillSpot = async (allRooms, io) => {
             io.in(allRooms[i]._id.toString()).emit("roomchanged", {
               changeIds: userIds,
               newRoomId: allRooms[j]._id,
+              updatedRoom:updatedRoom
+
             });
-            io.in(allRooms[j]._id.toString()).emit("newhand", {
-              updatedRoom: updatedRoom,
-            });
-            await roomModel.deleteOne({ _id: allRooms[i]._id });
+            // io.in(allRooms[j]._id.toString()).emit("newhand", {
+            //   updatedRoom: updatedRoom,
+            // });
             await tournamentModel.updateOne(
               { _id: allRooms[j].tournament },
               { $push: { destroyedRooms: allRooms[i]._id } },
@@ -5294,6 +5301,7 @@ const fillSpot = async (allRooms, io) => {
                 new: true,
               }
             );
+            await roomModel.deleteOne({ _id: allRooms[i]._id });
             await preflopround(allRooms[j], io);
           }
         }
