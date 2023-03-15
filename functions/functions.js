@@ -762,6 +762,11 @@ export const preflopround = async (room, io) => {
           let updatedRoom = await roomModel.findOne({
             _id: room._id,
           });
+
+          if (updatedRoom.gameType === "poker-tournament") {
+            console.log("blind stated");
+            blindTimer({ gameId: room._id }, io);
+          }
           io.in(room._id.toString()).emit("preflopround", updatedRoom);
         } else {
           // console.log("io--->", io);
@@ -2226,6 +2231,7 @@ export const showdown = async (roomid, io) => {
               winnerHand.push(`${c.value}${c.suit}`);
             });
             const totalPlayerTablePot = winnerData[0].prevPot;
+            console.log("totalPlayerTablePot", totalPlayerTablePot);
             let winningAmount = e.pot - totalPlayerTablePot;
 
             if (winnerPlayers.length) {
@@ -2408,6 +2414,7 @@ export const showdown = async (roomid, io) => {
 };
 
 export const updateRoomForNewHand = async (roomid, io) => {
+  console.log("Update data for new hand");
   try {
     return new Promise(async (resolve, reject) => {
       try {
@@ -2602,6 +2609,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
               io.in(upRoom._id.toString()).emit("newhand", {
                 updatedRoom: upRoom,
               });
+
               resolve();
             } catch (error) {
               console.log("Error in transformedItems", err);
@@ -8488,6 +8496,52 @@ export const activateTournament = async (io) => {
     //console.log("checkTournament", checkTournament);
   } catch (error) {
     console.log("activateTournament", error);
+  }
+};
+
+export const blindTimer = async (data, io) => {
+  try {
+    const { gameId } = data;
+    const gameData = await roomModel
+      .findOne({ _id: gameId })
+      .populate("tournament");
+    console.log("gameData", gameData?.tournament);
+    console.log("incBlindTime", gameData?.tournament?.incBlindTime);
+    const { incBlindTime } = gameData?.tournament;
+    console.log("incBlindTime====>>>>", incBlindTime);
+    if (gameData && gameData?.tournament?.incBlindTime) {
+      let getMinute = incBlindTime * 60;
+      console.log("getMinute", getMinute);
+      const interval = setInterval(async () => {
+        if (getMinute > 0) {
+          getMinute -= 1;
+          // emit timer
+          const mm =
+            getMinute / 60 < 10
+              ? `0${parseInt(getMinute / 60, 10)}`
+              : `${parseInt(getMinute / 60, 10)}`;
+          const ss =
+            getMinute % 60 < 10
+              ? `0${parseInt(getMinute % 60, 10)}`
+              : `${parseInt(getMinute % 60, 10)}`;
+          const time = `${mm}:${ss}`;
+          console.log("getMinute", time);
+          io.in(gameId.toString()).emit("blindTimer", {
+            time,
+          });
+        } else {
+          getMinute = incBlindTime * 60;
+          // find all room of tournamet
+          //change blinds by 2 - sb =50 , newsB = sb*2, newBB= newSB*2
+        }
+
+        if (!gameData) {
+          clearInterval(interval);
+        }
+      }, 1000);
+    }
+  } catch (error) {
+    console.log("error in blindTimer", error);
   }
 };
 
