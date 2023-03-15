@@ -4982,6 +4982,7 @@ export const doAllin = async (roomData, playerid, io) => {
               _id: roomid,
               "preflopround.id": playerid,
             },
+
             {
               $inc: {
                 "preflopround.$.wallet": -prevWallt,
