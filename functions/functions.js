@@ -301,9 +301,12 @@ export const preflopround = async (room, io) => {
     if (!room) {
       return;
     }
+    console.log("players =>", room.players);
+
     let playingPlayer = room?.players?.filter(
       (el) => el.playing && el.wallet > 0
     );
+    console.log("players filer =>", playingPlayer);
     let positions = room?.players?.map((pos) => pos.position);
     let isNewLeave = false;
     let i = 0;
@@ -359,10 +362,10 @@ export const preflopround = async (room, io) => {
           const room1111 = await roomModel.findOne(
             { _id: room._id },
             { _id: 1, preflopround: 1, smallBlind: 1, bigBlind: 1 }
-          );
+          ).populate('tournament');
 
-          const smallBlindAmt = room1111.smallBlind;
-          const bigBlindAmt = room1111.bigBlind;
+          const bigBlindAmt = room1111.tournament ? room1111.tournament.levels.bigBlind.amount: room1111.bigBlind;
+          const smallBlindAmt = room1111.tournament ? room1111.tournament.levels.smallBlind.amount : room1111.smallBlind;
           let smallBlindDeducted = 0;
           let smallBlindPosition = null;
           let bigBlindPosition = null;
@@ -738,6 +741,7 @@ export const preflopround = async (room, io) => {
           let updatedRoom = await roomModel.findOne({
             _id: room._id,
           });
+
           io.in(room._id.toString()).emit("preflopround", updatedRoom);
         } else {
           // console.log("io--->", io);
@@ -2217,6 +2221,7 @@ export const showdown = async (roomid, io) => {
               winnerHand.push(`${c.value}${c.suit}`);
             });
             const totalPlayerTablePot = winnerData[0].prevPot;
+            console.log("totalPlayerTablePot", totalPlayerTablePot);
             let winningAmount = e.pot - totalPlayerTablePot;
 
             if (winnerPlayers.length) {
@@ -2400,6 +2405,7 @@ export const showdown = async (roomid, io) => {
 };
 
 export const updateRoomForNewHand = async (roomid, io) => {
+  console.log("Update data for new hand");
   try {
     return new Promise(async (resolve, reject) => {
       try {
@@ -2594,6 +2600,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
               io.in(upRoom._id.toString()).emit("newhand", {
                 updatedRoom: upRoom,
               });
+
               resolve();
             } catch (error) {
               console.log("Error in transformedItems", err);
@@ -5487,7 +5494,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
       }
     }, gameRestartSeconds);
   } catch (error) {
-    console.log("catchhh block", error);
+    console.log("error in winnerBeforeShowdwon", error);
   }
 };
 
@@ -5816,7 +5823,7 @@ const fillSpot = async (allRooms, io) => {
             await preflopround(allRooms[i], io);
           }else{
             console.log("only one player =>", allRooms[i])
-            io.in(allRooms[i]._id).emit('tournamentFinished');
+            io.in(allRooms[i]._id.toString()).emit('tournamentFinished');
           }
         }
         for (let j = i + 1; j < allRooms.length; j++) {
@@ -8282,7 +8289,7 @@ const pushPlayerInRoom = async (
         userid: _id,
         id: _id,
         photoURI: avatar ? avatar : profile ? profile : img,
-        wallet: parseFloat(tournamentAmount),
+        wallet: parseFloat(checkTournament.buyIn),
         position: players.length,
         missedSmallBlind: false,
         missedBigBlind: false,
@@ -8333,7 +8340,7 @@ const pushPlayerInRoom = async (
             userid: _id,
             id: _id,
             photoURI: avatar ? avatar : profile ? profile : img,
-            wallet: parseFloat(tournamentAmount),
+            wallet: parseFloat(checkTournament.buyIn),
             position: 0,
             missedSmallBlind: false,
             missedBigBlind: false,
@@ -8387,13 +8394,60 @@ export const activateTournament = async (io) => {
     if (checkTournament) {
       //preflopround()
       if(checkTournament?.rooms?.length >0){
+        blindTimer(checkTournament, io);
       for await(let room of checkTournament?.rooms){
         await preflopround(room, io);
       }
+     
       }
     }
   } catch (error) {
     console.log("activateTournament", error);
+  }
+};
+
+export const blindTimer = async (data, io) => {
+  try {
+    const { rooms, incBlindTime, levels:{smallBlind: { amount: smAmount} }, _id } = data;
+    if (rooms && rooms.length && incBlindTime) {
+      let getMinute = incBlindTime * 60;
+      const interval = setInterval(async () => {
+        if (getMinute > 0) {
+          // emit timer
+          const mm =
+            getMinute / 60 < 10
+              ? `0${parseInt(getMinute / 60, 10)}`
+              : `${parseInt(getMinute / 60, 10)}`;
+          const ss =
+            getMinute % 60 < 10
+              ? `0${parseInt(getMinute % 60, 10)}`
+              : `${parseInt(getMinute % 60, 10)}`;
+          const time = `${mm}:${ss}`;
+          rooms.forEach( room => {
+            io.in(room._id.toString()).emit("blindTimer", {
+              time,
+            });
+          })
+         
+          getMinute -= 1;
+        } else {
+          clearInterval(interval);
+          getMinute = incBlindTime * 60;
+          // find all room of tournamet
+          let bliend = {
+            levels: {
+            smallBlind: { amount: smAmount * 2 },
+            bigBlind: { amount: smAmount * 2 * 2},
+            }
+          };
+          await tournamentModel.updateOne({ _id }, bliend);
+        const t = await tournamentModel.findOne({ _id });
+          blindTimer(t, io);
+        }
+      }, 1000);
+    }
+  } catch (error) {
+    console.log("error in blindTimer", error);
   }
 };
 
