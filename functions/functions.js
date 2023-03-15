@@ -742,10 +742,6 @@ export const preflopround = async (room, io) => {
             _id: room._id,
           });
 
-          if (updatedRoom.gameType === "poker-tournament") {
-            console.log("blind stated");
-            blindTimer({ gameId: room._id }, io);
-          }
           io.in(room._id.toString()).emit("preflopround", updatedRoom);
         } else {
           // console.log("io--->", io);
@@ -8382,11 +8378,14 @@ export const activateTournament = async (io) => {
       .lean();
     if (checkTournament) {
       //preflopround()
+      // blindTimer({ gameId: room._id }, io);
       each(
         checkTournament.rooms,
         async function (room, next) {
           console.log("Preflop round start on line number 7791");
+          blindTimer({ gameId: room }, io);
           await preflopround(room, io);
+
           next();
         }
         // async function (err, transformedItems) {
@@ -8425,11 +8424,10 @@ export const blindTimer = async (data, io) => {
     const { incBlindTime } = gameData?.tournament;
     console.log("incBlindTime====>>>>", incBlindTime);
     if (gameData && gameData?.tournament?.incBlindTime) {
-      let getMinute = incBlindTime * 60;
+      let getMinute = gameData?.tournament?.incBlindTime * 60;
       console.log("getMinute", getMinute);
       const interval = setInterval(async () => {
         if (getMinute > 0) {
-          getMinute -= 1;
           // emit timer
           const mm =
             getMinute / 60 < 10
@@ -8444,14 +8442,20 @@ export const blindTimer = async (data, io) => {
           io.in(gameId.toString()).emit("blindTimer", {
             time,
           });
+          getMinute -= 1;
         } else {
-          getMinute = incBlindTime * 60;
-          // find all room of tournamet
-          //change blinds by 2 - sb =50 , newsB = sb*2, newBB= newSB*2
-        }
-
-        if (!gameData) {
           clearInterval(interval);
+          getMinute = gameData?.tournament?.incBlindTime * 60;
+          // find all room of tournamet
+          let bliend = {
+            smallBlind: gameData?.smallBlind * 2,
+            bigBlind: gameData?.bigBlind * 2,
+          };
+          console.log("bliend", bliend);
+          console.log("GmaeIDD", gameId);
+          await roomModel.updateOne({ _id: gameId?.toString() }, bliend);
+          //change blinds by 2 - sb =50 , newsB = sb*2, newBB= newSB*2
+          blindTimer(data, io);
         }
       }, 1000);
     }
