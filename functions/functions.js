@@ -1033,7 +1033,7 @@ export const flopround = async (roomid, io) => {
   try {
     const roomData = await roomModel.findOne({ _id: roomid });
     // const tournamentConfig = await tournamentConfModel.findOne().sort({'_id': -1});
-
+console.log("flopround called", roomData)
     if (roomData?.runninground === 1) {
       let distributedCards = [];
       let floproundPlayersData = [];
@@ -1116,10 +1116,12 @@ export const flopround = async (roomid, io) => {
       io.in(updatedRoom?._id?.toString()).emit("flopround", updatedRoom);
       if (playingPlayer > 1) {
         setTimeout(() => {
+          console.log("flop-timer called for room =>", roomid);
           flopTimer(roomid, io);
         }, 1000);
       } else {
         setTimeout(() => {
+          console.log("turn-round called for room =>", roomid);
           turnround(roomid, io);
         }, 1000);
       }
@@ -1466,10 +1468,12 @@ export const turnround = async (roomid, io) => {
       io.in(updatedRoom?._id?.toString()).emit("turnround", updatedRoom);
       if (playingPlayer > 1) {
         setTimeout(() => {
+          console.log("turn-timer called for room =>", roomid);
           turnTimer(roomid, io);
         }, 1000);
       } else {
         setTimeout(() => {
+          console.log("river-round called for room =>", roomid);
           riverround(roomid, io);
         }, 1000);
       }
@@ -1806,11 +1810,13 @@ export const riverround = async (roomid, io) => {
       io.in(updatedRoom?._id?.toString()).emit("riverround", updatedRoom);
       if (playingPlayer > 1) {
         setTimeout(() => {
+          console.log("river-timer called for room =>", roomid);
           riverTimer(roomid, io);
         }, 1000);
       } else {
         console.log("<<<-----show down first----->>>");
         setTimeout(() => {
+          console.log("showdown called for room =>", roomid);
           showdown(roomid, io);
         }, 1000);
       }
@@ -5441,22 +5447,6 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         "I am here--- for check re arrange table",
         updatedRoomPlayers
       );
-      //check table tournament type ?
-      // if(updatedRoomPlayers?.tournament){
-      //   let rearrangeInterval = setInterval(async () => {
-      //     const updatedtournament = await tournamentModel
-      //       .findOne({ _id: checkTournament._id })
-      //       .lean()
-      //     if (updatedtournament.havePlayers > 1) {
-      //       consoel.log("Re arrange table")
-      //       await reArrangeTables(checkTournament._id, io)
-      //     } else {
-      //       clearInterval(rearrangeInterval)
-      //       console.log('We got tournament winner.')
-      //     }
-      //   }, 120000)
-      //   startLevelInterval(checkTournament._id)
-      // }
       console.log("auto hand 1--->");
       if (!updatedRoom.pause) {
         console.log("auto hand 2--->");
@@ -8394,36 +8384,7 @@ export const activateTournament = async (io) => {
         await preflopround(room, io);
       }
       }
-      // checkTournament.rooms.forEach(()=>{
-
-      // })
-      // each(
-      //   checkTournament.rooms,
-      //   async function (room, next) {
-      //     console.log("Preflop round start on line number 7791");
-      //     await preflopround(room, io);
-      //     next();
-      //   }
-      //   // async function (err, transformedItems) {
-      //   //   let rearrangeInterval = setInterval(async () => {
-      //   //     const updatedtournament = await tournamentModel
-      //   //       .findOne({ _id: checkTournament._id })
-      //   //       .lean()
-      //   //     if (updatedtournament.havePlayers > 1) {
-      //   //       console.log("Re arrange table")
-      //   //       await reArrangeTables(checkTournament._id, io)
-      //   //     } else {
-      //   //       clearInterval(rearrangeInterval)
-      //   //       console.log('We got tournament winner.')
-      //   //     }
-      //   //   }, 120000)
-      //   //   startLevelInterval(checkTournament._id)
-      //   // },
-      // );
-    } else {
-      console.log("Tournament not found----->");
     }
-    //console.log("checkTournament", checkTournament);
   } catch (error) {
     console.log("activateTournament", error);
   }
