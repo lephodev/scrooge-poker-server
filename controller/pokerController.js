@@ -289,11 +289,6 @@ export const refillWallet = async (req, res) => {
         await roomModel.findByIdAndUpdate(room._id, {
           buyin: buyinrequest,
         });
-        const roomId = room._id.toString();
-        const updatedRoom = await roomModel.findById(roomId);
-        console.log("updatedRoom", updatedRoom);
-        console.log("room id==>", roomId);
-
         await User.updateOne(
           { _id: mongoose.Types.ObjectId(user.id) },
           { $inc: { wallet: -amount } }
