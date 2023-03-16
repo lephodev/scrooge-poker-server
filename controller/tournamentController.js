@@ -19,7 +19,7 @@ export const getAllGame = async (req, res) => {
     // console.log("getAllTournament", getAllTournament);
     return res.status(200).send({ tournaments: getAllTournament || [] });
   } catch (error) {
-    console.log(error);
+    console.log("getAllGame", error);
     res.status(500).send({ message: "Internal server error" });
   }
 };
@@ -28,9 +28,9 @@ export const jointournament = async (req, res) => {
   try {
     const { _id } = req.user;
     const { tournamentId } = req.body;
-    await JoinTournament({userId:_id,tournamentId})
+    await JoinTournament({ userId: _id, tournamentId });
   } catch (error) {
-    console.log(error);
+    console.log("eroor in jointournament", error);
     res.status(500).send({ message: "Internal server error" });
   }
 };
@@ -52,7 +52,7 @@ export const enterRoom = async (req, res) => {
     let roomId = p[p.length - 1].roomId;
     res.send({ code: 200, roomId });
   } catch (e) {
-    console.log("error", e);
+    console.log("error in enterRoom", e);
     res.send({ status: 406, msg: "Some error has occured!" });
   }
 };

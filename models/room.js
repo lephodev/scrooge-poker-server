@@ -34,6 +34,8 @@ const roomSchema = new Schema({
   isCircleCompleted: { type: Boolean, default: false },
   allinPlayers: [],
   tournament: { type: Schema.Types.ObjectId, ref: "tournament" },
+  gameType: { type: String },
+
   joinRequests: [],
   eleminated: [],
   timer: { type: Number, default: 15 },
@@ -73,6 +75,7 @@ const roomSchema = new Schema({
   firstGameTime: { type: Date },
   sitOut: [],
   isGameRunning: { type: Boolean, default: false },
+  eliminationCount: { type: Number },
 });
 
 const roomModel = mongoose.model("rooms", roomSchema);

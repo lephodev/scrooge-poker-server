@@ -7,10 +7,7 @@ import cors from "cors";
 import passport, { authenticate } from "passport";
 import socket from "socket.io";
 import roomModel from "./models/room";
-import {
-  doLeaveTable,
-  doLeaveWatcher,
-} from "./functions/functions";
+import { doLeaveTable, doLeaveWatcher } from "./functions/functions";
 import { updateInGameStatus } from "./firestore/dbFetch";
 import jwtStrategy from "./landing-server/config/jwtstragety";
 import {
@@ -36,7 +33,13 @@ const io = socket(server, {
 
 returnCron(io);
 
-const whitelist = ["http://localhost:3000","http://localhost:3001", "https://poker.scrooge.casino"];
+const whitelist = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://poker.scrooge.casino",
+  "https://devpoker.scrooge.casino",
+  "https://betapoker.scrooge.casino",
+];
 const corsOptions = {
   origin: function (origin, callback) {
     if (whitelist.indexOf(origin) !== -1) {
@@ -53,7 +56,7 @@ app.use(
     extended: false,
   })
 );
-app.use(cors(corsOptions));
+app.use(cors());
 mongoConnect();
 
 // Auth functions
@@ -184,7 +187,6 @@ app.get("/deleteStuckTable/:tableId", async (req, res) => {
     console.log("Error in Poker game delete table api =>", error);
   }
 });
-
 
 app.get("/leaveGame/:tableId/:userId", async (req, res) => {
   try {

@@ -8,8 +8,7 @@ import { activateTournament } from "../functions/functions";
 import gameService from "../service/game.service";
 const returnCron = async(io) => {
   const job1 = new CronJob("*    *    *    *    *", async () => {
-    await gameService.sendAcknowledgementForJoinTournament()
-    console.log("new date-->",new Date('2023-02-16T13:03:00.000+00:00').toUTCString(),new Date().toUTCString())
+    await gameService.sendAcknowledgementForJoinTournament(io)
     await activateTournament(io)
   });
   job1.start();
