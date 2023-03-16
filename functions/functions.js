@@ -8383,7 +8383,6 @@ export const activateTournament = async (io) => {
         checkTournament.rooms,
         async function (room, next) {
           console.log("Preflop round start on line number 7791");
-          blindTimer({ gameId: room }, io);
           await preflopround(room, io);
 
           next();

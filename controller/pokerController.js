@@ -288,7 +288,7 @@ export const refillWallet = async (req, res) => {
             redeem: 0,
           };
           buyinrequest.push(buyin);
-          res.status(200).send({ msg: "Success" });
+
           await roomModel.findByIdAndUpdate(room._id, {
             buyin: buyinrequest,
           });
@@ -296,6 +296,7 @@ export const refillWallet = async (req, res) => {
             { _id: mongoose.Types.ObjectId(user.id) },
             { $inc: { wallet: -amount } }
           );
+          res.status(200).send({ msg: "Success" });
         } else {
           res.send({
             code: 404,
