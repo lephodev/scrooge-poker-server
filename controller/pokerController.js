@@ -265,7 +265,9 @@ export const getTablePlayers = async (req, res) => {
 export const refillWallet = async (req, res) => {
   try {
     const user = req.user;
+    console.log("user", user);
     let { tableId, amount } = req.body;
+    console.log("body", req.body);
     amount = parseInt(amount);
     let room = await roomModel.findOne({
       _id: tableId,
@@ -277,11 +279,10 @@ export const refillWallet = async (req, res) => {
           mongoose.Types.ObjectId(el.userid).toString() === user.id.toString()
       );
       if (playerExist?.length) {
-        const userData = await User.findById(user.id).lean();
         let buyinrequest = room.buyinrequest;
         let buyin = {
           userid: user.id,
-          name: userData?.username,
+          name: user?.username,
           wallet: amount,
           redeem: 0,
         };
