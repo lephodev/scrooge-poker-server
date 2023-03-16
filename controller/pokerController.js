@@ -293,16 +293,7 @@ export const refillWallet = async (req, res) => {
         const updatedRoom = await roomModel.findById(roomId);
         console.log("updatedRoom", updatedRoom);
         console.log("room id==>", roomId);
-        const roomData = await roomModel.findOne({
-          $and: [
-            { _id: tableId },
-            {
-              players: {
-                $elemMatch: { userid: mongoose.Types.ObjectId(user.id) },
-              },
-            },
-          ],
-        });
+
         await User.updateOne(
           { _id: mongoose.Types.ObjectId(user.id) },
           { $inc: { wallet: -amount } }
