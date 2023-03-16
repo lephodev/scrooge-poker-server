@@ -126,7 +126,6 @@ let returnSocket = (io) => {
       //   _id: data.roomid,
       // });
       // data.roomid = room._id;
-      console.log("do fold executed 1");
       process.nextTick(async () => {
         await socketDoCall(data, io, socket);
       });
@@ -410,7 +409,6 @@ let returnSocket = (io) => {
     });
 
     socket.on("startGame", async (data) => {
-      console.log("start game executed", data);
       const { tableId } = data;
       io.in(tableId).emit("roomGameStarted", { start: true });
     });
