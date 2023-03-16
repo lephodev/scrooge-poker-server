@@ -203,91 +203,70 @@ export const verifycards = (distributedCards, noOfCards) => {
 
 export const preflopPlayerPush = async (players, roomid) => {
   try {
-    console.log("PREFLOP PLAYER PUSH");
-    return new Promise((resolve, reject) => {
-      let distributedCards = [];
-
-      each(
-        players,
-        async function (elem, next) {
-          //perform async operation with item
-          // let game= req.body._id;
-          let checkcards = [];
-          const roomData = await roomModel
-            .findOne({ _id: convertMongoId(roomid) })
-            .sort({ _id: -1 })
-            .lean();
-          if (
-            !roomData.preflopround.find(
-              (ele) => ele.id.toString() === elem.userid.toString()
-            )
-          ) {
-            let playing;
-            if (typeof elem.playing !== "undefined" && elem.playing !== null) {
-              playing = elem.playing;
-            } else {
-              playing = true;
-            }
-
-            if (elem.wallet <= 0) {
-              playing = false;
-            }
-
-            if (playing) {
-              checkcards = verifycards(distributedCards, 2);
-              checkcards.map((e) => distributedCards.push(e));
-            }
-            const a = await roomModel.updateOne(
-              {
-                _id: convertMongoId(roomid),
-              },
-              {
-                $push: {
-                  preflopround: {
-                    cards: checkcards,
-                    id: elem.userid,
-                    name: elem.name,
-                    photoURI: elem.photoURI,
-                    wallet: elem.wallet,
-                    timebank: elem.timebank,
-                    playing: true,
-                    fold: false,
-                    playerchance: roomData.timer,
-                    action: null,
-                    actionType: null,
-                    prevPot: 0,
-                    pot: 0,
-                    position: elem.position,
-                    playing: playing,
-                    missedSmallBlind: elem.missedSmallBlind,
-                    missedBigBlind: elem.missedBigBlind,
-                    missedBilndAmt: 0,
-                    forceBigBlind: elem.forceBigBlind,
-                    stats: elem.stats,
-                    initialCoinBeforeStart: elem.initialCoinBeforeStart,
-                    gameJoinedAt: elem.gameJoinedAt,
-                    hands: elem.hands,
-                    meetingToken: elem.meetingToken,
-                    items: elem.items,
-                  },
-                },
-              },
-              {
-                //   upsert: true,
-                // new:true
-              }
-            );
-          }
-          next();
-        },
-        function (err, transformedItems) {
-          //Success callback
-          resolve();
+    console.log("PREFLOP PLAYER PUSH", players);
+    const roomData = await roomModel
+    .findOne({ _id: convertMongoId(roomid) })
+    .lean();
+    let distributedCards = [];
+    let newP = [];
+    players.forEach(player => {
+      if(!newP.find(p => p.id.toString() === player.id.toString() || p.id.toString() === player.userid.toString())){
+        let playing;
+        let checkcards = [];
+        if (typeof player.playing !== "undefined" && player.playing !== null) {
+          playing = player.playing;
+        } else {
+          playing = true;
         }
-      );
-    });
+
+        if (player.wallet <= 0) {
+          playing = false;
+        }
+
+        if (playing) {
+          checkcards = verifycards(distributedCards, 2);
+          checkcards.map((e) => distributedCards.push(e));
+        }
+        newP.push({
+          cards: checkcards,
+          id: player.userid || player.id,
+          name: player.name,
+          photoURI: player.photoURI,
+          wallet: player.wallet,
+          timebank: player.timebank,
+          playing,
+          fold: false,
+          playerchance: roomData.timer,
+          action: null,
+          actionType: null,
+          prevPot: 0,
+          pot: 0,
+          position: player.position,
+          playing: playing,
+          missedSmallBlind: player.missedSmallBlind,
+          missedBigBlind: player.missedBigBlind,
+          missedBilndAmt: 0,
+          forceBigBlind: player.forceBigBlind,
+          stats: player.stats,
+          initialCoinBeforeStart: player.initialCoinBeforeStart,
+          gameJoinedAt: player.gameJoinedAt,
+          hands: player.hands,
+          meetingToken: player.meetingToken,
+          items: player.items,
+        })
+      }
+    })
+
+    await roomModel.updateOne(
+      {
+        _id: convertMongoId(roomid),
+      },
+     {
+      preflopround: newP
+     }
+    );
   } catch (error) {
-    console.log("eeeyyy", error);
+    console.log("error in preflopplayer push function =>", error);
   }
 };
 
@@ -329,6 +308,7 @@ export const preflopround = async (room, io) => {
         i++;
       }
       playingPlayer = [...newPos];
+      console.log("positions player", playingPlayer);
       room = await roomModel.findOneAndUpdate(
         { _id: room._id },
         {
@@ -836,20 +816,23 @@ export const prefloptimer = async (roomid, io) => {
                     await doCheck(roomid, intervalPlayer[0].id, io);
                     timer(++i, maxPosition);
                   } else {
-                    const isContinue = await doFold(
-                      data,
-                      intervalPlayer[0].id,
-                      io
-                    );
-                    io.in(data?._id?.toString()).emit("automaticFold", {
-                      msg: `${intervalPlayer[0].name} has automatically folded`,
-                    });
-                    console.log("do sit out executed 1");
-                    await doSitOut(data, io);
-                    console.log("do sit out executed 2", isContinue);
-                    if (isContinue) {
-                      timer(++i, maxPosition);
-                    }
+                    setTimeout(async() => {
+                      const isContinue = await doFold(
+                        data,
+                        intervalPlayer[0].id,
+                        io
+                      );
+                      io.in(data?._id?.toString()).emit("automaticFold", {
+                        msg: `${intervalPlayer[0].name} has automatically folded`,
+                      });
+                      console.log("do sit out executed 1");
+                      await doSitOut(data, io);
+                      console.log("do sit out executed 2", isContinue);
+                      if (isContinue) {
+                        timer(++i, maxPosition);
+                      }
+                    }, 1000)
+                   
                   }
                 }
               } else if (
@@ -2713,6 +2696,9 @@ export const elemination = async (roomData, io) => {
       const availablePlayerCount =
         parseInt(upRoom.tournament.havePlayers) -
         parseInt(upRoom?.eliminationCount);
+        if(availablePlayerCount <= upRoom.tournament.winTotalPlayer){
+          await calculateTournamentPrize(upRoom.tournament._id, upRoom.eleminated);
+        }
       await tournamentModel.updateOne(
         { _id: upRoom.tournament._id },
         {
@@ -2729,68 +2715,64 @@ export const elemination = async (roomData, io) => {
     console.log("error in eleminite function =>", error);
   }
 };
-export const calculateTournamentPrize = async (tournamentId) => {
+export const calculateTournamentPrize = async (tournamentId, eleminated) => {
   try {
     const tournamentData = await tournamentModel
       .findOne({ _id: tournamentId })
       .populate("rooms", null)
       .lean();
-    const totalPlayer = tournamentData?.havePlayers;
-    let winnerPlayer = [];
-    if (totalPlayer <= tournamentData?.winTotalPlayer) {
-      tournamentData?.rooms?.forEach((el) => {
-        winnerPlayer.push([...el?.players]);
-      });
-      if (winnerPlayer.length > 0) {
-        const sortedWinner = winnerPlayer.sort((a, b) => {
-          return a.wallet - b.wallet;
-        });
 
-        if (sortedWinner.length > 0) {
+      let { winPlayer, winTotalPlayer } = tournamentData;
+console.log("eleimiated plauer", eleminated);
+      eleminated.forEach(ele => {
+        if(winTotalPlayer === 25 && winPlayer["11-25"] && winPlayer["11-25"].userIds.length < winPlayer["11-25"].playerCount){
+          winPlayer["11-25"].userIds.push(ele.id || ele.userid);
+          return;
         }
-      }
-    }
-    //  let allplayer=0
-    //  let winnerArr=[]
-    //  if(tournamentData){
-    //   tournamentData?.rooms?.forEach((el)=>{
-    //    allplayer+=el?.players?.length
-    //   if(tournamentData.winners === allplayer){
-    //  const newPl= el.players.sort((a, b) => {
-    //     return a.wallet - b.wallet;
-    //   });
-    //     winnerArr.push(newPl)
-    //    }
-    //   })
-    //  }
-    //  if(winnerArr.length >0){
-    // sortedWinner.map(async(el,i)=>{
-    //   if(i===0){
-    //     payload={
-    //        ...payload,['first.userId']:el.id
-    //     }
-    //   }
-    //   if(i===1){
-    //     payload={
-    //       ...payload,['second.userId']:el.id
-    //    }
-    //   }
-    //   if(i===2){
-    //     payload={
-    //       ...payload,['third.userId']:el.id
-    //    }
-    //   }
-    //   if(i>3 && i<=9){
-    //     payload={
-    //       ...payload,['410'].push(el.id)
-    //    }
-    //   }
-    // })
-    //  }
+        if(winTotalPlayer === 10 && winPlayer["4-10"] && winPlayer["4-10"].userIds.length <= winPlayer["4-10"].playerCount){
+          winPlayer["4-10"].userIds.push(ele.id || ele.userid);
+          return;
+        }
+        if(!winPlayer.third.userId){
+          winPlayer.third.userId = ele.id || ele.userid;
+          return;
+        }
+        if(!winPlayer.second.userId){
+          winPlayer.second.userId = ele.id || ele.userid;
+          return;
+        }
+
+      });
+      console.log("winpluyare", winPlayer)
+      await tournamentModel.updateOne({ _id: tournamentId }, { winPlayer })
+
   } catch (err) {
     console.log("Error in prize calculation--->", err);
   }
 };
+
+export const distributeTournamentPrize = async(tournamentId,lastPlayer, io) => {
+  try {
+    const tournament = await tournamentModel.findOne({ _id: tournamentId });
+    let winPlayer = { ...tournament.winPlayer, first: { userId: lastPlayer.userid || lastPlayer.id }};
+    const tournamentData = await tournamentModel.findByIdAndUpdate({ _id: tournamentId }, { winPlayer});
+    console.log("winner tournamet", lastPlayer, tournament.winPlayer)
+    for await (let player of Object.values(tournament.winPlayer)) {
+      if(player.playerCount === 1){
+        //player.userId is the winner of amount player.amount
+        // await userModel.updateOne({ _id: player.userId }, { $inc: { wallet: player.amount} });
+        // await transactionModel.create({ });
+        console.log("winner =>", player)
+      }else{
+        // player.userIds are winner of amount player.amount
+        // await userModel.updateMany({ _id: { $in: player.userIds} }, { $inc: { wallet: player.amount} });
+        // await transactionModel.insertMany({ });
+      }
+    }
+  } catch (error) {
+    console.log("error in distributeTournamentPrize", error)
+  }
+}
 
 export const doPauseGame = async (data, io, socket) => {
   const userid = data.userid;
@@ -3363,7 +3345,7 @@ export const doLeaveTable = async (data, io, socket) => {
 
 export const doFold = async (roomData, playerid, io) => {
   try {
-    console.log("----doFold-----", roomData.runninground);
+    console.log("----doFold-----", roomData.runninground, roomData?.timerPlayer, playerid);
     // const roomData = await roomModel.findOne({ _id: roomid });
     const roomid = roomData._id;
     let updatedRoom = null;
@@ -3675,8 +3657,11 @@ export const doFold = async (roomData, playerid, io) => {
           return res;
         }
       }
+      return res;
     }
     console.log("exit called fold")
+    return res;
+    
   } catch (error) {
     console.log("fafdaaf", error);
   }
@@ -5801,7 +5786,7 @@ export const reArrangeTables = async (tournamentId, io) => {
         return b.players.length - a.players.length;
       });
       if (allRooms.length > 0) {
-        await fillSpot(allRooms, io);
+        await fillSpot(allRooms, io, tournamentId);
       }else{
         console.log("no rooms in tournament")
       }
@@ -5813,7 +5798,7 @@ export const reArrangeTables = async (tournamentId, io) => {
   }
 };
 
-const fillSpot = async (allRooms, io) => {
+const fillSpot = async (allRooms, io, tournamentId) => {
   try {
     console.log("fill spot called");
     for (let i = 0; i <= allRooms.length - 1; i++) {
@@ -5822,7 +5807,8 @@ const fillSpot = async (allRooms, io) => {
           if(allRooms[i].players.length > 1){
             await preflopround(allRooms[i], io);
           }else{
-            console.log("only one player =>", allRooms[i])
+            console.log("only one player =>", allRooms[i]);
+            await distributeTournamentPrize(tournamentId, allRooms[i].players[0])
             io.in(allRooms[i]._id.toString()).emit('tournamentFinished');
           }
         }
@@ -8260,7 +8246,7 @@ const Tournament = async (userId, tournamentId, tournamentAmount, socket) => {
       }
     }
   } catch (error) {
-    console.log("Tournament data", error);
+    console.log("error in tournament function =>", error);
   }
 };
 
@@ -8284,21 +8270,22 @@ const pushPlayerInRoom = async (
     if (checkTournament?.rooms?.length && lastRoom?.players?.length < 3) {
       roomId = lastRoom._id;
       let players = lastRoom.players;
+      let position = await findAvailablePosition(players);
       players.push({
         name: username,
         userid: _id,
         id: _id,
         photoURI: avatar ? avatar : profile ? profile : img,
         wallet: parseFloat(checkTournament.buyIn),
-        position: players.length,
+        position,
         missedSmallBlind: false,
         missedBigBlind: false,
         forceBigBlind: false,
         playing: true,
-        initialCoinBeforeStart: 100,
+        stats: {},
+        initialCoinBeforeStart: parseFloat(checkTournament.buyIn),
         gameJoinedAt: new Date(),
         hands: [],
-
         // timebank: tournamentconfig.emergencyTimer,
       });
 
@@ -8307,7 +8294,7 @@ const pushPlayerInRoom = async (
         tournament: tournamentId,
       };
 
-      const updatedRoom = await roomModel.findOneAndUpdate(
+     await roomModel.findOneAndUpdate(
         { _id: roomId },
         payload,
         { new: true }
@@ -8346,7 +8333,7 @@ const pushPlayerInRoom = async (
             missedBigBlind: false,
             forceBigBlind: false,
             playing: true,
-            initialCoinBeforeStart: 100,
+            initialCoinBeforeStart: parseFloat(checkTournament.buyIn),
             gameJoinedAt: new Date(),
             hands: [],
           },
@@ -8376,7 +8363,7 @@ const pushPlayerInRoom = async (
       );
     }
   } catch (error) {
-    console.log("errorerrorerror", error);
+    console.log("error in push player in room function =>", error);
   }
 };
 
