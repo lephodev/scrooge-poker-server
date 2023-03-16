@@ -147,7 +147,6 @@ export const getAllUsers = async (req, res) => {
   try {
     const allUsers = await User.find({
       _id: { $ne: req.user._id },
-      isRegistrationComplete: true,
     }).select("_id username");
 
     return res.status(200).send({ allUsers });
