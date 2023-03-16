@@ -7696,7 +7696,10 @@ const createTransactionFromUsersArray = async (roomId, users = []) => {
         return {
           userId,
           roomId,
-          amount: gameWinOrLoseamount,
+          amount:
+            gameWinOrLoseamount >= 0
+              ? gameWinOrLoseamount * 2
+              : gameWinOrLoseamount,
           transactionDetails: {},
           prevWallet: lastAmount,
           updatedWallet: updatedAmount + usersWalltAmt[i],
@@ -7858,7 +7861,12 @@ export const leaveApiCall = async (room, userId) => {
     // console.log("users2====>", users);
     const userBalancePromise = users.map((el) => {
       let totalTicketWon = 0;
-      el.hands.forEach((hand) => {});
+      console.log("user hand ===>", el.hands);
+      el.hands.forEach((hand) => {
+        if (hand.action === "game-win") {
+          totalTicketWon += hand.amount;
+        }
+      });
       console.log("total tickets token", totalTicketWon);
       const newBalnce = el.newBalance > 0 ? el.newBalance : 0;
       console.log("newBalnce =====>", newBalnce, el.newBalance);
@@ -7870,7 +7878,7 @@ export const leaveApiCall = async (room, userId) => {
         {
           $inc: {
             wallet: newBalnce,
-            ticket: totalTicketWon,
+            ticket: totalTicketWon * 2,
           },
         }
       );
