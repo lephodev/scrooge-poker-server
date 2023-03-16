@@ -7993,76 +7993,86 @@ export const checkForGameTable = async (data, socket, io) => {
   try {
     const { gameId, userId, sitInAmount } = data;
     const game = await gameService.getGameById(gameId);
-
-    if (!game || game.finish) {
-      console.log("7353 in function.js");
-      return socket.emit("notFound", {
-        message: "Game not found. Either game is finished or not exist",
-      });
-    }
-
-    const user = await userService.getUserById(userId);
-
-    if (!user) {
-      return socket.emit("notAuthorized", {
-        message: "You are not authorized",
-      });
-    }
-
-    console.log("USER WALLET ", user.wallet);
-
-    const ifUserInGame = game.players.find((el) => {
-      return el.userid?.toString() === userId.toString();
+    const checkTable = await roomModel.findOne({
+      _id: mongoose.Types.ObjectId(gameId),
+      "players.userid": mongoose.Types.ObjectId(userId),
     });
 
-    // check user
-    if (
-      parseFloat(game.smallBlind) > parseFloat(user.wallet) &&
-      !ifUserInGame
-    ) {
-      return socket.emit("notEnoughBalance", {
-        message: "You don't have enough balance to sit on the table.",
-      });
-    }
+    if (checkTable || sitInAmount) {
+      if (!game || game.finish) {
+        console.log("7353 in function.js");
+        return socket.emit("notFound", {
+          message: "Game not found. Either game is finished or not exist",
+        });
+      }
 
-    if (ifUserInGame) {
-      addUserInSocket(io, socket, gameId, userId);
-      const gameUpdatedData = await roomModel.findOneAndUpdate(
-        {
-          _id: convertMongoId(gameId),
-          "players.userid": convertMongoId(userId),
-        },
-        {
-          "players.$.playing": true,
-        }
+      const user = await userService.getUserById(userId);
+
+      if (!user) {
+        return socket.emit("notAuthorized", {
+          message: "You are not authorized",
+        });
+      }
+
+      console.log("USER WALLET ", user.wallet);
+
+      const ifUserInGame = game.players.find((el) => {
+        return el.userid?.toString() === userId.toString();
+      });
+
+      // check user
+      if (
+        parseFloat(game.smallBlind) > parseFloat(user.wallet) &&
+        !ifUserInGame
+      ) {
+        return socket.emit("notEnoughBalance", {
+          message: "You don't have enough balance to sit on the table.",
+        });
+      }
+
+      if (ifUserInGame) {
+        addUserInSocket(io, socket, gameId, userId);
+        const gameUpdatedData = await roomModel.findOneAndUpdate(
+          {
+            _id: convertMongoId(gameId),
+            "players.userid": convertMongoId(userId),
+          },
+          {
+            "players.$.playing": true,
+          }
+        );
+
+        io.in(gameId).emit("updateGame", { game: gameUpdatedData });
+        return;
+      }
+
+      const checkIfInOtherGame = await gameService.checkIfUserInGame(userId);
+      if (checkIfInOtherGame) {
+        console.log("User in the other table");
+        return socket.emit("inOtherGame", {
+          message: "You are also on other tabe.",
+        });
+      }
+
+      // If user is not in the room
+      const updatedRoom = await gameService.joinRoomByUserId(
+        game,
+        userId,
+        sitInAmount
       );
 
-      io.in(gameId).emit("updateGame", { game: gameUpdatedData });
-      return;
-    }
-
-    const checkIfInOtherGame = await gameService.checkIfUserInGame(userId);
-    if (checkIfInOtherGame) {
-      console.log("User in the other table");
-      return socket.emit("inOtherGame", {
-        message: "You are also on other tabe.",
-      });
-    }
-
-    // If user is not in the room
-    const updatedRoom = await gameService.joinRoomByUserId(
-      game,
-      userId,
-      sitInAmount
-    );
-
-    if (updatedRoom && Object.keys(updatedRoom).length > 0) {
-      addUserInSocket(io, socket, gameId, userId);
-      await userService.updateUserWallet(userId, user.wallet - sitInAmount);
-      io.in(gameId).emit("updateGame", { game: updatedRoom });
-      return;
+      if (updatedRoom && Object.keys(updatedRoom).length > 0) {
+        addUserInSocket(io, socket, gameId, userId);
+        await userService.updateUserWallet(userId, user.wallet - sitInAmount);
+        io.in(gameId).emit("updateGame", { game: updatedRoom });
+        return;
+      } else {
+        socket.emit("tablefull", { message: "This table is full." });
+      }
     } else {
-      socket.emit("tablefull", { message: "This table is full." });
+      return socket.emit("notInviteddddd", {
+        message: "notInvited",
+      });
     }
   } catch (error) {
     console.log("Error in check for table =>", error);
