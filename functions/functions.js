@@ -2755,7 +2755,7 @@ export const distributeTournamentPrize = async(tournamentId,lastPlayer, io) => {
   try {
     const tournament = await tournamentModel.findOne({ _id: tournamentId });
     let winPlayer = { ...tournament.winPlayer, first: { userId: lastPlayer.userid || lastPlayer.id }};
-    const tournamentData = await tournamentModel.findByIdAndUpdate({ _id: tournamentId }, { winPlayer});
+    const tournamentData = await tournamentModel.findByIdAndUpdate({ _id: tournamentId }, { winPlayer, isFinished: true });
     console.log("winner tournamet", lastPlayer, tournament.winPlayer)
     for await (let player of Object.values(tournament.winPlayer)) {
       if(player.playerCount === 1){
@@ -8395,8 +8395,8 @@ export const activateTournament = async (io) => {
 
 export const blindTimer = async (data, io) => {
   try {
-    const { rooms, incBlindTime, levels:{smallBlind: { amount: smAmount} }, _id } = data;
-    if (rooms && rooms.length && incBlindTime) {
+    const { rooms, incBlindTime, levels:{smallBlind: { amount: smAmount} }, _id, isFinished } = data;
+    if (rooms && rooms.length && incBlindTime && !isFinished) {
       let getMinute = incBlindTime * 60;
       const interval = setInterval(async () => {
         if (getMinute > 0) {
