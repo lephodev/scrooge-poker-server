@@ -314,7 +314,7 @@ export const refillWallet = async (data, io, socket) => {
           );
 
           if (roomData) {
-            io.in(tableId).emit("updateRoom", roomData);
+            socket.emit("updateRoom", roomData);
           }
           // res.status(200).send({ msg: "Success", roomData });
         }
@@ -337,7 +337,7 @@ export const refillWallet = async (data, io, socket) => {
             { $inc: { wallet: -amount } }
           );
 
-          io.in(tableId).emit("InrunningGame");
+          socket.emit("InrunningGame");
 
           // res.status(200).send({ msg: "Success" });
         } else {
