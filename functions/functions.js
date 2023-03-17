@@ -2773,21 +2773,60 @@ export const distributeTournamentPrize = async (
       ...tournament.winPlayer,
       first: { userId: lastPlayer.userid || lastPlayer.id },
     };
-    const tournamentData = await tournamentModel.findByIdAndUpdate(
+     await tournamentModel.findByIdAndUpdate(
       { _id: tournamentId },
-      { winPlayer, isFinished: true }
+      { winPlayer, isFinished: true,isStart:false}
     );
     console.log("winner tournamet", lastPlayer, tournament.winPlayer);
     for await (let player of Object.values(tournament.winPlayer)) {
-      if (player.playerCount === 1) {
+      if (player?.playerCount === 1) {
         //player.userId is the winner of amount player.amount
-        // await userModel.updateOne({ _id: player.userId }, { $inc: { wallet: player.amount} });
-        // await transactionModel.create({ });
+        const user= await userModel.findOneAndUpdate({ _id: player.userId }, { $inc: { wallet: player.amount} },{new :true});
+         await transactionModel.create({
+          userId:player.userId,
+          amount:player.amount,
+          transactionDetails: {},
+          prevWallet: parseFloat(user?.wallet)-parseFloat(player?.amount),
+          updatedWallet:parseFloat(user?.wallet),
+          transactionType: "poker tournament"
+        });
         console.log("winner =>", player);
       } else {
         // player.userIds are winner of amount player.amount
-        // await userModel.updateMany({ _id: { $in: player.userIds} }, { $inc: { wallet: player.amount} });
-        // await transactionModel.insertMany({ });
+        if(player.playerCount === 7){
+          console.log("In player count 7")
+          const user= await userModel.updateMany({ _id: { $in: player.userIds} }, { $inc: { wallet: player.amount} });
+          if(player?.userIds?.length >0){
+            for await(let top_4_7 of player?.userIds){
+              await transactionModel.create({
+                userId:top_4_7,
+                amount:player.amount,
+                transactionDetails: {},
+                prevWallet: parseFloat(user?.wallet)-parseFloat(player?.amount),
+                updatedWallet:parseFloat(user?.wallet),
+                transactionType: "poker tournament"
+              });
+            }
+          }
+          
+        }
+        if(player?.playerCount === 15){
+          console.log("In player count 15")
+          const user= await userModel.updateMany({ _id: { $in: player.userIds} }, { $inc: { wallet: player.amount} });
+          if(player?.userIds?.length >0){
+            for await(let top_11_25 of player?.userIds){
+              await transactionModel.create({
+                userId:top_11_25,
+                amount:player.amount,
+                transactionDetails: {},
+                prevWallet: parseFloat(user?.wallet)-parseFloat(player?.amount),
+                updatedWallet:parseFloat(user?.wallet),
+                transactionType: "poker tournament"
+              });
+            }
+          }
+          
+        }
       }
     }
   } catch (error) {
@@ -6265,7 +6304,6 @@ export const findAvailablePosition = async (playerList) => {
   });
 };
 
-
 export const startPreflopRound = async (data, socket, io) => {
   try {
     let room = await gameService.getGameById(data.tableId);
@@ -6288,7 +6326,6 @@ export const startPreflopRound = async (data, socket, io) => {
     socket.emit("actionError", "Action Error");
   }
 };
-
 
 export const handleNewBet = async (data, socket, io) => {
   try {
@@ -7362,6 +7399,19 @@ export const emitTyping = async (data, socket, io) => {
 export const JoinTournament = async (data, socket) => {
   try {
     const { userId, tournamentId, fees } = data;
+
+    const tournament = await tournamentModel.findOne({
+      _id: tournamentId,
+    });
+
+    if (tournament.isStart) {
+      socket.emit("tournamentAlreadyStarted", {
+        message: "Tournament Has been already started",
+        code: 400,
+      });
+      return;
+    }
+
     const checkTable = await roomModel.findOne({
       tournament: mongoose.Types.ObjectId(tournamentId),
       "players.userid": mongoose.Types.ObjectId(userId),
@@ -7376,6 +7426,14 @@ export const JoinTournament = async (data, socket) => {
           { $inc: { wallet: -parseFloat(fees) } },
           { new: true }
         );
+        await transactionModel.create({
+          userId:player.userId,
+          amount:parseFloat(fees),
+          transactionDetails: {},
+          prevWallet: parseFloat(userData?.wallet),
+          updatedWallet:updatedUser?.wallet,
+          transactionType: "poker tournament"
+        });
         return socket.emit("alreadyInTournament", {
           message: "You joined in game.",
           code: 200,
@@ -7547,7 +7605,10 @@ export const activateTournament = async (io) => {
     if (checkTournament) {
       //preflopround()
       if (checkTournament?.rooms?.length > 0) {
-        await tournamentModel.updateOne({_id:checkTournament?._id},{isStart:true})
+        await tournamentModel.updateOne(
+          { _id: checkTournament?._id },
+          { isStart: true }
+        );
         blindTimer(checkTournament, io);
         for await (let room of checkTournament?.rooms) {
           await preflopround(room, io);
@@ -7611,57 +7672,3 @@ export const blindTimer = async (data, io) => {
     console.log("error in blindTimer", error);
   }
 };
-
-// const findCanPlayMinimum = async (totalPlayer) => {
-//   try {
-//     // console.log("findCanPlayMinimum called with total player =>", totalPlayer);
-//     let fulltable = 0;
-//     let playerOnTable = 4;
-//     let leftPlayer = totalPlayer;
-//     let minPlayerCanPlay = 2;
-//     const y = async () => {
-//       console.log("function y called");
-//       fulltable = Math.floor(leftPlayer / playerOnTable);
-//       leftPlayer = leftPlayer % playerOnTable;
-//       if (leftPlayer === 0) {
-//         console.log("can play minimum 1=>", playerOnTable - 1);
-//         minPlayerCanPlay = playerOnTable - 1;
-//       } else {
-//         if (leftPlayer % (playerOnTable - 1) === 0) {
-//           console.log("can play minimum 2=>", playerOnTable - 1);
-//           minPlayerCanPlay = playerOnTable - 1;
-//         } else {
-//           const x = async () => {
-//             console.log("function x called");
-//             if (fulltable > 0) {
-//               leftPlayer += playerOnTable;
-//               fulltable -= 1;
-//               if (leftPlayer % (playerOnTable - 1) === 0) {
-//                 console.log("can play minimum 3=>", playerOnTable - 1);
-//                 minPlayerCanPlay = playerOnTable - 1;
-//               } else {
-//                 await x();
-//               }
-//             } else {
-//               playerOnTable -= 1;
-//               leftPlayer = totalPlayer;
-//               console.log("calling y again");
-//               await y();
-//             }
-//           };
-//           await x();
-//         }
-//       }
-//     };
-//     await y();
-//     // console.log("full Tables =>", fulltable)
-//     // console.log("Players on full Tables =>", playerOnTable)
-//     let otherTables =
-//       (totalPlayer - fulltable * playerOnTable) / minPlayerCanPlay;
-//     // console.log("other Tables =>", otherTables)
-//     console.log("minPlayerCanPlay =>", minPlayerCanPlay);
-//     return minPlayerCanPlay;
-//   } catch (error) {
-//     console.log("Find Playyy", error);
-//   }
-// };
