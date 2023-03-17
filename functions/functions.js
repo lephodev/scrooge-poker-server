@@ -6,25 +6,13 @@ import { userJwtKey, adminJwtKey } from "../config/keys";
 import roomModel from "../models/room";
 import mongoose from "mongoose";
 import tournamentModel from "../models/tournament";
-import roomHistoryModel from "../models/roomHistory";
 import userModel from "../landing-server/models/user.model";
 import each from "sync-each";
-import axios from "axios";
-import {
-  addWatcher,
-  deductAmount,
-  finishHandUpdate,
-  getDoc,
-  removeInvToPlayers,
-  getPurchasedItem,
-  updateInGameStatus,
-} from "../firestore/dbFetch";
 import BetModal from "../models/betModal";
 import gameService from "../service/game.service";
 import userService from "../service/user.service";
 import rankModel from "../models/rankModel";
 var Hand = require("pokersolver").Hand;
-const admin = require("firebase-admin");
 import MessageModal from "../models/messageModal";
 import Notification from "../models/notificationModal";
 import User from "../landing-server/models/user.model";
@@ -3356,17 +3344,6 @@ export const doLeaveTable = async (data, io, socket) => {
             msg: `${playerdata[0].name} has left the game`,
           });
       }
-      //  else {
-      //   console.log('IN THE ELSE BLOCK');
-      //   let roomdata = await roomModel
-      //     .findOne({
-      //       _id: tableId,
-      //     })
-      //     .lean();
-      //   if (roomdata && !roomdata.players.find((el) => el.userid === userid)) {
-      //     // updateInGameStatus(userid);
-      //   }
-      // }
     } else {
       if (socket) socket.emit("actionError", { code: 400, msg: "Bad request" });
     }
@@ -6169,932 +6146,6 @@ export const findAvailablePosition = async (playerList) => {
   });
 };
 
-export const joinRequest = async (data, socket, io) => {
-  try {
-    const roomData = await getDoc(data.gameType, data._id);
-    if (!roomData) {
-      return socket.emit("noTable", "No such table exists");
-    }
-    const userData = await getDoc("users", data.userId);
-    if (userData) {
-      userData.userid = data.userId;
-      let room = await roomModel.findOne({
-        _id: data._id,
-      });
-      if (room != null) {
-        const isExist = room.players.filter(
-          (el) => el.userid.toString() === userData.userid.toString()
-        );
-        if (isExist.length) {
-          socket.emit("alreadyJoin", "");
-        } else {
-          if (room.players.length < 3) {
-            let ischecked = false;
-            let amt;
-            if (
-              data.gameType === "pokerTournament_Tables" &&
-              room.maxchips <= userData.stats.total.coins
-            ) {
-              ischecked = true;
-              amt = room.maxchips;
-            } else if (data.gameType !== "pokerTournament_Tables") {
-              ischecked = true;
-              amt = userData.stats.total.coins;
-            }
-
-            if (ischecked && amt) {
-              let joinRequests = room.joinRequests;
-              const player = {
-                userid: userData.userid,
-                name: userData.nickname,
-                photoURI: userData.photoURI,
-                wallet: amt,
-                playing: true,
-              };
-              joinRequests.push(player);
-              const savedroom = await roomModel.findByIdAndUpdate(room._id, {
-                joinRequests: joinRequests,
-              });
-              let roomId = room._id;
-              io.in(data._id.toString()).emit("joinrequest", {
-                player,
-                hostid: room.hostId,
-                _id: data._id,
-                gameType: data.gameType,
-              });
-              socket.emit("hostApproval", "Waithing for host approval");
-            } else {
-              io.in(data._id.toString()).emit("lowBalance", {
-                userid: userData.userid,
-              });
-            }
-          } else {
-            socket.emit("roomFull", "Room is Already Full");
-          }
-        }
-      } else {
-        socket.emit("notFound", "Room not Found");
-      }
-    } else {
-      socket.emit("actionError", "Some Error Occured");
-    }
-  } catch (e) {
-    console.log("error : ", e);
-    socket.emit("actionError", "Some Error Occured");
-  }
-};
-
-export const checkRoomForConnectedUser = async (data, socket, io) => {
-  try {
-    const { room, user, gameType } = data;
-    if (!room.roomid) return;
-    let hand = [];
-    let amount = 0;
-    // let items = await getPurchasedItem(user.userid, user.stats.Level);
-    let items = [];
-
-    if (room.table.media !== "no-media") {
-      amount = room.table.media === "video" ? 400 : 100;
-      hand.push({
-        amount,
-        action: `${room.table.media}-game`,
-        date: new Date(),
-        isWatcher: false,
-      });
-    }
-    let isRoomExist = await roomModel.findOne({ _id: room.roomid });
-    if (isRoomExist) {
-      if (
-        room.table.isGameFinished ||
-        isRoomExist.finish ||
-        room.table.status === "empty"
-      ) {
-        return socket.emit("gameFinished", "Game Already Finished.");
-      }
-      if (isRoomExist.watchers.find((ele) => ele.userid === user.userid)) {
-        const bet = await BetModal.findOne({ _id: room.roomid });
-        socket.join(room.roomid.toString() + "watchers");
-        io.in(room.roomid.toString() + "watchers").emit("newWatcherJoin", {
-          watcherId: user.userid,
-          roomData: isRoomExist,
-        });
-        if (bet)
-          io.in(room.roomid.toString() + "watchers").emit("newBetPlaced", bet);
-        return;
-      } else if (
-        isRoomExist.players.find((ele) => ele.userid === user.userid)
-      ) {
-        return io
-          .in(room.roomid.toString())
-          .emit("updatePlayerList", isRoomExist);
-      }
-      const position = await findAvailablePosition(isRoomExist.players);
-      if (
-        (isRoomExist.gameType === "poker1vs1_Tables" &&
-          isRoomExist.players.length === 2) ||
-        isRoomExist.players.length >= 3
-      ) {
-        if (isRoomExist.allowWatcher) {
-          return socket.emit("newWatcher", {
-            _id: room.roomid,
-            userId: user.userid,
-            allowWatcher: room.table.alloWatchers,
-          });
-        } else {
-          return socket.emit("roomFull", "Room is full");
-        }
-      }
-      if (isRoomExist.gamestart) {
-        if (room.table.public) {
-          if (
-            isRoomExist.gameType !== "poker1vs1_Tables" &&
-            isRoomExist.players.length < 3 &&
-            !isRoomExist.players.find((ele) => ele.userid === user.userid)
-          ) {
-            user.isAdmin = false;
-            const deduct = await deductAmount(
-              isRoomExist.maxchips,
-              user.userid,
-              gameType,
-              isRoomExist.minBet,
-              isRoomExist.media
-            );
-            if (deduct) {
-              let buyin = isRoomExist.buyin;
-              let leavereq = isRoomExist.leavereq.filter(
-                (el) => el !== user.userid
-              );
-              buyin.push({
-                userid: user.userid,
-                name: user.nickname,
-                chips: deduct - amount,
-                redeem: 1,
-              });
-              const API_KEY = process.env.VIDEOSDK_API_KEY;
-              const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
-
-              const options = { expiresIn: "10d", algorithm: "HS256" };
-
-              const payload = {
-                apikey: API_KEY,
-                permissions: ["ask_join"], // also accepts "ask_join"
-              };
-
-              const token = jwt.sign(payload, SECRET_KEY, options);
-              const updateRoom = await roomModel.findOneAndUpdate(
-                { _id: isRoomExist._id },
-                {
-                  $push: {
-                    players: {
-                      name: user.nickname,
-                      userid: user.userid,
-                      photoURI: user.photoURI,
-                      wallet: deduct - amount,
-                      position: position,
-                      missedSmallBlind: false,
-                      missedBigBlind: false,
-                      forceBigBlind: false,
-                      playing: true,
-                      stats: user.stats,
-                      initialCoinBeforeStart: user.stats.total.coins,
-                      gameJoinedAt: new Date(),
-                      hands: hand,
-                      meetingToken: token,
-                      items,
-                    },
-                  },
-                  buyin: buyin,
-                  leavereq,
-                },
-                { new: true }
-              );
-              io.in(room.roomid.toString()).emit("joinInRunningGame", {
-                updatedRoom: updateRoom,
-                playerId: user.userid,
-              });
-              await removeInvToPlayers(room.roomid, user.userid, gameType);
-            } else {
-              io.in(room.roomid.toString()).emit("lowBalance", {
-                userid: user.userid,
-              });
-            }
-          } else if (
-            !room.invPlayers.find((ele) => ele === user.userid) &&
-            isRoomExist.gameType !== "poker1vs1_Tables" &&
-            isRoomExist.players.length < 3
-          ) {
-            socket.emit("newUser", {
-              _id: room.roomid,
-              userId: user.userid,
-              allowWatcher: room.table.alloWatchers,
-            });
-          } else if (
-            isRoomExist.gameType !== "poker1vs1_Tables" &&
-            isRoomExist.players.length >= 3
-          ) {
-            console.log("ROOM FULL 5716");
-            socket.emit("roomFull", "Room is full");
-          }
-        } else {
-          if (
-            room.invPlayers.find((ele) => ele === user.userid) &&
-            !room.players.find((ele) => ele === user.userid)
-          ) {
-            user.isAdmin = false;
-            const deduct = await deductAmount(
-              isRoomExist.maxchips,
-              user.userid,
-              gameType,
-              isRoomExist.minBet,
-              isRoomExist.media
-            );
-            if (deduct) {
-              let buyin = isRoomExist.buyin;
-              let leavereq = isRoomExist.leavereq.filter(
-                (el) => el !== user.userid
-              );
-              buyin.push({
-                userid: user.userid,
-                name: user.nickname,
-                chips: deduct - amount,
-                redeem: 1,
-              });
-              const API_KEY = process.env.VIDEOSDK_API_KEY;
-              const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
-
-              const options = { expiresIn: "10d", algorithm: "HS256" };
-
-              const payload = {
-                apikey: API_KEY,
-                permissions: ["ask_join"], // also accepts "ask_join"
-              };
-
-              const token = jwt.sign(payload, SECRET_KEY, options);
-              const updateRoom = await roomModel.findOneAndUpdate(
-                { _id: isRoomExist._id },
-                {
-                  $push: {
-                    players: {
-                      name: user.nickname,
-                      userid: user.userid,
-                      photoURI: user.photoURI,
-                      wallet: deduct - amount,
-                      position: position,
-                      missedSmallBlind: false,
-                      missedBigBlind: false,
-                      forceBigBlind: false,
-                      playing: true,
-                      stats: user.stats,
-                      initialCoinBeforeStart: user.stats.total.coins,
-                      gameJoinedAt: new Date(),
-                      hands: hand,
-                      meetingToken: token,
-                      items,
-                    },
-                  },
-                  buyin: buyin,
-                  leavereq,
-                },
-                { new: true }
-              );
-              io.in(room.roomid.toString()).emit(
-                "updatePlayerList",
-                updateRoom
-              );
-              await removeInvToPlayers(room.roomid, user.userid, gameType);
-            } else {
-              io.in(room.roomid.toString()).emit("lowBalance", {
-                userid: user.userid,
-              });
-            }
-          } else if (room.players.find((ele) => ele === user.userid)) {
-            if (isRoomExist.hostId === user.userid) {
-              socket.emit("tableOwner", isRoomExist);
-            }
-            if (
-              !isRoomExist.players.find((ele) => ele.userid === user.userid)
-            ) {
-              let buyin = isRoomExist.buyin;
-              let leavereq = isRoomExist.leavereq.filter(
-                (el) => el !== user.userid
-              );
-              buyin.push({
-                userid: user.userid,
-                name: user.nickname,
-                chips: isRoomExist.maxchips,
-                redeem: 1,
-              });
-              const API_KEY = process.env.VIDEOSDK_API_KEY;
-              const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
-
-              const options = { expiresIn: "10d", algorithm: "HS256" };
-
-              const payload = {
-                apikey: API_KEY,
-                permissions: ["ask_join"], // also accepts "ask_join"
-              };
-              console.log("LINE NUMBER 5883");
-              const token = jwt.sign(payload, SECRET_KEY, options);
-              const updateRoom = await roomModel.findOneAndUpdate(
-                { _id: isRoomExist._id },
-                {
-                  $push: {
-                    players: {
-                      name: user.nickname,
-                      userid: user.userid,
-                      photoURI: user.photoURI,
-                      wallet: isRoomExist.maxchips,
-                      position: position,
-                      missedSmallBlind: false,
-                      missedBigBlind: false,
-                      forceBigBlind: false,
-                      playing: true,
-                      stats: user.stats,
-                      initialCoinBeforeStart: user.stats.total.coins,
-                      gameJoinedAt: new Date(),
-                      hands: hand,
-                      meetingToken: token,
-                      items,
-                    },
-                  },
-                  buyin: buyin,
-                  leavereq,
-                },
-                { new: true }
-              );
-              isRoomExist = updateRoom;
-            }
-            io.in(room.roomid.toString()).emit("updatePlayerList", isRoomExist);
-          } else {
-            socket.emit(
-              "privateTable",
-              "This is private table and you are not invited."
-            );
-          }
-        }
-      } else {
-        if (room.table.public) {
-          if (
-            isRoomExist.gameType !== "poker1vs1_Tables" &&
-            isRoomExist.players.length < 3 &&
-            !room.players.find((ele) => ele === user.userid)
-          ) {
-            user.isAdmin = false;
-            const deduct = await deductAmount(
-              isRoomExist.maxchips,
-              user.userid,
-              gameType,
-              isRoomExist.minBet,
-              isRoomExist.media
-            );
-            if (deduct) {
-              let buyin = isRoomExist.buyin;
-              let leavereq = isRoomExist.leavereq.filter(
-                (el) => el !== user.userid
-              );
-              buyin.push({
-                userid: user.userid,
-                name: user.nickname,
-                chips: deduct - amount,
-                redeem: 1,
-              });
-              const API_KEY = process.env.VIDEOSDK_API_KEY;
-              const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
-
-              const options = { expiresIn: "10d", algorithm: "HS256" };
-
-              const payload = {
-                apikey: API_KEY,
-                permissions: ["ask_join"], // also accepts "ask_join"
-              };
-
-              const token = jwt.sign(payload, SECRET_KEY, options);
-              const updateRoom = await roomModel.findOneAndUpdate(
-                { _id: isRoomExist._id },
-                {
-                  $push: {
-                    players: {
-                      name: user.nickname,
-                      userid: user.userid,
-                      photoURI: user.photoURI,
-                      wallet: deduct - amount,
-                      position: position,
-                      missedSmallBlind: false,
-                      missedBigBlind: false,
-                      forceBigBlind: false,
-                      playing: true,
-                      stats: user.stats,
-                      initialCoinBeforeStart: user.stats.total.coins,
-                      gameJoinedAt: new Date(),
-                      hands: hand,
-                      meetingToken: token,
-                      items,
-                    },
-                  },
-                  buyin: buyin,
-                  leavereq,
-                },
-                { new: true }
-              );
-              io.in(room.roomid.toString()).emit(
-                "updatePlayerList",
-                updateRoom
-              );
-              await removeInvToPlayers(room.roomid, user.userid, gameType);
-            } else {
-              io.in(room.roomid.toString()).emit("lowBalance", {
-                userid: user.userid,
-              });
-            }
-          } else if (room.players.find((ele) => ele === user.userid)) {
-            if (isRoomExist.hostId === user.userid) {
-              socket.emit("tableOwner", isRoomExist);
-            }
-            if (
-              !isRoomExist.players.find((ele) => ele.userid === user.userid)
-            ) {
-              let buyin = isRoomExist.buyin;
-              let leavereq = isRoomExist.leavereq.filter(
-                (el) => el !== user.userid
-              );
-              buyin.push({
-                userid: user.userid,
-                name: user.nickname,
-                chips: isRoomExist.maxchips,
-                redeem: 1,
-              });
-              const API_KEY = process.env.VIDEOSDK_API_KEY;
-              const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
-
-              const options = { expiresIn: "10d", algorithm: "HS256" };
-
-              const payload = {
-                apikey: API_KEY,
-                permissions: ["ask_join"], // also accepts "ask_join"
-              };
-
-              const token = jwt.sign(payload, SECRET_KEY, options);
-              const updateRoom = await roomModel.findOneAndUpdate(
-                { _id: isRoomExist._id },
-                {
-                  $push: {
-                    players: {
-                      name: user.nickname,
-                      userid: user.userid,
-                      photoURI: user.photoURI,
-                      wallet: isRoomExist.maxchips,
-                      position: position,
-                      missedSmallBlind: false,
-                      missedBigBlind: false,
-                      forceBigBlind: false,
-                      playing: true,
-                      stats: user.stats,
-                      initialCoinBeforeStart: user.stats.total.coins,
-                      gameJoinedAt: new Date(),
-                      hands: hand,
-                      meetingToken: token,
-                      items,
-                    },
-                  },
-                  buyin: buyin,
-                  leavereq,
-                },
-                { new: true }
-              );
-              isRoomExist = updateRoom;
-            }
-            io.in(room.roomid.toString()).emit("updatePlayerList", isRoomExist);
-          } else {
-            socket.emit("newUser", {
-              _id: room.roomid,
-              userId: user.userid,
-              allowWatcher: room.table.alloWatchers,
-            });
-          }
-        } else {
-          if (
-            room.invPlayers.find((ele) => ele === user.userid) &&
-            !room.players.find((ele) => ele === user.userid)
-          ) {
-            user.isAdmin = false;
-            const deduct = await deductAmount(
-              isRoomExist.maxchips,
-              user.userid,
-              gameType,
-              isRoomExist.minBet,
-              isRoomExist.media
-            );
-            if (deduct) {
-              let buyin = isRoomExist.buyin;
-              let leavereq = isRoomExist.leavereq.filter(
-                (el) => el !== user.userid
-              );
-              buyin.push({
-                userid: user.userid,
-                name: user.nickname,
-                chips: deduct - amount,
-                redeem: 1,
-              });
-              const API_KEY = process.env.VIDEOSDK_API_KEY;
-              const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
-
-              const options = { expiresIn: "10d", algorithm: "HS256" };
-
-              const payload = {
-                apikey: API_KEY,
-                permissions: ["ask_join"], // also accepts "ask_join"
-              };
-
-              const token = jwt.sign(payload, SECRET_KEY, options);
-              const updateRoom = await roomModel.findOneAndUpdate(
-                { _id: isRoomExist._id },
-                {
-                  $push: {
-                    players: {
-                      name: user.nickname,
-                      userid: user.userid,
-                      photoURI: user.photoURI,
-                      wallet: deduct - amount,
-                      position: position,
-                      missedSmallBlind: false,
-                      missedBigBlind: false,
-                      forceBigBlind: false,
-                      playing: true,
-                      stats: user.stats,
-                      initialCoinBeforeStart: user.stats.total.coins,
-                      gameJoinedAt: new Date(),
-                      hands: hand,
-                      meetingToken: token,
-                      items,
-                    },
-                  },
-                  buyin: buyin,
-                  leavereq,
-                },
-                { new: true }
-              );
-              io.in(room.roomid.toString()).emit(
-                "updatePlayerList",
-                updateRoom
-              );
-              await removeInvToPlayers(room.roomid, user.userid, gameType);
-            } else {
-              io.in(room.roomid.toString()).emit("lowBalance", {
-                userid: user.userid,
-              });
-            }
-          } else if (room.players.find((ele) => ele === user.userid)) {
-            if (isRoomExist.hostId === user.userid) {
-              socket.emit("tableOwner", isRoomExist);
-            }
-            if (
-              !isRoomExist.players.find((ele) => ele.userid === user.userid)
-            ) {
-              let buyin = isRoomExist.buyin;
-              let leavereq = isRoomExist.leavereq.filter(
-                (el) => el !== user.userid
-              );
-              buyin.push({
-                userid: user.userid,
-                name: user.nickname,
-                chips: isRoomExist.maxchips,
-                redeem: 1,
-              });
-              const API_KEY = process.env.VIDEOSDK_API_KEY;
-              const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
-
-              const options = { expiresIn: "10d", algorithm: "HS256" };
-
-              const payload = {
-                apikey: API_KEY,
-                permissions: ["ask_join"], // also accepts "ask_join"
-              };
-
-              const token = jwt.sign(payload, SECRET_KEY, options);
-              const updateRoom = await roomModel.findOneAndUpdate(
-                { _id: isRoomExist._id },
-                {
-                  $push: {
-                    players: {
-                      name: user.nickname,
-                      userid: user.userid,
-                      photoURI: user.photoURI,
-                      wallet: isRoomExist.maxchips,
-                      position: position,
-                      missedSmallBlind: false,
-                      missedBigBlind: false,
-                      forceBigBlind: false,
-                      playing: true,
-                      stats: user.stats,
-                      initialCoinBeforeStart: user.stats.total.coins,
-                      gameJoinedAt: new Date(),
-                      hands: hand,
-                      meetingToken: token,
-                      items,
-                    },
-                  },
-                  buyin: buyin,
-                  leavereq,
-                },
-                { new: true }
-              );
-              isRoomExist = updateRoom;
-            }
-            io.in(room.roomid.toString()).emit("updatePlayerList", isRoomExist);
-          } else {
-            socket.emit(
-              "privateTable",
-              "This is private table and you are not invited."
-            );
-          }
-        }
-      }
-    } else {
-      if (room.table.isGameFinished || room.table.status === "empty") {
-        await updateInGameStatus(user.userid);
-        return socket.emit("gameFinished", "Game Already Finished.");
-      }
-      if (
-        room.table.admin === user.userid ||
-        room.table.status === "scheduled"
-      ) {
-        user.isAdmin = room.table.admin === user.userid;
-        const deduct = await deductAmount(
-          room.table.buyIn,
-          user.userid,
-          gameType,
-          room.table.minBet,
-          room.table.media
-        );
-
-        if (deduct) {
-          const API_KEY = process.env.VIDEOSDK_API_KEY;
-          const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
-
-          const options = { expiresIn: "10d", algorithm: "HS256" };
-
-          const payload = {
-            apikey: API_KEY,
-            permissions: ["allow_join", "allow_mod"], // also accepts "ask_join"
-          };
-
-          const token = jwt.sign(payload, SECRET_KEY, options);
-          const url = `${process.env.VIDEOSDK_API_ENDPOINT}/api/meetings`;
-
-          const option = {
-            method: "POST",
-            headers: { Authorization: token },
-          };
-
-          const result = await axios(url, option);
-          let meetingId = result.data.meetingId;
-          const createRoom = await roomModel.create({
-            players: [
-              {
-                name: user.nickname,
-                userid: user.userid,
-                photoURI: user.photoURI,
-                isAdmin: user.isAdmin,
-                wallet: deduct - amount,
-                position: 0,
-                missedSmallBlind: false,
-                missedBigBlind: false,
-                forceBigBlind: false,
-                playing: true,
-                stats: user.stats,
-                initialCoinBeforeStart: user.stats.total.coins,
-                gameJoinedAt: new Date(),
-                hands: hand,
-                meetingToken: token,
-                items,
-              },
-            ],
-            invPlayers: room.invPlayers,
-            gameName: room.table.name,
-            gamestart: room.table.isGameStarted,
-            isGameRunning: room.table.isGameStarted,
-            smallBlind: room.table.minBet,
-            bigBlind: room.table.minBet,
-            timer: room.table.rTimeout,
-            minchips: room.table.minBet,
-            maxchips: deduct,
-            hostId: room.table.admin,
-            autoNextHand: room.table.adminStart,
-            public: room.table.public,
-            allowWatcher: room.table.alloWatchers,
-            _id: room.roomid,
-            gameType,
-            media: room.table.media,
-            buyin: [
-              {
-                userid: user.userid,
-                name: user.nickname,
-                chips: deduct - amount,
-                redeem: 1,
-              },
-            ],
-            created_on: new Date(),
-            meetingId,
-            meetingToken: token,
-          });
-          await removeInvToPlayers(room.roomid, user.userid, gameType);
-          io.in(room.roomid.toString()).emit("updatePlayerList", createRoom);
-          setTimeout(() => {
-            socket.emit("tableOwner", createRoom);
-          }, 1000);
-        } else {
-          io.in(room.roomid.toString()).emit("lowBalance", {
-            userid: user.userid,
-          });
-        }
-      } else {
-        socket.emit("noAdmin", "Table admin is not available yet");
-      }
-    }
-  } catch (err) {
-    console.log("Error in checkRoomForConnectedUser =>", err);
-  }
-};
-
-export const approveJoinRequest = async (data, socket, io) => {
-  try {
-    const roomData = await getDoc(data.gameType, data._id);
-    if (!roomData) {
-      return socket.emit("noTable", "No such table exists");
-    }
-    const userData = await getDoc("users", data.player.userid);
-    if (userData) {
-      userData.userid = data.player.userid;
-      let items = await getPurchasedItem(
-        data.player.userid,
-        userData.stats.Level
-      );
-      let room = await roomModel.findOne({
-        _id: data.tableId,
-      });
-
-      if (room != null) {
-        let hand = [];
-        let amount = 0;
-        if (room.media !== "no-media") {
-          amount = room.media === "video" ? 400 : 100;
-          hand.push({
-            amount,
-            action: `${room.media}-game`,
-            date: new Date(),
-            isWatcher: false,
-          });
-        }
-        if (room.players.length < 3) {
-          let joinPlayer = room.joinRequests.filter(
-            (e) => e.userid.toString() === data.player.userid.toString()
-          );
-          let leftrequest = room.joinRequests.filter(
-            (e) => e.userid.toString() !== data.player.userid.toString()
-          );
-
-          const position = await findAvailablePosition(room.players);
-
-          let roomId = room._id;
-          const API_KEY = process.env.VIDEOSDK_API_KEY;
-          const SECRET_KEY = process.env.VIDEOSDK_SECRET_KEY;
-
-          const options = { expiresIn: "10d", algorithm: "HS256" };
-
-          const payload = {
-            apikey: API_KEY,
-            permissions: ["ask_join"], // also accepts "ask_join"
-          };
-
-          const token = jwt.sign(payload, SECRET_KEY, options);
-          if (joinPlayer.length) {
-            joinPlayer = {
-              ...joinPlayer[0],
-              position: position,
-              missedSmallBlind: false,
-              missedBigBlind: false,
-              forceBigBlind: false,
-              stats: userData.stats,
-              initialCoinBeforeStart: userData.stats.total.coins,
-              gameJoinedAt: new Date(),
-              hands: hand,
-              meetingToken: token,
-              items,
-            };
-            const deduct = await deductAmount(
-              room.maxchips,
-              userData.userid,
-              room.gameType,
-              room.minBet,
-              room.media
-            );
-
-            if (deduct) {
-              let buyin = room.buyin;
-              let leaveReq = room.leavereq.filter(
-                (el) => el !== userData.userid
-              );
-              buyin.push({
-                userid: data.player.userid,
-                name: joinPlayer.name,
-                chips: deduct - amount,
-                redeem: 1,
-              });
-              let players = room.players;
-              players.push(joinPlayer);
-              const savedroom = await roomModel.findByIdAndUpdate(roomId, {
-                players: players,
-                joinRequests: leftrequest,
-                buyin: buyin,
-                leavereq: leaveReq,
-              });
-              roomId = room._id;
-
-              const updatedRoom = await roomModel.findById(roomId);
-
-              if (updatedRoom.gamestart) {
-                io.in(data._id.toString()).emit("joinInRunningGame", {
-                  updatedRoom,
-                  playerId: data.player.userid,
-                });
-              } else
-                io.in(data._id.toString()).emit(
-                  "updatePlayerList",
-                  updatedRoom
-                );
-              io.in(data._id.toString()).emit("approved", {
-                playerid: userData.userid,
-                name: data.player.name,
-              });
-              await removeInvToPlayers(
-                data._id,
-                userData.userid,
-                data.gameType
-              );
-            } else {
-              io.in(data._id.toString()).emit("lowBalance", {
-                userid: userData.userid,
-              });
-            }
-          }
-        } else {
-          console.log("ROOM FULL 6451");
-          socket.emit("roomFull", "Room is Already Full");
-        }
-      } else {
-        console.log("----NOT FOUND 6495----");
-        socket.emit("notFound", "Room not Found");
-      }
-    } else {
-      socket.emit("actionError", "Action Error");
-    }
-  } catch (e) {
-    console.log("error : ", e);
-    socket.emit("actionError", "Action Error");
-  }
-};
-
-export const rejectJoinRequest = async (data, socket, io) => {
-  try {
-    const roomData = await getDoc(data.gameType, data._id);
-    if (!roomData) {
-      return socket.emit("noTable", "No such table exists");
-    }
-    const userData = await getDoc("users", data.player.userid);
-    if (userData) {
-      userData.userid = data.player.userid;
-      let room = await roomModel.findOne({
-        _id: data.tableId,
-      });
-
-      if (room != null) {
-        let leftrequest = room.joinRequests.filter(
-          (e) => e.userid.toString() !== data.player.userid.toString()
-        );
-
-        let roomId = room._id;
-
-        const savedroom = await roomModel.findByIdAndUpdate(room._id, {
-          joinRequests: leftrequest,
-        });
-        const updatedRoom = await roomModel.findById(roomId);
-
-        io.in(data._id.toString()).emit("updatePlayerList", updatedRoom);
-        io.in(data._id.toString()).emit("rejected", {
-          playerid: data.player.userid,
-        });
-      } else {
-        console.log("----NOT FOUND 6537----");
-        socket.emit("notFound", "Room not Found");
-      }
-    } else {
-      socket.emit("actionError", "Action Error");
-    }
-  } catch (e) {
-    console.log("error : ", e);
-    scoket.emit("actionError", "Action Error");
-  }
-};
 
 export const startPreflopRound = async (data, socket, io) => {
   try {
@@ -7119,70 +6170,6 @@ export const startPreflopRound = async (data, socket, io) => {
   }
 };
 
-export const joinWatcherRequest = async (data, socket, io) => {
-  try {
-    const roomData = await getDoc(data.gameType, data._id);
-    if (!roomData) {
-      return socket.emit("noTable", "No such table exists");
-    }
-    const userData = await getDoc("users", data.userId);
-    if (userData) {
-      userData.userid = data.userId;
-      if (roomData.table.alloWatchers) {
-        const room = await roomModel.findOne({ _id: data.tableId });
-        let player = room.players;
-
-        if (
-          player.find(
-            (ele) => (ele.id ? ele.id : ele.userid) === data.userId
-          ) ||
-          room.watchers.find(
-            (ele) => (ele.id ? ele.id : ele.userid) === data.userId
-          )
-        ) {
-          return socket.emit("alreadyJoin", "");
-        }
-        await addWatcher(data.userId, data._id, data.gameType);
-        const deduct = await deductAmount(
-          userData.stats.total.coins,
-          data.userId,
-          "wacher",
-          100,
-          "no-media"
-        );
-        const updateRoom = await roomModel.findOneAndUpdate(
-          { _id: data.tableId },
-          {
-            $push: {
-              watchers: {
-                userid: userData.userid,
-                name: userData.nickname,
-                photoURI: userData.photoURI,
-                hands: [],
-                wallet: deduct,
-                initialCoinBeforeStart: userData.stats.total.coins,
-                gameJoinedAt: new Date(),
-              },
-            },
-          },
-          {
-            new: true,
-          }
-        );
-
-        socket.join(data._id.toString() + "watchers");
-        io.in(data._id.toString() + "watchers").emit("newWatcherJoin", {
-          watcherId: userData.userid,
-          roomData: updateRoom,
-        });
-      }
-    } else {
-      return socket.emit("noUser", "No such User exists");
-    }
-  } catch (err) {
-    console.log("Error in JoinWatcher request  =>", err.message);
-  }
-};
 
 export const handleNewBet = async (data, socket, io) => {
   try {
@@ -7487,7 +6474,6 @@ export const findLoserAndWinner = async (room) => {
         looser.push(item);
       }
     });
-    await finishHandUpdate(winners, looser, room._id, room.gameType);
   } catch (error) {
     console.log("errorsass", error);
   }
@@ -8040,85 +7026,94 @@ export const checkForGameTable = async (data, socket, io) => {
   try {
     const { gameId, userId, sitInAmount } = data;
     const game = await gameService.getGameById(gameId);
-    const checkTable = await roomModel.findOne({
+    const IsTableExist = await roomModel.findOne({
       _id: mongoose.Types.ObjectId(gameId),
-      "players.userid": mongoose.Types.ObjectId(userId),
     });
-
-    if (checkTable || sitInAmount) {
-      if (!game || game.finish) {
-        console.log("7353 in function.js");
-        return socket.emit("notFound", {
-          message: "Game not found. Either game is finished or not exist",
-        });
-      }
-
-      const user = await userService.getUserById(userId);
-
-      if (!user) {
-        return socket.emit("notAuthorized", {
-          message: "You are not authorized",
-        });
-      }
-
-      console.log("USER WALLET ", user.wallet);
-
-      const ifUserInGame = game.players.find((el) => {
-        return el.userid?.toString() === userId.toString();
+    if (IsTableExist) {
+      const checkTable = await roomModel.findOne({
+        _id: mongoose.Types.ObjectId(gameId),
+        "players.userid": mongoose.Types.ObjectId(userId),
       });
 
-      // check user
-      if (
-        parseFloat(game.smallBlind) > parseFloat(user.wallet) &&
-        !ifUserInGame
-      ) {
-        return socket.emit("notEnoughBalance", {
-          message: "You don't have enough balance to sit on the table.",
-        });
-      }
+      if (checkTable || sitInAmount) {
+        if (!game || game.finish) {
+          console.log("7353 in function.js");
+          return socket.emit("notFound", {
+            message: "Game not found. Either game is finished or not exist",
+          });
+        }
 
-      if (ifUserInGame) {
-        addUserInSocket(io, socket, gameId, userId);
-        const gameUpdatedData = await roomModel.findOneAndUpdate(
-          {
-            _id: convertMongoId(gameId),
-            "players.userid": convertMongoId(userId),
-          },
-          {
-            "players.$.playing": true,
-          }
+        const user = await userService.getUserById(userId);
+
+        if (!user) {
+          return socket.emit("notAuthorized", {
+            message: "You are not authorized",
+          });
+        }
+
+        console.log("USER WALLET ", user.wallet);
+
+        const ifUserInGame = game.players.find((el) => {
+          return el.userid?.toString() === userId.toString();
+        });
+
+        // check user
+        if (
+          parseFloat(game.smallBlind) > parseFloat(user.wallet) &&
+          !ifUserInGame
+        ) {
+          return socket.emit("notEnoughBalance", {
+            message: "You don't have enough balance to sit on the table.",
+          });
+        }
+
+        if (ifUserInGame) {
+          addUserInSocket(io, socket, gameId, userId);
+          const gameUpdatedData = await roomModel.findOneAndUpdate(
+            {
+              _id: convertMongoId(gameId),
+              "players.userid": convertMongoId(userId),
+            },
+            {
+              "players.$.playing": true,
+            }
+          );
+
+          io.in(gameId).emit("updateGame", { game: gameUpdatedData });
+          return;
+        }
+
+        const checkIfInOtherGame = await gameService.checkIfUserInGame(userId);
+        if (checkIfInOtherGame) {
+          console.log("User in the other table");
+          return socket.emit("inOtherGame", {
+            message: "You are also on other tabe.",
+          });
+        }
+
+        // If user is not in the room
+        const updatedRoom = await gameService.joinRoomByUserId(
+          game,
+          userId,
+          sitInAmount
         );
 
-        io.in(gameId).emit("updateGame", { game: gameUpdatedData });
-        return;
-      }
-
-      const checkIfInOtherGame = await gameService.checkIfUserInGame(userId);
-      if (checkIfInOtherGame) {
-        console.log("User in the other table");
-        return socket.emit("inOtherGame", {
-          message: "You are also on other tabe.",
+        if (updatedRoom && Object.keys(updatedRoom).length > 0) {
+          addUserInSocket(io, socket, gameId, userId);
+          await userService.updateUserWallet(userId, user.wallet - sitInAmount);
+          io.in(gameId).emit("updateGame", { game: updatedRoom });
+          return;
+        } else {
+          socket.emit("tablefull", { message: "This table is full." });
+        }
+      } else {
+        return socket.emit("notInvitedPlayer", {
+          message: "notInvited",
         });
       }
-
-      // If user is not in the room
-      const updatedRoom = await gameService.joinRoomByUserId(
-        game,
-        userId,
-        sitInAmount
-      );
-
-      if (updatedRoom && Object.keys(updatedRoom).length > 0) {
-        addUserInSocket(io, socket, gameId, userId);
-        await userService.updateUserWallet(userId, user.wallet - sitInAmount);
-        io.in(gameId).emit("updateGame", { game: updatedRoom });
-        return;
-      } else {
-        socket.emit("tablefull", { message: "This table is full." });
-      }
     } else {
-      return socket.emit("notInvitedPlayer", {
-        message: "notInvited",
+      return socket.emit("tablenotFound", {
+        message: "tablenotFound",
       });
     }
   } catch (error) {
@@ -8433,6 +7428,7 @@ export const activateTournament = async (io) => {
     if (checkTournament) {
       //preflopround()
       if (checkTournament?.rooms?.length > 0) {
+        await tournamentModel.updateOne({_id:checkTournament?._id},{isStart:true})
         blindTimer(checkTournament, io);
         for await (let room of checkTournament?.rooms) {
           await preflopround(room, io);
