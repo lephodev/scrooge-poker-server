@@ -2331,7 +2331,7 @@ export const showdown = async (roomid, io) => {
       if (upRoom.tournament) {
         // await calculateTournamentPrize(upRoom?.tournament)
         await elemination(upRoom, io);
-        await reArrangeTables(upRoom.tournament, io);
+        await reArrangeTables(upRoom.tournament, io, upRoom._id);
       } else {
         await updateRoomForNewHand(roomid, io);
         let updatedRoomPlayers = await roomModel.findOne({
