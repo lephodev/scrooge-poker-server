@@ -7426,6 +7426,7 @@ export const activateTournament = async (io) => {
     if (checkTournament) {
       //preflopround()
       if (checkTournament?.rooms?.length > 0) {
+        await tournamentModel.updateOne({_id:checkTournament?._id},{isStart:true})
         blindTimer(checkTournament, io);
         for await (let room of checkTournament?.rooms) {
           await preflopround(room, io);
