@@ -7437,7 +7437,7 @@ export const JoinTournament = async (data, socket) => {
           { new: true }
         );
         await transactionModel.create({
-          userId:player.userId,
+          userId:userId,
           amount:parseFloat(fees),
           transactionDetails: {},
           prevWallet: parseFloat(userData?.wallet),
