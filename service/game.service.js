@@ -8,7 +8,7 @@ import moment from "moment";
 import Notification from "../models/notificationModal.js";
 
 const converMongoId = (id) => mongoose.Types.ObjectId(id);
-const maxPlayer = 3;
+const maxPlayer = 9;
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
 

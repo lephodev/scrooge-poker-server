@@ -409,7 +409,6 @@ let returnSocket = (io) => {
     });
 
     socket.on("startGame", async (data) => {
-      console.log("start game executed", data);
       const { tableId } = data;
       io.in(tableId).emit("roomGameStarted", { start: true });
     });
