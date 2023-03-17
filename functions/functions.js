@@ -6146,7 +6146,6 @@ export const findAvailablePosition = async (playerList) => {
   });
 };
 
-
 export const startPreflopRound = async (data, socket, io) => {
   try {
     let room = await gameService.getGameById(data.tableId);
@@ -6169,7 +6168,6 @@ export const startPreflopRound = async (data, socket, io) => {
     socket.emit("actionError", "Action Error");
   }
 };
-
 
 export const handleNewBet = async (data, socket, io) => {
   try {
@@ -7428,7 +7426,10 @@ export const activateTournament = async (io) => {
     if (checkTournament) {
       //preflopround()
       if (checkTournament?.rooms?.length > 0) {
-        await tournamentModel.updateOne({_id:checkTournament?._id},{isStart:true})
+        await tournamentModel.updateOne(
+          { _id: checkTournament?._id },
+          { isStart: true }
+        );
         blindTimer(checkTournament, io);
         for await (let room of checkTournament?.rooms) {
           await preflopround(room, io);
