@@ -5851,20 +5851,20 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
   try {
     console.log("fill spot called");
     if (allRooms.length === 1) {
-      if (allRooms[i].players.length > 1) {
-       return preflopround(allRooms[i], io);
+      if (allRooms[0].players.length > 1) {
+       return preflopround(allRooms[0], io);
       } else {
-        console.log("only one player =>", allRooms[i]);
+        console.log("only one player =>", allRooms[0]);
         await distributeTournamentPrize(
           tournamentId,
-          allRooms[i].players[0]
+          allRooms[0].players[0]
         );
-        io.in(allRooms[i]._id.toString()).emit("tournamentFinished", { tournamentId });
+        io.in(allRooms[0]._id.toString()).emit("tournamentFinished", { tournamentId });
         return;
       }
     }
-    const room = allRooms.find(r => r._id === roomId);
-    const OtherRoom = allRooms.filter(r => r._id !== roomId);
+    const room = allRooms.find(r => r._id.toString() === roomId.toString());
+    const OtherRoom = allRooms.filter(r => r._id.toString() !== roomId.toString());
     let blankSpot = 0;
     OtherRoom.forEach(c => {
       blankSpot += 3-c.players.length
@@ -5904,6 +5904,16 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         io.in(room._id.toString()).emit('roomchanged',{
           userIds
         })
+      }
+      if(playersToMove.length === 0){
+        await tournamentModel.updateOne(
+                  { _id: room.tournament },
+                  { $push: { destroyedRooms: room._id } },
+                  {
+                    new: true,
+                  }
+                );
+                await roomModel.deleteOne({ _id: room._id });
       }
     }else{
       console.log("Not enough blank spot");
