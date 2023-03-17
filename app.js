@@ -8,7 +8,6 @@ import passport, { authenticate } from "passport";
 import socket from "socket.io";
 import roomModel from "./models/room";
 import { doLeaveTable, doLeaveWatcher } from "./functions/functions";
-import { updateInGameStatus } from "./firestore/dbFetch";
 import jwtStrategy from "./landing-server/config/jwtstragety";
 import {
   successHandler,
@@ -216,7 +215,6 @@ app.get("/leaveGame/:tableId/:userId", async (req, res) => {
     } else {
       let roomdata = await roomModel.findOne({ tableId }).lean();
       if (!roomdata?.players?.find((el) => el.id === userId)) {
-        updateInGameStatus(userId);
         return res.send({
           success: true,
         });
@@ -256,7 +254,6 @@ app.get("/checkUserInGame/:userId", async (req, res) => {
         leaveTableUrl: `https://poker-server-t3e66zpola-uc.a.run.app/leaveGame/${room._id}/${userId}`,
       });
     } else {
-      updateInGameStatus(userId);
       res.status(200).send({
         success: true,
         gameStatus: "online",
