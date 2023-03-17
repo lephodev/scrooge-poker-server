@@ -6146,7 +6146,6 @@ export const findAvailablePosition = async (playerList) => {
   });
 };
 
-
 export const startPreflopRound = async (data, socket, io) => {
   try {
     let room = await gameService.getGameById(data.tableId);
@@ -6169,7 +6168,6 @@ export const startPreflopRound = async (data, socket, io) => {
     socket.emit("actionError", "Action Error");
   }
 };
-
 
 export const handleNewBet = async (data, socket, io) => {
   try {
@@ -7243,6 +7241,19 @@ export const emitTyping = async (data, socket, io) => {
 export const JoinTournament = async (data, socket) => {
   try {
     const { userId, tournamentId, fees } = data;
+
+    const tournament = await tournamentModel.findOne({
+      _id: tournamentId,
+    });
+
+    if (tournament.isStart) {
+      socket.emit("tournamentAlreadyStarted", {
+        message: "Tournament Has been already started",
+        code: 400,
+      });
+      return;
+    }
+
     const checkTable = await roomModel.findOne({
       tournament: mongoose.Types.ObjectId(tournamentId),
       "players.userid": mongoose.Types.ObjectId(userId),
@@ -7428,7 +7439,10 @@ export const activateTournament = async (io) => {
     if (checkTournament) {
       //preflopround()
       if (checkTournament?.rooms?.length > 0) {
-        await tournamentModel.updateOne({_id:checkTournament?._id},{isStart:true})
+        await tournamentModel.updateOne(
+          { _id: checkTournament?._id },
+          { isStart: true }
+        );
         blindTimer(checkTournament, io);
         for await (let room of checkTournament?.rooms) {
           await preflopround(room, io);
