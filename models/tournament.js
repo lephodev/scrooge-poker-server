@@ -17,7 +17,8 @@ const tournamentSchema = new Schema(
     incBlindTime: { type: Number, required: true},
     winTotalPlayer: { type: Number, required: true},
     winPlayer: { type: Object},
-    buyIn: { type: Number, required: true}
+    buyIn: { type: Number, required: true},
+    isStart:{ type: Boolean, default: false }
   },
   { timestamps: true }
 );
