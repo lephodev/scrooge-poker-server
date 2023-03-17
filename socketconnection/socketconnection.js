@@ -31,7 +31,6 @@ import {
   checkAlreadyInGame,
 } from "../functions/functions";
 import mongoose from "mongoose";
-import roomModel from "../models/room";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
