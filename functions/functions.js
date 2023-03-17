@@ -316,7 +316,8 @@ export const preflopround = async (room, io) => {
     }
     if (!room.finish && !room.gamestart) {
       // console.log("CHECK 308");
-      if (room.runninground === 0 && !room.pause) {
+      if (room.runninground === 0) {
+        // !room.pause
         // console.log("CHECK 310", room.runninground);
 
         if (playingPlayer.length > 1) {
@@ -329,6 +330,7 @@ export const preflopround = async (room, io) => {
               runninground: 1,
               gamestart: true,
               isGameRunning: true,
+              pause: false,
             }
           );
 
