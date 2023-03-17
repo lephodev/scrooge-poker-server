@@ -12,7 +12,7 @@ const transactionSchema = new Schema({
   updatedWallet: { type: Number },
   transactionDetails: {},
   tournamentId: { type: String },
-  transactionType: { type: String, enum: ['poker', 'blackjack', 'slot'] },
+  transactionType: { type: String, enum: ['poker', 'blackjack', 'slot','poker tournament'] },
 });
 
 const transactionModel = mongoose.model('transactions', transactionSchema);
