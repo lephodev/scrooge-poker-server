@@ -911,7 +911,7 @@ export const prefloptimer = async (roomid, io) => {
                   });
                 }
               } else {
-                console.log("Clear interval and update game", data._id);
+                // console.log("Clear interval and update game", data._id);
                 clearInterval(playerinterval);
                 io.in(data?._id?.toString()).emit("updateGame", {
                   game: data,
