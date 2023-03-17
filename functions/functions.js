@@ -5427,7 +5427,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
       //} else {
       if (updatedRoom?.tournament) {
         await elemination(updatedRoom, io);
-        await reArrangeTables(updatedRoom.tournament, io);
+        await reArrangeTables(updatedRoom.tournament, io, updatedRoom._id);
       } else {
         await updateRoomForNewHand(roomid, io);
         ///dgs
@@ -5769,7 +5769,7 @@ export const nextWeekdayDate = (date, day_in_week) => {
   }
 };
 
-export const reArrangeTables = async (tournamentId, io) => {
+export const reArrangeTables = async (tournamentId, io, roomId) => {
   try {
     const tournamentData = await tournamentModel
       .findOne(
@@ -5793,10 +5793,10 @@ export const reArrangeTables = async (tournamentId, io) => {
       const allRooms = notDestroyedYet.sort((a, b) => {
         // ASC  -> a.length - b.length
         // DESC -> b.length - a.length
-        return b.players.length - a.players.length;
+        return a.players.length - b.players.length;
       });
       if (allRooms.length > 0) {
-        await fillSpot(allRooms, io, tournamentId);
+        await fillSpot(allRooms, io, tournamentId, roomId);
       } else {
         console.log("no rooms in tournament");
       }
@@ -5808,84 +5808,203 @@ export const reArrangeTables = async (tournamentId, io) => {
   }
 };
 
-const fillSpot = async (allRooms, io, tournamentId) => {
+const fillSpot = async (allRooms, io, tournamentId, roomId) => {
   try {
     console.log("fill spot called");
-    for (let i = 0; i <= allRooms.length - 1; i++) {
-      if (allRooms[i].players.length <= 2) {
-        if (allRooms.length === 1) {
-          if (allRooms[i].players.length > 1) {
-            await preflopround(allRooms[i], io);
-          } else {
-            console.log("only one player =>", allRooms[i]);
-            await distributeTournamentPrize(
-              tournamentId,
-              allRooms[i].players[0]
-            );
-            io.in(allRooms[i]._id.toString()).emit("tournamentFinished");
-          }
-        }
-        for (let j = i + 1; j < allRooms.length; j++) {
-          if (allRooms[j].players.length <= 1) {
-            let currentPlayer = [...allRooms[j].players];
-            let userIds = [];
-            for await (let player of allRooms[i].players) {
-              const position = await findAvailablePosition(currentPlayer);
-              currentPlayer.push({ ...player, position });
-              userIds.push(player.userid);
-              const userData = await userModel.findOneAndUpdate(
-                {
-                  _id: player.userid,
-                  "tournaments.tournamentId": allRooms[j].tournament,
-                },
-                {
-                  players: currentPlayer,
-                },
-                { new: true }
-              );
-            }
-            const updatedRoom = await roomModel.findOneAndUpdate(
-              {
-                _id: allRooms[j]._id,
-              },
-              {
-                players: currentPlayer,
-              },
-              {
-                new: true,
-              }
-            );
-
-            io.in(allRooms[i]._id.toString()).emit("roomchanged", {
-              changeIds: userIds,
-              newRoomId: allRooms[j]._id,
-              updatedRoom: updatedRoom,
-            });
-            // io.in(allRooms[j]._id.toString()).emit("newhand", {
-            //   updatedRoom: updatedRoom,
-            // });
-            await tournamentModel.updateOne(
-              { _id: allRooms[j].tournament },
-              { $push: { destroyedRooms: allRooms[i]._id } },
-              {
-                new: true,
-              }
-            );
-            await roomModel.deleteOne({ _id: allRooms[i]._id });
-            // await updateRoomForNewHand(allRooms[i]._id, io);
-            await preflopround(allRooms[j], io);
-          }
-        }
+    if (allRooms.length === 1) {
+      if (allRooms[i].players.length > 1) {
+       return preflopround(allRooms[i], io);
       } else {
-        console.log(
-          "not enough space to fill the spot in room =>",
-          allRooms[i]._id
+        console.log("only one player =>", allRooms[i]);
+        await distributeTournamentPrize(
+          tournamentId,
+          allRooms[i].players[0]
         );
-        if (allRooms[i].players.length > 1) {
-          await preflopround(allRooms[i], io);
-        }
+        io.in(allRooms[i]._id.toString()).emit("tournamentFinished", { tournamentId });
+        return;
       }
     }
+    const room = allRooms.find(r => r._id === roomId);
+    const OtherRoom = allRooms.filter(r => r._id !== roomId);
+    let blankSpot = 0;
+    OtherRoom.forEach(c => {
+      blankSpot += 3-c.players.length
+    });
+    if(blankSpot >=room.players.length){
+      let playersToMove = [...room.players];
+      let userIds = [];
+      for await (const r of OtherRoom){
+        if(playersToMove.length === 0 || blankSpot === 0){
+          break;
+        }
+        if(r.players.length >= 3){
+          continue;
+        }
+        let newPlayers = [...r.players];
+        let tempSpotArr = [...Array(3-r.players.length).keys()];
+        for await(const temp of tempSpotArr){
+          let position = await findAvailablePosition(newPlayers);
+          newPlayers.push({ ...playersToMove[temp], position });
+          userIds.push({ userId: playersToMove[temp].userid, newRoomId: r._id })
+        }
+        const updatedRoom = await roomModel.findOneAndUpdate(
+          {
+            _id: r._id,
+          },
+          {
+            players: newPlayers,
+          },
+          {
+            new: true,
+          }
+        );
+        playersToMove.splice(0,tempSpotArr.length);
+        blankSpot -=tempSpotArr.length
+      }
+      if(userIds.length){
+        io.in(room._id.toString()).emit('roomchanged',{
+          userIds
+        })
+      }
+    }else{
+      console.log("Not enough blank spot");
+      if(room.players.length >1){
+        preflopround(room, io);
+      }else{
+        // emit please wait for re-arrange/blank spot
+        io.in(room._id.toString()).emit('waitForReArrange');
+      }
+    }
+//////////////////////////////////////////////
+    // for await (let room of allRooms) {
+    //   i+=1;
+    //   //blank_spot 
+    //   let blankSpot = 3-room.players.length;
+    //   if(blankSpot === 0){
+    //       console.log(
+    //         "not enough space to fill the spot in room =>",
+    //         room._id
+    //       );
+    //       if (allRooms[i].players.length > 1) {
+    //          preflopround(allRooms[i], io);
+    //       }
+    //       continue;
+    //     }
+    //     j=i+1;
+    //     let arr = Array(allRooms.length -j).keys();
+
+    //   for await (let roomJ of arr){
+    //     if(allRooms[j].players.length <=blankSpot){
+    //       blankSpot = blankSpot-allRooms[j].players.length
+    //       let newPlayers = [...allRooms[i].players];
+    //       let userIds = [];
+    //       for await(let pl of allRooms[j].players){
+    //         let position = await findAvailablePosition(newPlayers);
+    //         newPlayers.push({ ...pl, position})
+    //         userIds.push(pl.userid);
+    //       }
+    //       const updatedRoom = await roomModel.findOneAndUpdate(
+    //         {
+    //           _id: allRooms[i]._id,
+    //         },
+    //         {
+    //           players: currentPlayer,
+    //         },
+    //         {
+    //           new: true,
+    //         }
+    //       );
+    //       io.in(allRooms[j]._id.toString()).emit("roomchanged", {
+    //         changeIds: userIds,
+    //         newRoomId: allRooms[i]._id,
+    //         updatedRoom: updatedRoom,
+    //       });
+
+    //       await tournamentModel.updateOne(
+    //         { _id: allRooms[j].tournament },
+    //         { $push: { destroyedRooms: allRooms[j]._id } },
+    //         {
+    //           new: true,
+    //         }
+    //       );
+    //       await roomModel.deleteOne({ _id: allRooms[j]._id });
+    //     }
+    //     j++;
+    //   }
+    //   if (allRooms[i].players.length <= 2) {
+    //     if (allRooms.length === 1) {
+    //       if (allRooms[i].players.length > 1) {
+    //         await preflopround(allRooms[i], io);
+    //       } else {
+    //         console.log("only one player =>", allRooms[i]);
+    //         await distributeTournamentPrize(
+    //           tournamentId,
+    //           allRooms[i].players[0]
+    //         );
+    //         io.in(allRooms[i]._id.toString()).emit("tournamentFinished");
+    //       }
+    //     }
+    //     for (let j = i + 1; j < allRooms.length; j++) {
+    //       if (allRooms[j].players.length <= 1) {
+    //         let currentPlayer = [...allRooms[j].players];
+    //         let userIds = [];
+    //         for await (let player of allRooms[i].players) {
+    //           const position = await findAvailablePosition(currentPlayer);
+    //           currentPlayer.push({ ...player, position });
+    //           userIds.push(player.userid);
+    //           const userData = await userModel.findOneAndUpdate(
+    //             {
+    //               _id: player.userid,
+    //               "tournaments.tournamentId": allRooms[j].tournament,
+    //             },
+    //             {
+    //               players: currentPlayer,
+    //             },
+    //             { new: true }
+    //           );
+    //         }
+    //         const updatedRoom = await roomModel.findOneAndUpdate(
+    //           {
+    //             _id: allRooms[j]._id,
+    //           },
+    //           {
+    //             players: currentPlayer,
+    //           },
+    //           {
+    //             new: true,
+    //           }
+    //         );
+
+    //         io.in(allRooms[i]._id.toString()).emit("roomchanged", {
+    //           changeIds: userIds,
+    //           newRoomId: allRooms[j]._id,
+    //           updatedRoom: updatedRoom,
+    //         });
+    //         // io.in(allRooms[j]._id.toString()).emit("newhand", {
+    //         //   updatedRoom: updatedRoom,
+    //         // });
+    //         await tournamentModel.updateOne(
+    //           { _id: allRooms[j].tournament },
+    //           { $push: { destroyedRooms: allRooms[i]._id } },
+    //           {
+    //             new: true,
+    //           }
+    //         );
+    //         await roomModel.deleteOne({ _id: allRooms[i]._id });
+    //         // await updateRoomForNewHand(allRooms[i]._id, io);
+    //         await preflopround(allRooms[j], io);
+    //       }
+    //     }
+    //   } else {
+    //     console.log(
+    //       "not enough space to fill the spot in room =>",
+    //       allRooms[i]._id
+    //     );
+    //     if (allRooms[i].players.length > 1) {
+    //       await preflopround(allRooms[i], io);
+    //     }
+    //   }
+    // }
   } catch (error) {
     console.log("error in fillSpot function =>", error);
   }
