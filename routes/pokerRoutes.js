@@ -8,7 +8,6 @@ import {
   getTablePlayers,
   refillWallet,
 } from "../controller/pokerController.js";
-import Token from "../landing-server/models/Token.model.js";
 import { validateCreateTable } from "../validation/poker.validation.js";
 import auth from "../landing-server/middlewares/auth";
 

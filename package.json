@@ -19,7 +19,6 @@
     "dotenv": "^10.0.0",
     "express": "^4.16.4",
     "fetch": "1.1.0",
-    "firebase-admin": "^9.9.0",
     "http-errors": "~1.6.3",
     "http-status": "^1.5.3",
     "jade": "~1.11.0",
