@@ -31,6 +31,7 @@ import {
   checkAlreadyInGame,
 } from "../functions/functions";
 import mongoose from "mongoose";
+import { refillWallet } from "../controller/pokerController";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
@@ -179,6 +180,10 @@ let returnSocket = (io) => {
       process.nextTick(async () => {
         await doPauseGame(data, io, socket);
       });
+    });
+
+    socket.on("refillWallet", async (data) => {
+      await refillWallet(data, io, socket);
     });
 
     socket.on("dofinishgame", async (data) => {
