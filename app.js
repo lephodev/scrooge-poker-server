@@ -284,7 +284,6 @@ app.get("/getUserForInvite/:tableId", async (req, res) => {
     }
 
     const { leavereq, invPlayers, players } = roomData;
-    console.log({ leavereq, invPlayers, players });
     const allId = [...leavereq, ...invPlayers, ...players.map((el) => el.id)];
 
     const allUsers = await User.find({
