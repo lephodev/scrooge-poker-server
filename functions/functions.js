@@ -7664,8 +7664,8 @@ export const activateTournament = async (io) => {
         );
         console.log("Tournament started");
         blindTimer(checkTournament, io);
-        for await (let room of checkTournament?.rooms) {
-          await preflopround(room, io);
+        for (let room of checkTournament?.rooms) {
+           preflopround(room, io);
         }
       }
     }
@@ -7685,6 +7685,7 @@ export const blindTimer = async (data, io) => {
       _id,
       isFinished,
     } = data;
+    console.log("blind Timer called", incBlindTime, isFinished)
     if (rooms && rooms.length && incBlindTime && !isFinished) {
       let getMinute = incBlindTime * 60;
       const interval = setInterval(async () => {
@@ -7717,7 +7718,8 @@ export const blindTimer = async (data, io) => {
             },
           };
           await tournamentModel.updateOne({ _id }, bliend);
-          const t = await tournamentModel.findOne({ _id });
+          const t = await tournamentModel.findOne({ _id }).populate("rooms")
+          .lean();
           blindTimer(t, io);
         }
       }, 1000);
