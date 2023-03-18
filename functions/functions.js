@@ -5884,6 +5884,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
       }
     }
     const room = allRooms.find((r) => r._id.toString() === roomId.toString());
+    console.log("room that need to be transfer",room);
     const OtherRoom = allRooms.filter(
       (r) => r._id.toString() !== roomId.toString()
     );
@@ -5929,6 +5930,11 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         io.in(room._id.toString()).emit("roomchanged", {
           userIds,
         });
+        allRooms.forEach(r => {
+          if(userIds.find(user => user.newRoomId.toString() === r._id.toString()) && !r.gamestart){
+            preflopround(r,io);
+          }
+        })
       }
       if (playersToMove.length === 0) {
         await tournamentModel.updateOne(
@@ -5939,7 +5945,9 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
           }
         );
         await roomModel.deleteOne({ _id: room._id });
+
       }
+
     } else {
       console.log("Not enough blank spot");
       if (room.players.length > 1) {
