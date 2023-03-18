@@ -1063,7 +1063,8 @@ export const flopround = async (roomid, io) => {
         });
       };
       await fetchDistributedCards();
-      let communityCards = await verifycards(distributedCards, 3);
+      let communityCards = verifycards(distributedCards, 3);
+      communityCards = communityCards.map((card) => EncryptCard(card));
 
       const updatedRoom = await roomModel.findOneAndUpdate(
         {
