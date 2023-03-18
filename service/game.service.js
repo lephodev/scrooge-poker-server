@@ -13,6 +13,7 @@ const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
 
 const getGameById = async (id) => {
+  console.log("iddddd", id);
   const game = await roomModel.findOne({ _id: converMongoId(id) }).lean();
   if (game) return { ...game, id: game._id };
   return null;

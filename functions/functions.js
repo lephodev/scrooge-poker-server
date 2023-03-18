@@ -16,6 +16,7 @@ var Hand = require("pokersolver").Hand;
 import MessageModal from "../models/messageModal";
 import Notification from "../models/notificationModal";
 import User from "../landing-server/models/user.model";
+import { decryptCard, EncryptCard } from "../validation/poker.validation";
 
 const gameRestartSeconds = 4000;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
@@ -219,8 +220,12 @@ export const preflopPlayerPush = async (players, roomid) => {
 
         if (playing) {
           checkcards = verifycards(distributedCards, 2);
-          checkcards.map((e) => distributedCards.push(e));
+          checkcards = checkcards.map((e) => {
+            distributedCards.push(e);
+            return EncryptCard(e);
+          });
         }
+
         newP.push({
           cards: checkcards,
           id: player.userid || player.id,
@@ -1055,7 +1060,7 @@ export const flopround = async (roomid, io) => {
           floproundPlayersData.push(p);
 
           e.cards.forEach((el) => {
-            distributedCards.push(el);
+            distributedCards.push(decryptCard(el));
           });
           if (actionType === null && e.playing) {
             playingPlayer++;
@@ -1063,8 +1068,8 @@ export const flopround = async (roomid, io) => {
         });
       };
       await fetchDistributedCards();
-      let communityCards = await verifycards(distributedCards, 3);
-
+      let communityCards = verifycards(distributedCards, 3);
+      communityCards = communityCards.map((card) => EncryptCard(card));
       const updatedRoom = await roomModel.findOneAndUpdate(
         {
           _id: roomid,
@@ -1398,7 +1403,7 @@ export const turnround = async (roomid, io) => {
           turnroundPlayersData.push(p);
 
           e.cards.forEach((el) => {
-            distributedCards.push(el);
+            distributedCards.push(decryptCard(el));
           });
 
           if (actionType === null && e.playing) {
@@ -1407,13 +1412,14 @@ export const turnround = async (roomid, io) => {
         });
 
         roomData?.communityCard?.forEach((el) => {
-          distributedCards.push(el);
+          distributedCards.push(decryptCard(el));
         });
       };
 
       await fetchDistributedCards();
 
-      let newCard = await verifycards(distributedCards, 1);
+      let newCard = verifycards(distributedCards, 1);
+      newCard[0] = EncryptCard(newCard[0]);
       let communityCards = roomData.communityCard;
       communityCards.push(newCard[0]);
 
@@ -1742,7 +1748,7 @@ export const riverround = async (roomid, io) => {
           riverroundPlayersData.push(p);
 
           e.cards.forEach((el) => {
-            distributedCards.push(el);
+            distributedCards.push(decryptCard(el));
           });
           if (actionType === null && e.playing) {
             playingPlayer++;
@@ -1750,13 +1756,14 @@ export const riverround = async (roomid, io) => {
         });
 
         roomData?.communityCard?.forEach((el) => {
-          distributedCards.push(el);
+          distributedCards.push(decryptCard(el));
         });
       };
 
       await fetchDistributedCards();
 
-      let newCard = await verifycards(distributedCards, 1);
+      let newCard = verifycards(distributedCards, 1);
+      newCard[0] = EncryptCard(newCard[0]);
       let communityCards = roomData?.communityCard;
       communityCards.push(newCard[0]);
 
@@ -2157,8 +2164,9 @@ export const showdown = async (roomid, io) => {
           updatedRoom.showdown.forEach((el) => {
             if (!el.fold && e.players.indexOf(el.position) != -1) {
               let cards = updatedRoom.communityCard;
-              let allCards = cards.concat(el.cards);
 
+              let allCards = cards.concat(el.cards);
+              allCards = allCards.map((card) => decryptCard(card));
               let hand = Hand.solve(allCards);
 
               p.push({ id: el.id, position: el.position, hand: hand });
@@ -2175,7 +2183,7 @@ export const showdown = async (roomid, io) => {
           if (!el.fold) {
             let cards = updatedRoom.communityCard;
             let allCards = cards.concat(el.cards);
-
+            allCards = allCards.map((card) => decryptCard(card));
             let hand = Hand.solve(allCards);
 
             p.push({ id: el.id, position: el.position, hand: hand });
@@ -2223,8 +2231,8 @@ export const showdown = async (roomid, io) => {
                   winningAmount: winningAmount,
                   handName: winner[0].name,
                   winnerHand: winnerHand,
-                  winnerCards: winnerData[0].cards,
-                  communityCards: updatedRoom.communityCard,
+                  winnerCards: winnerData[0].cards.map(card => decryptCard(card)),
+                  communityCards: updatedRoom.communityCard.map(card => decryptCard(card)),
                 });
               }
             } else {
@@ -2235,8 +2243,8 @@ export const showdown = async (roomid, io) => {
                 winningAmount: winningAmount,
                 handName: winner[0].name,
                 winnerHand: winnerHand,
-                winnerCards: winnerData[0].cards,
-                communityCards: updatedRoom.communityCard,
+                winnerCards: winnerData[0].cards.map(card => decryptCard(card)),
+                communityCards: updatedRoom.communityCard.map(card => decryptCard(card)),
               });
             }
           }
@@ -5405,8 +5413,8 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         name: winnerPlayerData[0].name,
         position: winnerPlayerData[0].position,
         winningAmount: winningAmount,
-        winnerCards: winnerPlayerData[0].cards,
-        communityCards: roomData.communityCard,
+        winnerCards: winnerPlayerData[0].cards.map(card => decryptCard(card)),
+        communityCards: roomData.communityCard.map(card => decryptCard(card)),
       },
     ];
     const handWinner = roomData.handWinner;
@@ -5481,6 +5489,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
       } else {
         await updateRoomForNewHand(roomid, io);
         ///dgs
+        console.log("roomidroomidroomid", roomid);
         let updatedRoomPlayers = await roomModel.findOne({
           _id: roomid,
         });
