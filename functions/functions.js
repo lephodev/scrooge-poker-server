@@ -3400,6 +3400,7 @@ export const doLeaveTable = async (data, io, socket) => {
         if (updatedData)
           io.in(updatedData._id.toString()).emit("playerleft", {
             msg: `${playerdata[0].name} has left the game`,
+            userId: userid
           });
       }
     } else {
