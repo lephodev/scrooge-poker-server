@@ -2643,13 +2643,13 @@ export const distributeTournamentPrize = async (
     const tournamentdata = await tournamentModel.findOne({ _id: tournamentId });
     let winPlayer = {
       ...tournamentdata.winPlayer,
-      first: { userId: lastPlayer.userid || lastPlayer.id },
+      first: { ...tournamentdata.winPlayer.first, userId: lastPlayer.userid || lastPlayer.id },
     };
-    const tournament = await tournamentModel.findByIdAndUpdate(
+    const tournament = await tournamentModel.findOneAndUpdate(
       { _id: tournamentId },
       { winPlayer, isFinished: true, isStart: false }
     );
-    console.log("winner tournamet", lastPlayer, tournament.winPlayer);
+    console.log("winner tournamet", lastPlayer, tournament.winPlayer, winPlayer);
     for await (let player of Object.values(tournament.winPlayer)) {
       if (player?.playerCount === 1) {
         //player.userId is the winner of amount player.amount
@@ -2662,7 +2662,7 @@ export const distributeTournamentPrize = async (
           userId: player.userId,
           amount: player.amount,
           transactionDetails: {},
-          prevWallet: parseFloat(user?.wallet) - parseFloat(player?.amount),
+          prevWallet: parseFloat(user?.wallet),
           updatedWallet: parseFloat(user?.wallet),
           transactionType: "poker tournament",
         });
@@ -2671,19 +2671,18 @@ export const distributeTournamentPrize = async (
         // player.userIds are winner of amount player.amount
         if (player.playerCount === 7) {
           console.log("In player count 7");
-          const user = await userModel.updateMany(
-            { _id: { $in: player.userIds } },
-            { $inc: { wallet: player.amount } }
-          );
+          
           if (player?.userIds?.length > 0) {
-           
             for await (let userId of player?.userIds) {
+              const user = await userModel.findOneAndUpdate(
+                { _id: userId },
+                { $inc: { ticket: player.amount } }
+              );
               await transactionModel.create({
                 userId,
                 amount: player.amount,
                 transactionDetails: {},
-                prevWallet:
-                  parseFloat(user?.wallet) - parseFloat(player?.amount),
+                prevWallet: parseFloat(user?.wallet),
                 updatedWallet: parseFloat(user?.wallet),
                 transactionType: "poker tournament",
               });
@@ -2692,18 +2691,18 @@ export const distributeTournamentPrize = async (
         }
         if (player?.playerCount === 15) {
           console.log("In player count 15");
-          const user = await userModel.updateMany(
-            { _id: { $in: player.userIds } },
-            { $inc: { wallet: player.amount } }
-          );
+         
           if (player?.userIds?.length > 0) {
             for await (let userId of player?.userIds) {
+              const user = await userModel.findOneAndUpdate(
+                { _id: userId },
+                { $inc: { ticket: player.amount } }
+              );
               await transactionModel.create({
                 userId,
                 amount: player.amount,
                 transactionDetails: {},
-                prevWallet:
-                  parseFloat(user?.wallet) - parseFloat(player?.amount),
+                prevWallet:parseFloat(user?.wallet),
                 updatedWallet: parseFloat(user?.wallet),
                 transactionType: "poker tournament",
               });
