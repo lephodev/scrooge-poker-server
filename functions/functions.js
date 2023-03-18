@@ -7252,7 +7252,7 @@ export const checkForGameTable = async (data, socket, io) => {
       io.in(gameId).emit("updateGame", { game: gameUpdatedData });
       return;
     }
-    if (game.players.length >= 2) {
+    if (game.players.length >= 3) {
       return socket.emit("tablefull", { message: "This table is full." });
     }
     if (!sitInAmount) {
