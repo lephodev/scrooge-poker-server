@@ -2521,20 +2521,7 @@ export const elemination = async (roomData, io) => {
     if (eleminated_players.length === 0) {
       eleminated_players = roomData.eleminated;
     }
-    const playerfromDifferentRoom = roomData.players.filter(player => {
-      if(!newHandPlayer.find(pl => pl.userid === player.id || pl.userid === player.userid) && !eleminated_players.find(pl => pl.userid === player.id || pl.userid === player.userid)){
-        return true
-      }
-      return false
-    });
-    console.log("player from other room =>", playerfromDifferentRoom)
-    playerfromDifferentRoom.forEach(pl => {
-      if(!newHandPlayer.find(p => p.userid === pl.id || p.userid === pl.userid)){
-        newHandPlayer.push({
-          ...pl
-        })
-      }
-    })
+
     // console.log("eleminated_players", eleminated_players);
     // console.log("newHandPlayer", newHandPlayer);
     const upRoom = await roomModel
@@ -2543,7 +2530,7 @@ export const elemination = async (roomData, io) => {
           _id: roomData._id,
         },
         {
-          players: newHandPlayer,
+          showdown: newHandPlayer,
           eleminated: eleminated_players?.filter(
             (item, index) => eleminated_players?.indexOf(item) === index
           ),
@@ -2551,10 +2538,8 @@ export const elemination = async (roomData, io) => {
           flopround: [],
           turnround: [],
           riverround: [],
-          showdown: [],
           pot: 0,
           communityCard: [],
-          runninground: 0,
           gamestart: false,
           isGameRunning: false,
           smallBlind: smallBlindAmt,
@@ -5749,11 +5734,11 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
   try {
     console.log("fill spot called");
     if (allRooms.length === 1) {
-      if (allRooms[0].players.length > 1) {
+      if (allRooms[0].showdown.length > 1) {
         return preflopround(allRooms[0], io);
       } else {
         console.log("only one player =>", allRooms[0]);
-        await distributeTournamentPrize(tournamentId, allRooms[0].players[0]);
+        await distributeTournamentPrize(tournamentId, allRooms[0].showdown[0]);
         io.in(allRooms[0]._id.toString()).emit("tournamentFinished", {
           tournamentId,
         });
@@ -5769,8 +5754,8 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
     OtherRoom.forEach((c) => {
       blankSpot += 3 - c.players.length;
     });
-    if (blankSpot >= room.players.length) {
-      let playersToMove = [...room.players];
+    if (blankSpot >= room.showdown.length) {
+      let playersToMove = [...room.showdown];
       let userIds = [];
       for await (const r of OtherRoom) {
         if (playersToMove.length === 0 || blankSpot === 0) {
@@ -5827,7 +5812,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
 
     } else {
       console.log("Not enough blank spot");
-      if (room.players.length > 1) {
+      if (room.showdown.length > 1) {
         preflopround(room, io);
       } else {
         // emit please wait for re-arrange/blank spot
