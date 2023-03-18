@@ -2773,59 +2773,69 @@ export const distributeTournamentPrize = async (
       ...tournament.winPlayer,
       first: { userId: lastPlayer.userid || lastPlayer.id },
     };
-     await tournamentModel.findByIdAndUpdate(
+    await tournamentModel.findByIdAndUpdate(
       { _id: tournamentId },
-      { winPlayer, isFinished: true,isStart:false}
+      { winPlayer, isFinished: true, isStart: false }
     );
     console.log("winner tournamet", lastPlayer, tournament.winPlayer);
     for await (let player of Object.values(tournament.winPlayer)) {
       if (player?.playerCount === 1) {
         //player.userId is the winner of amount player.amount
-        const user= await userModel.findOneAndUpdate({ _id: player.userId }, { $inc: { wallet: player.amount} },{new :true});
-         await transactionModel.create({
-          userId:player.userId,
-          amount:player.amount,
+        const user = await userModel.findOneAndUpdate(
+          { _id: player.userId },
+          { $inc: { wallet: player.amount } },
+          { new: true }
+        );
+        await transactionModel.create({
+          userId: player.userId,
+          amount: player.amount,
           transactionDetails: {},
-          prevWallet: parseFloat(user?.wallet)-parseFloat(player?.amount),
-          updatedWallet:parseFloat(user?.wallet),
-          transactionType: "poker tournament"
+          prevWallet: parseFloat(user?.wallet) - parseFloat(player?.amount),
+          updatedWallet: parseFloat(user?.wallet),
+          transactionType: "poker tournament",
         });
         console.log("winner =>", player);
       } else {
         // player.userIds are winner of amount player.amount
-        if(player.playerCount === 7){
-          console.log("In player count 7")
-          const user= await userModel.updateMany({ _id: { $in: player.userIds} }, { $inc: { wallet: player.amount} });
-          if(player?.userIds?.length >0){
-            for await(let top_4_7 of player?.userIds){
+        if (player.playerCount === 7) {
+          console.log("In player count 7");
+          const user = await userModel.updateMany(
+            { _id: { $in: player.userIds } },
+            { $inc: { wallet: player.amount } }
+          );
+          if (player?.userIds?.length > 0) {
+            for await (let top_4_7 of player?.userIds) {
               await transactionModel.create({
-                userId:top_4_7,
-                amount:player.amount,
+                userId: top_4_7,
+                amount: player.amount,
                 transactionDetails: {},
-                prevWallet: parseFloat(user?.wallet)-parseFloat(player?.amount),
-                updatedWallet:parseFloat(user?.wallet),
-                transactionType: "poker tournament"
+                prevWallet:
+                  parseFloat(user?.wallet) - parseFloat(player?.amount),
+                updatedWallet: parseFloat(user?.wallet),
+                transactionType: "poker tournament",
               });
             }
           }
-          
         }
-        if(player?.playerCount === 15){
-          console.log("In player count 15")
-          const user= await userModel.updateMany({ _id: { $in: player.userIds} }, { $inc: { wallet: player.amount} });
-          if(player?.userIds?.length >0){
-            for await(let top_11_25 of player?.userIds){
+        if (player?.playerCount === 15) {
+          console.log("In player count 15");
+          const user = await userModel.updateMany(
+            { _id: { $in: player.userIds } },
+            { $inc: { wallet: player.amount } }
+          );
+          if (player?.userIds?.length > 0) {
+            for await (let top_11_25 of player?.userIds) {
               await transactionModel.create({
-                userId:top_11_25,
-                amount:player.amount,
+                userId: top_11_25,
+                amount: player.amount,
                 transactionDetails: {},
-                prevWallet: parseFloat(user?.wallet)-parseFloat(player?.amount),
-                updatedWallet:parseFloat(user?.wallet),
-                transactionType: "poker tournament"
+                prevWallet:
+                  parseFloat(user?.wallet) - parseFloat(player?.amount),
+                updatedWallet: parseFloat(user?.wallet),
+                transactionType: "poker tournament",
               });
             }
           }
-          
         }
       }
     }
@@ -5852,39 +5862,43 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
     console.log("fill spot called");
     if (allRooms.length === 1) {
       if (allRooms[0].players.length > 1) {
-       return preflopround(allRooms[0], io);
+        return preflopround(allRooms[0], io);
       } else {
         console.log("only one player =>", allRooms[0]);
-        await distributeTournamentPrize(
+        await distributeTournamentPrize(tournamentId, allRooms[0].players[0]);
+        io.in(allRooms[0]._id.toString()).emit("tournamentFinished", {
           tournamentId,
-          allRooms[0].players[0]
-        );
-        io.in(allRooms[0]._id.toString()).emit("tournamentFinished", { tournamentId });
+        });
         return;
       }
     }
-    const room = allRooms.find(r => r._id.toString() === roomId.toString());
-    const OtherRoom = allRooms.filter(r => r._id.toString() !== roomId.toString());
+    const room = allRooms.find((r) => r._id.toString() === roomId.toString());
+    const OtherRoom = allRooms.filter(
+      (r) => r._id.toString() !== roomId.toString()
+    );
     let blankSpot = 0;
-    OtherRoom.forEach(c => {
-      blankSpot += 3-c.players.length
+    OtherRoom.forEach((c) => {
+      blankSpot += 3 - c.players.length;
     });
-    if(blankSpot >=room.players.length){
+    if (blankSpot >= room.players.length) {
       let playersToMove = [...room.players];
       let userIds = [];
-      for await (const r of OtherRoom){
-        if(playersToMove.length === 0 || blankSpot === 0){
+      for await (const r of OtherRoom) {
+        if (playersToMove.length === 0 || blankSpot === 0) {
           break;
         }
-        if(r.players.length >= 3){
+        if (r.players.length >= 3) {
           continue;
         }
         let newPlayers = [...r.players];
-        let tempSpotArr = [...Array(3-r.players.length).keys()];
-        for await(const temp of tempSpotArr){
+        let tempSpotArr = [...Array(3 - r.players.length).keys()];
+        for await (const temp of tempSpotArr) {
           let position = await findAvailablePosition(newPlayers);
           newPlayers.push({ ...playersToMove[temp], position });
-          userIds.push({ userId: playersToMove[temp].userid, newRoomId: r._id })
+          userIds.push({
+            userId: playersToMove[temp].userid,
+            newRoomId: r._id,
+          });
         }
         const updatedRoom = await roomModel.findOneAndUpdate(
           {
@@ -5897,37 +5911,37 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
             new: true,
           }
         );
-        playersToMove.splice(0,tempSpotArr.length);
-        blankSpot -=tempSpotArr.length
+        playersToMove.splice(0, tempSpotArr.length);
+        blankSpot -= tempSpotArr.length;
       }
-      if(userIds.length){
-        io.in(room._id.toString()).emit('roomchanged',{
-          userIds
-        })
+      if (userIds.length) {
+        io.in(room._id.toString()).emit("roomchanged", {
+          userIds,
+        });
       }
-      if(playersToMove.length === 0){
+      if (playersToMove.length === 0) {
         await tournamentModel.updateOne(
-                  { _id: room.tournament },
-                  { $push: { destroyedRooms: room._id } },
-                  {
-                    new: true,
-                  }
-                );
-                await roomModel.deleteOne({ _id: room._id });
+          { _id: room.tournament },
+          { $push: { destroyedRooms: room._id } },
+          {
+            new: true,
+          }
+        );
+        await roomModel.deleteOne({ _id: room._id });
       }
-    }else{
+    } else {
       console.log("Not enough blank spot");
-      if(room.players.length >1){
+      if (room.players.length > 1) {
         preflopround(room, io);
-      }else{
+      } else {
         // emit please wait for re-arrange/blank spot
-        io.in(room._id.toString()).emit('waitForReArrange');
+        io.in(room._id.toString()).emit("waitForReArrange");
       }
     }
-//////////////////////////////////////////////
+    //////////////////////////////////////////////
     // for await (let room of allRooms) {
     //   i+=1;
-    //   //blank_spot 
+    //   //blank_spot
     //   let blankSpot = 3-room.players.length;
     //   if(blankSpot === 0){
     //       console.log(
@@ -7192,95 +7206,105 @@ export const checkForGameTable = async (data, socket, io) => {
   try {
     const { gameId, userId, sitInAmount } = data;
     const game = await gameService.getGameById(gameId);
-    const IsTableExist = await roomModel.findOne({
-      _id: mongoose.Types.ObjectId(gameId),
-    });
-    if (IsTableExist) {
-      const checkTable = await roomModel.findOne({
-        _id: mongoose.Types.ObjectId(gameId),
-        "players.userid": mongoose.Types.ObjectId(userId),
-      });
 
-      if (checkTable || sitInAmount) {
-        if (!game || game.finish) {
-          console.log("7353 in function.js");
-          return socket.emit("notFound", {
-            message: "Game not found. Either game is finished or not exist",
-          });
-        }
-
-        const user = await userService.getUserById(userId);
-
-        if (!user) {
-          return socket.emit("notAuthorized", {
-            message: "You are not authorized",
-          });
-        }
-
-        console.log("USER WALLET ", user.wallet);
-
-        const ifUserInGame = game.players.find((el) => {
-          return el.userid?.toString() === userId.toString();
-        });
-
-        // check user
-        if (
-          parseFloat(game.smallBlind) > parseFloat(user.wallet) &&
-          !ifUserInGame
-        ) {
-          return socket.emit("notEnoughBalance", {
-            message: "You don't have enough balance to sit on the table.",
-          });
-        }
-
-        if (ifUserInGame) {
-          addUserInSocket(io, socket, gameId, userId);
-          const gameUpdatedData = await roomModel.findOneAndUpdate(
-            {
-              _id: convertMongoId(gameId),
-              "players.userid": convertMongoId(userId),
-            },
-            {
-              "players.$.playing": true,
-            }
-          );
-
-          io.in(gameId).emit("updateGame", { game: gameUpdatedData });
-          return;
-        }
-
-        const checkIfInOtherGame = await gameService.checkIfUserInGame(userId);
-        if (checkIfInOtherGame) {
-          console.log("User in the other table");
-          return socket.emit("inOtherGame", {
-            message: "You are also on other tabe.",
-          });
-        }
-
-        // If user is not in the room
-        const updatedRoom = await gameService.joinRoomByUserId(
-          game,
-          userId,
-          sitInAmount
-        );
-
-        if (updatedRoom && Object.keys(updatedRoom).length > 0) {
-          addUserInSocket(io, socket, gameId, userId);
-          await userService.updateUserWallet(userId, user.wallet - sitInAmount);
-          io.in(gameId).emit("updateGame", { game: updatedRoom });
-          return;
-        } else {
-          socket.emit("tablefull", { message: "This table is full." });
-        }
-      } else {
-        return socket.emit("notInvitedPlayer", {
-          message: "notInvited",
-        });
-      }
-    } else {
+    if (!game) {
       return socket.emit("tablenotFound", {
         message: "tablenotFound",
       });
+    }
+
+    const user = await userService.getUserById(userId);
+
+    if (!user) {
+      return socket.emit("notAuthorized", {
+        message: "You are not authorized",
+      });
+    }
+
+    if (game.finish) {
+      console.log("7353 in function.js");
+      return socket.emit("notFound", {
+        message: "Game not found. Either game is finished or not exist",
+      });
+    }
+    const { players } = game;
+    if (players.find((el) => el.userid?.toString() === userId.toString())) {
+      addUserInSocket(io, socket, gameId, userId);
+      const gameUpdatedData = await roomModel.findOneAndUpdate(
+        {
+          _id: convertMongoId(gameId),
+          "players.userid": convertMongoId(userId),
+        },
+        {
+          "players.$.playing": true,
+        }
+      );
+      io.in(gameId).emit("updateGame", { game: gameUpdatedData });
+      return;
+    }
+    if (game.players.length >= 2) {
+      return socket.emit("tablefull", { message: "This table is full." });
+    }
+    if (!sitInAmount) {
+      return socket.emit("notInvitedPlayer", {
+        message: "notInvited",
+      });
+    }
+
+    console.log("USER WALLET ", user.wallet);
+
+    // const ifUserInGame = game.players.find((el) => {
+    //   return el.userid?.toString() === userId.toString();
+    // });
+
+    // if (ifUserInGame) {
+    //   addUserInSocket(io, socket, gameId, userId);
+    //   const gameUpdatedData = await roomModel.findOneAndUpdate(
+    //     {
+    //       _id: convertMongoId(gameId),
+    //       "players.userid": convertMongoId(userId),
+    //     },
+    //     {
+    //       "players.$.playing": true,
+    //     }
+    //   );
+
+    //   io.in(gameId).emit("updateGame", { game: gameUpdatedData });
+    //   return;
+    // }
+
+    // check user
+    // if (
+    //   parseFloat(game.bigBlind) > parseFloat(user.wallet) &&
+    //   !ifUserInGame
+    // ) {
+    //   return socket.emit("notEnoughBalance", {
+    //     message: "You don't have enough balance to sit on the table.",
+    //   });
+    // }
+
+    // const checkIfInOtherGame = await gameService.checkIfUserInGame(userId);
+    // if (checkIfInOtherGame) {
+    //   console.log("User in the other table");
+    //   return socket.emit("inOtherGame", {
+    //     message: "You are also on other tabe.",
+    //   });
+    // }
+
+    // If user is not in the room
+    const updatedRoom = await gameService.joinRoomByUserId(
+      game,
+      userId,
+      sitInAmount
+    );
+
+    if (updatedRoom && Object.keys(updatedRoom).length > 0) {
+      addUserInSocket(io, socket, gameId, userId);
+      await userService.updateUserWallet(userId, user.wallet - sitInAmount);
+      io.in(gameId).emit("updateGame", { game: updatedRoom });
+      return;
+    } else {
+      socket.emit("tablefull", { message: "This table is full." });
     }
   } catch (error) {
     console.log("Error in check for table =>", error);
@@ -7437,12 +7461,12 @@ export const JoinTournament = async (data, socket) => {
           { new: true }
         );
         await transactionModel.create({
-          userId:player.userId,
-          amount:parseFloat(fees),
+          userId: player.userId,
+          amount: parseFloat(fees),
           transactionDetails: {},
           prevWallet: parseFloat(userData?.wallet),
-          updatedWallet:updatedUser?.wallet,
-          transactionType: "poker tournament"
+          updatedWallet: updatedUser?.wallet,
+          transactionType: "poker tournament",
         });
         return socket.emit("alreadyInTournament", {
           message: "You joined in game.",
