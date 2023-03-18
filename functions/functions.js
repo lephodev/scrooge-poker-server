@@ -16,6 +16,7 @@ var Hand = require("pokersolver").Hand;
 import MessageModal from "../models/messageModal";
 import Notification from "../models/notificationModal";
 import User from "../landing-server/models/user.model";
+import { decryptCard, EncryptCard } from "../validation/poker.validation";
 
 const gameRestartSeconds = 4000;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
@@ -219,8 +220,12 @@ export const preflopPlayerPush = async (players, roomid) => {
 
         if (playing) {
           checkcards = verifycards(distributedCards, 2);
-          checkcards.map((e) => distributedCards.push(e));
+          checkcards = checkcards.map((e) => {
+            distributedCards.push(e);
+            return EncryptCard(e);
+          });
         }
+
         newP.push({
           cards: checkcards,
           id: player.userid || player.id,
@@ -1025,7 +1030,7 @@ export const flopround = async (roomid, io) => {
             actionType = "all-in";
           }
           let p = {
-            cards: e.cards,
+            cards: EncryptCard(e.cards),
             id: e.id,
             name: e.name,
             wallet: e.wallet,
@@ -1064,7 +1069,10 @@ export const flopround = async (roomid, io) => {
       };
       await fetchDistributedCards();
       let communityCards = await verifycards(distributedCards, 3);
+      console.log("communityCards=====>>>>1", communityCards);
 
+      communityCards = communityCards.map((card) => EncryptCard(card));
+      console.log("communityCards=====>>>>2", communityCards);
       const updatedRoom = await roomModel.findOneAndUpdate(
         {
           _id: roomid,
@@ -1413,7 +1421,8 @@ export const turnround = async (roomid, io) => {
 
       await fetchDistributedCards();
 
-      let newCard = await verifycards(distributedCards, 1);
+      let newCard = verifycards(distributedCards, 1);
+      newCard[0] = EncryptCard(newCard[0]);
       let communityCards = roomData.communityCard;
       communityCards.push(newCard[0]);
 
@@ -1756,7 +1765,8 @@ export const riverround = async (roomid, io) => {
 
       await fetchDistributedCards();
 
-      let newCard = await verifycards(distributedCards, 1);
+      let newCard = verifycards(distributedCards, 1);
+      newCard[0] = EncryptCard(newCard[0]);
       let communityCards = roomData?.communityCard;
       communityCards.push(newCard[0]);
 
@@ -2157,8 +2167,9 @@ export const showdown = async (roomid, io) => {
           updatedRoom.showdown.forEach((el) => {
             if (!el.fold && e.players.indexOf(el.position) != -1) {
               let cards = updatedRoom.communityCard;
-              let allCards = cards.concat(el.cards);
 
+              let allCards = cards.concat(el.cards);
+              allCards = allCards.map((card) => decryptCard(card));
               let hand = Hand.solve(allCards);
 
               p.push({ id: el.id, position: el.position, hand: hand });
@@ -2175,7 +2186,7 @@ export const showdown = async (roomid, io) => {
           if (!el.fold) {
             let cards = updatedRoom.communityCard;
             let allCards = cards.concat(el.cards);
-
+            allCards = allCards.map((card) => decryptCard(card));
             let hand = Hand.solve(allCards);
 
             p.push({ id: el.id, position: el.position, hand: hand });
@@ -5480,6 +5491,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
       } else {
         await updateRoomForNewHand(roomid, io);
         ///dgs
+        console.log("roomidroomidroomid", roomid);
         let updatedRoomPlayers = await roomModel.findOne({
           _id: roomid,
         });
