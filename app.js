@@ -15,7 +15,7 @@ import {
 } from "./landing-server/config/morgan.js";
 import pokerRoute from "./routes/pokerRoutes.js";
 import tournamentRoute from "./routes/tournamentRoutes.js";
-
+import dotenv from "dotenv";
 import auth from "./landing-server/middlewares/auth.js";
 import mongoose from "mongoose";
 import User from "./landing-server/models/user.model";
@@ -24,6 +24,7 @@ import tournamentModel from "./models/tournament";
 import { log } from "console";
 
 let app = express();
+dotenv.config();
 const server = http.createServer(app);
 const io = socket(server, {
   pingInterval: 10000,
@@ -283,7 +284,6 @@ app.get("/getUserForInvite/:tableId", async (req, res) => {
     }
 
     const { leavereq, invPlayers, players } = roomData;
-    console.log({ leavereq, invPlayers, players });
     const allId = [...leavereq, ...invPlayers, ...players.map((el) => el.id)];
 
     const allUsers = await User.find({
