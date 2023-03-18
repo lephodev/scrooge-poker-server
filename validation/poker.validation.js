@@ -1,4 +1,7 @@
 import CryptoJS from "crypto-js";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export const validateCreateTable = (req, res, next) => {
   const gameState = req.body;
@@ -26,22 +29,18 @@ export const validateCreateTable = (req, res, next) => {
 };
 
 export const EncryptCard = (card) => {
-  console.log("cardddddddddd", card);
   if (card) {
-    let ciphercard = CryptoJS.AES.encrypt(
+    let ciphercard = CryptoJS.AES.encrypt(card,
       process.env.PUBLICK_CRYTO_KEY
     ).toString();
-    console.log("ciphercard", ciphercard);
     return ciphercard;
   }
 };
 export const decryptCard = (cipher) => {
-  console.log("cipher", cipher);
   if (cipher) {
-    let card = CryptoJS.AES.decrypt(
-      cipher,
-      process.env.PUBLICK_CRYTO_KEY
-    ).toString();
-    return card;
+    var bytes  = CryptoJS.AES.decrypt(cipher, process.env.PUBLICK_CRYTO_KEY);
+var originalText = bytes.toString(CryptoJS.enc.Utf8);
+   
+    return originalText;
   }
 };

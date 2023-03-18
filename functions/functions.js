@@ -1030,7 +1030,7 @@ export const flopround = async (roomid, io) => {
             actionType = "all-in";
           }
           let p = {
-            cards: EncryptCard(e.cards),
+            cards: e.cards,
             id: e.id,
             name: e.name,
             wallet: e.wallet,
@@ -1060,7 +1060,7 @@ export const flopround = async (roomid, io) => {
           floproundPlayersData.push(p);
 
           e.cards.forEach((el) => {
-            distributedCards.push(el);
+            distributedCards.push(decryptCard(el));
           });
           if (actionType === null && e.playing) {
             playingPlayer++;
@@ -1068,11 +1068,8 @@ export const flopround = async (roomid, io) => {
         });
       };
       await fetchDistributedCards();
-      let communityCards = await verifycards(distributedCards, 3);
-      console.log("communityCards=====>>>>1", communityCards);
-
+      let communityCards = verifycards(distributedCards, 3);
       communityCards = communityCards.map((card) => EncryptCard(card));
-      console.log("communityCards=====>>>>2", communityCards);
       const updatedRoom = await roomModel.findOneAndUpdate(
         {
           _id: roomid,
@@ -1406,7 +1403,7 @@ export const turnround = async (roomid, io) => {
           turnroundPlayersData.push(p);
 
           e.cards.forEach((el) => {
-            distributedCards.push(el);
+            distributedCards.push(decryptCard(el));
           });
 
           if (actionType === null && e.playing) {
@@ -1415,7 +1412,7 @@ export const turnround = async (roomid, io) => {
         });
 
         roomData?.communityCard?.forEach((el) => {
-          distributedCards.push(el);
+          distributedCards.push(decryptCard(el));
         });
       };
 
@@ -1751,7 +1748,7 @@ export const riverround = async (roomid, io) => {
           riverroundPlayersData.push(p);
 
           e.cards.forEach((el) => {
-            distributedCards.push(el);
+            distributedCards.push(decryptCard(el));
           });
           if (actionType === null && e.playing) {
             playingPlayer++;
@@ -1759,7 +1756,7 @@ export const riverround = async (roomid, io) => {
         });
 
         roomData?.communityCard?.forEach((el) => {
-          distributedCards.push(el);
+          distributedCards.push(decryptCard(el));
         });
       };
 
@@ -2234,8 +2231,8 @@ export const showdown = async (roomid, io) => {
                   winningAmount: winningAmount,
                   handName: winner[0].name,
                   winnerHand: winnerHand,
-                  winnerCards: winnerData[0].cards,
-                  communityCards: updatedRoom.communityCard,
+                  winnerCards: winnerData[0].cards.map(card => decryptCard(card)),
+                  communityCards: updatedRoom.communityCard.map(card => decryptCard(card)),
                 });
               }
             } else {
@@ -2246,8 +2243,8 @@ export const showdown = async (roomid, io) => {
                 winningAmount: winningAmount,
                 handName: winner[0].name,
                 winnerHand: winnerHand,
-                winnerCards: winnerData[0].cards,
-                communityCards: updatedRoom.communityCard,
+                winnerCards: winnerData[0].cards.map(card => decryptCard(card)),
+                communityCards: updatedRoom.communityCard.map(card => decryptCard(card)),
               });
             }
           }
@@ -5415,8 +5412,8 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         name: winnerPlayerData[0].name,
         position: winnerPlayerData[0].position,
         winningAmount: winningAmount,
-        winnerCards: winnerPlayerData[0].cards,
-        communityCards: roomData.communityCard,
+        winnerCards: winnerPlayerData[0].cards.map(card => decryptCard(card)),
+        communityCards: roomData.communityCard.map(card => decryptCard(card)),
       },
     ];
     const handWinner = roomData.handWinner;
