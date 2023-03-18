@@ -2521,6 +2521,13 @@ export const elemination = async (roomData, io) => {
     if (eleminated_players.length === 0) {
       eleminated_players = roomData.eleminated;
     }
+    roomData.players.forEach(pl => {
+      if(!newHandPlayer.find(p => p.userid === pl.id)){
+        newHandPlayer.push({
+          ...pl
+        })
+      }
+    })
     // console.log("eleminated_players", eleminated_players);
     // console.log("newHandPlayer", newHandPlayer);
     const upRoom = await roomModel
