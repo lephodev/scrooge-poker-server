@@ -2521,8 +2521,15 @@ export const elemination = async (roomData, io) => {
     if (eleminated_players.length === 0) {
       eleminated_players = roomData.eleminated;
     }
-    roomData.players.forEach(pl => {
-      if(!newHandPlayer.find(p => p.userid === pl.id) && !eleminated_players.find(p => p.userid === pl.id)){
+    const playerfromDifferentRoom = roomData.players.filter(player => {
+      if(!newHandPlayer.find(pl => pl.userid === player.id || pl.userid === player.userid) && !eleminated_players.find(pl => pl.userid === player.id || pl.userid === player.userid)){
+        return true
+      }
+      return false
+    });
+    console.log("player from other room =>", playerfromDifferentRoom)
+    playerfromDifferentRoom.forEach(pl => {
+      if(!newHandPlayer.find(p => p.userid === pl.id || p.userid === pl.userid)){
         newHandPlayer.push({
           ...pl
         })
