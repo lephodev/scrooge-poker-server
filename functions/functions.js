@@ -2522,7 +2522,7 @@ export const elemination = async (roomData, io) => {
       eleminated_players = roomData.eleminated;
     }
     roomData.players.forEach(pl => {
-      if(!newHandPlayer.find(p => p.userid === pl.id)){
+      if(!newHandPlayer.find(p => p.userid === pl.id) && !eleminated_players.find(p => p.userid === pl.id)){
         newHandPlayer.push({
           ...pl
         })
