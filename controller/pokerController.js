@@ -312,11 +312,9 @@ export const refillWallet = async (data, io, socket) => {
             { _id: mongoose.Types.ObjectId(userid) },
             { $inc: { wallet: -amount } }
           );
-
           if (roomData) {
             socket.emit("updateRoom", roomData);
           }
-          // res.status(200).send({ msg: "Success", roomData });
         }
         if (playerExist?.length && room.isGameRunning) {
           let buyinrequest = room.buyinrequest;
@@ -336,26 +334,11 @@ export const refillWallet = async (data, io, socket) => {
             { _id: mongoose.Types.ObjectId(userid) },
             { $inc: { wallet: -amount } }
           );
-
           socket.emit("InrunningGame");
-
-          // res.status(200).send({ msg: "Success" });
-        } else {
-          // res.send({
-          //   code: 404,
-          //   msg: "Player not exist in this teble.",
-          // });
         }
-      } else {
-        // res.send({
-        //   code: 404,
-        //   msg: "Room not found",
-        // });
       }
     } catch (error) {
       console.log("error in  refillWallet", error);
-      // res.status(500).send({ msg: "Internel server error" });
-      console.log(error);
     }
   });
 };
