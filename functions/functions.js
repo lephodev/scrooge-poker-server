@@ -2776,12 +2776,12 @@ export const distributeTournamentPrize = async (
   io
 ) => {
   try {
-    const tournament = await tournamentModel.findOne({ _id: tournamentId });
+    const tournamentdata = await tournamentModel.findOne({ _id: tournamentId });
     let winPlayer = {
-      ...tournament.winPlayer,
+      ...tournamentdata.winPlayer,
       first: { userId: lastPlayer.userid || lastPlayer.id },
     };
-    await tournamentModel.findByIdAndUpdate(
+    const tournament = await tournamentModel.findByIdAndUpdate(
       { _id: tournamentId },
       { winPlayer, isFinished: true, isStart: false }
     );
@@ -2812,9 +2812,10 @@ export const distributeTournamentPrize = async (
             { $inc: { wallet: player.amount } }
           );
           if (player?.userIds?.length > 0) {
-            for await (let top_4_7 of player?.userIds) {
+           
+            for await (let userId of player?.userIds) {
               await transactionModel.create({
-                userId: top_4_7,
+                userId,
                 amount: player.amount,
                 transactionDetails: {},
                 prevWallet:
@@ -2832,9 +2833,9 @@ export const distributeTournamentPrize = async (
             { $inc: { wallet: player.amount } }
           );
           if (player?.userIds?.length > 0) {
-            for await (let top_11_25 of player?.userIds) {
+            for await (let userId of player?.userIds) {
               await transactionModel.create({
-                userId: top_11_25,
+                userId,
                 amount: player.amount,
                 transactionDetails: {},
                 prevWallet:
@@ -7470,7 +7471,7 @@ export const JoinTournament = async (data, socket) => {
           { new: true }
         );
         await transactionModel.create({
-          userId: player.userId,
+          userId: userId,
           amount: parseFloat(fees),
           transactionDetails: {},
           prevWallet: parseFloat(userData?.wallet),
@@ -7652,6 +7653,7 @@ export const activateTournament = async (io) => {
           { _id: checkTournament?._id },
           { isStart: true }
         );
+        console.log("Tournament started");
         blindTimer(checkTournament, io);
         for await (let room of checkTournament?.rooms) {
           await preflopround(room, io);
