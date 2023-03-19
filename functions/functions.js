@@ -2568,7 +2568,7 @@ export const elemination = async (roomData, io) => {
         }
       )
       .populate("tournament");
-      console.log("remainging player in showdown after game finish", newHandPlayer, upRoom.showDown)
+      console.log("remainging player in showdown after game finish", newHandPlayer, players, upRoom)
     if (
       eleminated_players.length > 0 &&
       upRoom.tournament.havePlayers > 0 &&
@@ -2590,7 +2590,7 @@ export const elemination = async (roomData, io) => {
         }
       );
     }
-    io.in(upRoom._id.toString()).emit("newhand", { updatedRoom: upRoom });
+    // io.in(upRoom._id.toString()).emit("newhand", { updatedRoom: upRoom });
   } catch (error) {
     console.log("error in eleminite function =>", error);
   }
