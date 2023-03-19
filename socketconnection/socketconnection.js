@@ -32,6 +32,7 @@ import {
 } from "../functions/functions";
 import mongoose from "mongoose";
 import { refillWallet } from "../controller/pokerController";
+import { connetToLanding, landingSocket } from "./landing_Connection";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
@@ -42,12 +43,12 @@ let returnSocket = (io) => {
   io.users = [];
   io.room = [];
   io.on("connection", async (socket) => {
+    console.log("sockket connecteds")
     socket.on("room", (roomData) => {
       socket.join(roomData.roomid);
-
       socket.emit("welcome", { msg: "hello welcome to socket.io" });
     });
-
+    connetToLanding(socket);
     socket.on("checkTable", async (data) => {
       try {
         await checkForGameTable(data, socket, io);

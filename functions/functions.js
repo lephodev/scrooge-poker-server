@@ -7612,7 +7612,7 @@ const pushPlayerInRoom = async (
         { upsert: true, new: true }
       );
       const getAllTournament = await tournamentModel.find({}).populate("rooms");
-      socket.emit("updatePlayerList", getAllTournament);
+      io.emit("updatePlayerList", getAllTournament);
       const updatedUser = await User.findOneAndUpdate(
         { _id: userData._id },
         { $push: { tournaments: { tournamentId, roomId } } },
