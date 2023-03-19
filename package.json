@@ -37,6 +37,7 @@
     "pokersolver": "^2.1.3",
     "shortid": "^2.2.15",
     "socket.io": "^4.0.1",
+    "socket.io-client": "^4.6.1",
     "sync-each": "^1.0.1",
     "twilio": "^3.84.1",
     "uuid": "^8.3.2",

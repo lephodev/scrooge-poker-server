@@ -14,7 +14,6 @@ const updateUserWallet = async (userId, walletAmount = 0) => {
       { _id: convertMongoId(userId) },
       { wallet: walletAmount }
     );
-    console.log("updated wallet", walletAmount, " ", userId);
     return true;
   } catch (error) {
     throw new Error(false);

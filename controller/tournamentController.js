@@ -61,7 +61,6 @@ export const enterRoom = async (req, res) => {
   try {
     const { _id } = req.user;
     const { tournamentId } = req.body;
-    console.log("req.body", req.body);
     const data = await User.findOne(
       { _id: _id, "tournaments.tournamentId": tournamentId },
       {
