@@ -3272,18 +3272,10 @@ export const doLeaveTable = async (data, io, socket) => {
 
 export const doFold = async (roomData, playerid, io) => {
   try {
-    console.log(
-      "----doFold-----",
-      roomData.runninground,
-      roomData?.timerPlayer,
-      playerid
-    );
-    // const roomData = await roomModel.findOne({ _id: roomid });
     const roomid = roomData._id;
     let updatedRoom = null;
     let playingPlayer = [];
     let res = true;
-    let filterData = null;
 
     let lastAction = "fold";
     if (roomData.lastAction === "check") {
@@ -3295,16 +3287,10 @@ export const doFold = async (roomData, playerid, io) => {
     ) {
       switch (roomData.runninground) {
         case 1: {
-          // let p = roomData.preflopround;
-
-          // p = p.map((el) => {
-          //   if (el.id.toString() === playerid.toString()) {
-          //     el.fold = true;
-          //     el.tentativeAction = null;
-          //   }
-          //   return el;
-          // });
-          // roomData.preflopround = p;
+          if(roomData.preflopround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
+          
           roomData.lastAction = lastAction;
 
           io.in(roomData._id.toString()).emit("actionperformed", {
@@ -3321,23 +3307,18 @@ export const doFold = async (roomData, playerid, io) => {
               "preflopround.id": playerid,
             },
             {
-              "preflopround.$.fold": true,
-              lastAction: lastAction,
-              "preflopround.$.tentativeAction": null,
+              'preflopround.$.fold': true,
+            'preflopround.$.actionType': 'fold',
+            lastAction,
+            'preflopround.$.tentativeAction': null,
             },
             {
               new: true,
             }
           );
-          console.log("updatedroom 3200===>");
-          filterData = updatedRoom?.preflopround.filter(
-            (el) => el.id.toString() === playerid.toString()
-          );
-
-          console.log("filterData 3205=>>");
 
           updatedRoom.preflopround.forEach((el) => {
-            if (!el.fold && el.wallet > 0 && el.playing) {
+            if (!el.fold && (el.wallet > 0 || updatedRoom.allinPlayers.find((all) => all.id === el.id)) && el.playing) {
               playingPlayer.push({ id: el.id, position: el.position });
             }
           });
@@ -3367,16 +3348,9 @@ export const doFold = async (roomData, playerid, io) => {
         }
 
         case 2: {
-          let p = roomData.flopround;
-
-          p = p.map((el) => {
-            if (el.id.toString() === playerid.toString()) {
-              el.fold = true;
-              el.tentativeAction = null;
-            }
-            return el;
-          });
-          roomData.flopround = p;
+          if(roomData.flopround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           roomData.lastAction = lastAction;
 
           io.in(roomData._id.toString()).emit("actionperformed", {
@@ -3394,26 +3368,17 @@ export const doFold = async (roomData, playerid, io) => {
             },
             {
               "flopround.$.fold": true,
+              'flopround.$.actionType': 'fold',
               "flopround.$.tentativeAction": null,
-              lastAction: lastAction,
+              lastAction,
             },
             {
               new: true,
             }
           );
 
-          filterData = updatedRoom.preflopround.filter(
-            (el) => el.id.toString() === playerid.toString()
-          );
-          // io.in(roomid).emit('fold',{userid:playerid,position:filterData[0].position})
-          // io.in(updatedRoom._id.toString()).emit("actionperformed", {
-          //   id: playerid,
-          //   action: "fold",
-          // });
-          // io.in(updatedRoom._id.toString()).emit("fold", { updatedRoom });
-
           updatedRoom.flopround.forEach((el) => {
-            if (!el.fold && el.wallet > 0 && el.playing) {
+            if (!el.fold && (el.wallet > 0 || updatedRoom.allinPlayers.find((all) => all.id === el.id)) && el.playing) {
               playingPlayer.push({ id: el.id, position: el.position });
             }
           });
@@ -3442,16 +3407,9 @@ export const doFold = async (roomData, playerid, io) => {
         }
 
         case 3: {
-          let p = roomData.turnround;
-
-          p = p.map((el) => {
-            if (el.id.toString() === playerid.toString()) {
-              el.fold = true;
-              el.tentativeAction = null;
-            }
-            return el;
-          });
-          roomData.turnround = p;
+          if(roomData.turnround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           roomData.lastAction = lastAction;
 
           io.in(roomData._id.toString()).emit("actionperformed", {
@@ -3468,25 +3426,19 @@ export const doFold = async (roomData, playerid, io) => {
             },
             {
               "turnround.$.fold": true,
+              'turnround.$.actionType': 'fold',
               "turnround.$.tentativeAction": null,
-              lastAction: lastAction,
+              lastAction,
             },
             {
               new: true,
             }
           );
-          filterData = updatedRoom.preflopround.filter(
-            (el) => el.id.toString() === playerid.toString()
-          );
-          // io.in(roomid).emit('fold',{userid:playerid,position:filterData[0].position})
-          // io.in(updatedRoom._id.toString()).emit("actionperformed", {
-          //   id: playerid,
-          //   action: "fold",
-          // });
-          // io.in(updatedRoom._id.toString()).emit("fold", { updatedRoom });
+         
+         
 
           updatedRoom.turnround.forEach((el) => {
-            if (!el.fold && el.wallet > 0 && el.playing) {
+            if (!el.fold && (el.wallet > 0 || updatedRoom.allinPlayers.find((all) => all.id === el.id)) && el.playing) {
               playingPlayer.push({ id: el.id, position: el.position });
             }
           });
@@ -3515,16 +3467,9 @@ export const doFold = async (roomData, playerid, io) => {
         }
 
         case 4: {
-          let p = roomData.riverround;
-
-          p = p.map((el) => {
-            if (el.id.toString() === playerid.toString()) {
-              el.fold = true;
-              el.tentativeAction = null;
-            }
-            return el;
-          });
-          roomData.riverround = p;
+          if(roomData.riverround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           roomData.lastAction = lastAction;
 
           io.in(roomData._id.toString()).emit("actionperformed", {
@@ -3542,26 +3487,17 @@ export const doFold = async (roomData, playerid, io) => {
             },
             {
               "riverround.$.fold": true,
+              'riverround.$.actionType': 'fold',
               "riverround.$.tentativeAction": null,
-              lastAction: lastAction,
+              lastAction,
             },
             {
               new: true,
             }
           );
 
-          filterData = updatedRoom.preflopround.filter(
-            (el) => el.id.toString() === playerid.toString()
-          );
-          // io.in(roomid).emit('fold',{userid:playerid,position:filterData[0].position})
-          // io.in(updatedRoom._id.toString()).emit("actionperformed", {
-          //   id: playerid,
-          //   action: "fold",
-          // });
-          // io.in(updatedRoom._id.toString()).emit("fold", { updatedRoom });
-
           updatedRoom.riverround.forEach((el) => {
-            if (!el.fold && el.wallet > 0 && el.playing) {
+            if (!el.fold && (el.wallet > 0 || updatedRoom.allinPlayers.find((all) => all.id === el.id)) && el.playing) {
               playingPlayer.push({ id: el.id, position: el.position });
             }
           });
@@ -3648,7 +3584,9 @@ export const doCall = async (roomData, playerid, io, amt) => {
     if (roomData.timerPlayer.toString() === playerid.toString()) {
       switch (roomData.runninground) {
         case 1: {
-          console.log("case 1 executed in do callback");
+          if(roomData.preflopround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           roundData = roomData.preflopround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -3667,7 +3605,7 @@ export const doCall = async (roomData, playerid, io, amt) => {
             return preflprnd;
           });
 
-          roomData.flopround = prefloprnd;
+          roomData.preflopround = prefloprnd;
           roomData.lastAction = "call";
 
           io.in(roomData._id.toString()).emit("actionperformed", {
@@ -3697,13 +3635,15 @@ export const doCall = async (roomData, playerid, io, amt) => {
               new: true,
             }
           );
-
+        
           break;
         }
 
         case 2: {
-          console.log("case 2 executed in do callback");
-          roundData = roomData.flopround.find(
+          if(roomData.flopround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
+          roundData = roomData.flopround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
           amt = amt - roundData.pot;
@@ -3750,12 +3690,14 @@ export const doCall = async (roomData, playerid, io, amt) => {
               new: true,
             }
           );
-
+         
           break;
         }
 
         case 3: {
-          console.log("case 3 executed in do callback");
+          if(roomData.turnround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           roundData = roomData.turnround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -3773,7 +3715,7 @@ export const doCall = async (roomData, playerid, io, amt) => {
             return trnrnd;
           });
 
-          roomData.flopround = turnrnd;
+          roomData.turnround = turnrnd;
           roomData.lastAction = "call";
 
           io.in(roomData._id.toString()).emit("actionperformed", {
@@ -3808,7 +3750,9 @@ export const doCall = async (roomData, playerid, io, amt) => {
         }
 
         case 4: {
-          console.log("case 4 executed in do callback");
+          if(roomData.riverround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           roundData = roomData.riverround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -3826,7 +3770,7 @@ export const doCall = async (roomData, playerid, io, amt) => {
             return rivrrnd;
           });
 
-          roomData.flopround = riverrnd;
+          roomData.riverround = riverrnd;
           roomData.lastAction = "call";
 
           io.in(roomData._id.toString()).emit("actionperformed", {
@@ -3862,7 +3806,7 @@ export const doCall = async (roomData, playerid, io, amt) => {
       }
     }
   } catch (error) {
-    console.log("errorerrorerrorerror", error);
+    console.log("Error in do call", error);
   }
 };
 
@@ -3932,6 +3876,9 @@ export const doBet = async (roomData, playerid, io, amt) => {
     if (roomData.timerPlayer.toString() === playerid.toString()) {
       switch (roomData.runninground) {
         case 2: {
+          if(roomData.flopround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           roundData = roomData.flopround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -4011,6 +3958,9 @@ export const doBet = async (roomData, playerid, io, amt) => {
         }
 
         case 3: {
+          if(roomData.turnround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           roundData = roomData.turnround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -4090,6 +4040,9 @@ export const doBet = async (roomData, playerid, io, amt) => {
         }
 
         case 4: {
+          if(roomData.riverround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           roundData = roomData.riverround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -4170,7 +4123,7 @@ export const doBet = async (roomData, playerid, io, amt) => {
       }
     }
   } catch (error) {
-    console.log("Blacckkk", error);
+    console.log("Error in do Bet", error);
   }
 };
 
@@ -4241,6 +4194,9 @@ export const doRaise = async (roomData, playerid, io, amt) => {
     if (roomData.timerPlayer.toString() === playerid.toString()) {
       switch (roomData.runninground) {
         case 1: {
+          if(roomData.preflopround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           roundData = roomData.preflopround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -4280,8 +4236,6 @@ export const doRaise = async (roomData, playerid, io, amt) => {
             }
             return el;
           });
-
-          console.log(p);
 
           roomData.preflopround = p;
           roomData.raisePlayerPosition = roundData[0].position;
@@ -4323,6 +4277,9 @@ export const doRaise = async (roomData, playerid, io, amt) => {
         }
 
         case 2: {
+          if(roomData.flopround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           roundData = roomData.flopround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -4402,6 +4359,9 @@ export const doRaise = async (roomData, playerid, io, amt) => {
         }
 
         case 3: {
+          if(roomData.turnround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           roundData = roomData.turnround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -4487,6 +4447,9 @@ export const doRaise = async (roomData, playerid, io, amt) => {
         }
 
         case 4: {
+          if(roomData.riverround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           roundData = roomData.riverround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -4640,6 +4603,9 @@ export const doCheck = async (roomData, playerid, io) => {
     if (roomData?.timerPlayer?.toString() === playerid?.toString()) {
       switch (roomData.runninground) {
         case 1: {
+          if(roomData.preflopround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           let p = roomData.preflopround;
 
           p = p.map((el) => {
@@ -4681,6 +4647,9 @@ export const doCheck = async (roomData, playerid, io) => {
         }
 
         case 2: {
+          if(roomData.flopround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           let p = roomData.flopround;
 
           p = p.map((el) => {
@@ -4692,7 +4661,7 @@ export const doCheck = async (roomData, playerid, io) => {
             return el;
           });
 
-          roomData.preflopround = p;
+          roomData.flopround = p;
           roomData.lastAction = "check";
 
           io.in(roomData._id.toString()).emit("actionperformed", {
@@ -4723,7 +4692,10 @@ export const doCheck = async (roomData, playerid, io) => {
         }
 
         case 3: {
-          let p = roomData.flopround;
+          if(roomData.turnround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
+          let p = roomData.turnround;
 
           p = p.map((el) => {
             if (el.id.toString() === playerid.toString()) {
@@ -4734,7 +4706,7 @@ export const doCheck = async (roomData, playerid, io) => {
             return el;
           });
 
-          roomData.preflopround = p;
+          roomData.turnround = p;
           roomData.lastAction = "check";
 
           io.in(roomData._id.toString()).emit("actionperformed", {
@@ -4766,7 +4738,10 @@ export const doCheck = async (roomData, playerid, io) => {
 
         case 4:
           {
-            let p = roomData.flopround;
+            if(roomData.riverround.find(pl => pl.id === playerid)?.action){
+              return;
+            }
+            let p = roomData.riverround;
 
             p = p.map((el) => {
               if (el.id.toString() === playerid.toString()) {
@@ -4777,7 +4752,7 @@ export const doCheck = async (roomData, playerid, io) => {
               return el;
             });
 
-            roomData.preflopround = p;
+            roomData.riverround = p;
             roomData.lastAction = "check";
 
             io.in(roomData._id.toString()).emit("actionperformed", {
@@ -4868,7 +4843,9 @@ export const doAllin = async (roomData, playerid, io) => {
     if (roomData?.timerPlayer?.toString() === playerid?.toString()) {
       switch (roomData.runninground) {
         case 1: {
-          console.log("=================== ALLIN 4331");
+          if(roomData.preflopround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           roundData = roomData.preflopround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -4885,6 +4862,21 @@ export const doAllin = async (roomData, playerid, io) => {
           });
 
           let p = roomData.preflopround;
+          p.forEach((e) => {
+            if (e.tentativeAction && (e.tentativeAction.startsWith('call ') || e.tentativeAction === 'check')) {
+              e.tentativeAction = null;
+            } else if (e.tentativeAction && e.tentativeAction === 'check/fold') {
+              e.tentativeAction = 'fold';
+            } else if (
+              e.tentativeAction &&
+              e.tentativeAction === 'callAny' &&
+              roundData[0].wallet + roundData[0].pot >= e.wallet
+            ) {
+              e.tentativeAction = 'allin';
+            }
+          });
+          await roomModel.updateOne({ _id: roomid }, { preflopround: p });
+  
           // let udpatedRaiseAmt = 0;
           let prevWallt = 0;
           p = p.map((el) => {
@@ -4942,7 +4934,10 @@ export const doAllin = async (roomData, playerid, io) => {
         }
 
         case 2: {
-          console.log("=================== ALLIN 4379");
+         
+          if(roomData.flopround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           roundData = roomData.flopround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -4958,6 +4953,20 @@ export const doAllin = async (roomData, playerid, io) => {
           });
 
           let p = roomData.flopround;
+          p.forEach((e) => {
+            if (e.tentativeAction && (e.tentativeAction.startsWith('call ') || e.tentativeAction === 'check')) {
+              e.tentativeAction = null;
+            } else if (e.tentativeAction && e.tentativeAction === 'check/fold') {
+              e.tentativeAction = 'fold';
+            } else if (
+              e.tentativeAction &&
+              e.tentativeAction === 'callAny' &&
+              roundData[0].wallet + roundData[0].pot >= e.wallet
+            ) {
+              e.tentativeAction = 'allin';
+            }
+          });
+          await roomModel.updateOne({ _id: roomid }, { flopround: p });
           let prevWallt = 0;
           p = p.map((el) => {
             if (el.id.toString() === playerid.toString()) {
@@ -5014,7 +5023,9 @@ export const doAllin = async (roomData, playerid, io) => {
         }
 
         case 3: {
-          console.log("=================== ALLIN 4425");
+          if(roomData.turnround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           roundData = roomData.turnround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -5030,6 +5041,20 @@ export const doAllin = async (roomData, playerid, io) => {
           });
 
           let p = roomData.turnround;
+          p.forEach((e) => {
+            if (e.tentativeAction && (e.tentativeAction.startsWith('call ') || e.tentativeAction === 'check')) {
+              e.tentativeAction = null;
+            } else if (e.tentativeAction && e.tentativeAction === 'check/fold') {
+              e.tentativeAction = 'fold';
+            } else if (
+              e.tentativeAction &&
+              e.tentativeAction === 'callAny' &&
+              roundData[0].wallet + roundData[0].pot >= e.wallet
+            ) {
+              e.tentativeAction = 'allin';
+            }
+          });
+          await roomModel.updateOne({ _id: roomid }, { turnround: p });
           let prevWallt = 0;
           p = p.map((el) => {
             if (el.id.toString() === playerid.toString()) {
@@ -5084,7 +5109,9 @@ export const doAllin = async (roomData, playerid, io) => {
         }
 
         case 4: {
-          console.log("=================== ALLIN 4472");
+          if(roomData.riverround.find(pl => pl.id === playerid)?.action){
+            return;
+          }
           roundData = roomData.riverround.filter(
             (el) => el.id.toString() === playerid.toString()
           );
@@ -5100,6 +5127,20 @@ export const doAllin = async (roomData, playerid, io) => {
           });
 
           let p = roomData.riverround;
+          p.forEach((e) => {
+            if (e.tentativeAction && (e.tentativeAction.startsWith('call ') || e.tentativeAction === 'check')) {
+              e.tentativeAction = null;
+            } else if (e.tentativeAction && e.tentativeAction === 'check/fold') {
+              e.tentativeAction = 'fold';
+            } else if (
+              e.tentativeAction &&
+              e.tentativeAction === 'callAny' &&
+              roundData[0].wallet + roundData[0].pot >= e.wallet
+            ) {
+              e.tentativeAction = 'allin';
+            }
+          });
+          await roomModel.updateOne({ _id: roomid }, { riverround: p });
           let prevWallt = 0;
           p = p.map((el) => {
             if (el.id.toString() === playerid.toString()) {
