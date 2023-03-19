@@ -2488,6 +2488,7 @@ export const elemination = async (roomData, io) => {
     let showDown = roomData.showdown;
     const bigBlindAmt = roomData.bigBlind;
     const smallBlindAmt = roomData.smallBlind;
+    let players = roomData.players;
     showDown.forEach((el) => {
       if (parseFloat(el.wallet) > 0) {
         newHandPlayer.push({
@@ -2503,6 +2504,7 @@ export const elemination = async (roomData, io) => {
           playing: true,
         });
       } else {
+        players = players.filter(p => p.userid !== el.id);
         noOfElemination++;
         eleminated_players.push({
           userid: el.id,
@@ -2530,6 +2532,7 @@ export const elemination = async (roomData, io) => {
           _id: roomData._id,
         },
         {
+          players,
           showdown: newHandPlayer,
           eleminated: eleminated_players?.filter(
             (item, index) => eleminated_players?.indexOf(item) === index
