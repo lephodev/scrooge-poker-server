@@ -2590,7 +2590,7 @@ export const elemination = async (roomData, io) => {
         }
       );
     }
-    // io.in(upRoom._id.toString()).emit("newhand", { updatedRoom: upRoom });
+     io.in(upRoom._id.toString()).emit("eliminatedPlayer", { eliminated: upRoom.eleminated,tournamentId:upRoom.tournament._id });
   } catch (error) {
     console.log("error in eleminite function =>", error);
   }
