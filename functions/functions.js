@@ -203,8 +203,8 @@ export const preflopPlayerPush = async (players, roomid) => {
       if (
         !newP.find(
           (p) =>
-            p.id.toString() === player.id.toString() ||
-            p.id.toString() === player.userid.toString()
+            p.id === player.id ||
+            p.id === player.userid
         )
       ) {
         let playing;
@@ -832,7 +832,7 @@ export const prefloptimer = async (roomid, io) => {
           console.log("before Flop round start---->");
           setTimeout(() => {
             flopround(roomid, io);
-          }, 200);
+          }, 500);
         } else {
           if (udata?.isCircleCompleted) {
             if (udata?.raisePlayerPosition < i) {
@@ -952,7 +952,7 @@ export const flopround = async (roomid, io) => {
         setTimeout(() => {
           console.log("turn-round called for room =>", roomid);
           turnround(roomid, io);
-        }, 200);
+        }, 500);
       }
     }
   } catch (error) {
@@ -1182,7 +1182,7 @@ export const flopTimer = async (roomid, io) => {
         ) {
           setTimeout(() => {
             turnround(roomid, io);
-          }, 200);
+          }, 500);
         } else {
           if (udata?.isCircleCompleted) {
             // timer(i,udata.raisePlayerPosition);
@@ -1313,7 +1313,7 @@ export const turnround = async (roomid, io) => {
         setTimeout(() => {
           console.log("river-round called for room =>", roomid);
           riverround(roomid, io);
-        }, 200);
+        }, 500);
       }
     }
   } catch (error) {
@@ -1536,7 +1536,7 @@ export const turnTimer = async (roomid, io) => {
         ) {
           setTimeout(() => {
             riverround(roomid, io);
-          }, 200);
+          }, 500);
         } else {
           if (udata?.isCircleCompleted) {
             // timer(i,udata.raisePlayerPosition);
@@ -1666,7 +1666,7 @@ export const riverround = async (roomid, io) => {
         setTimeout(() => {
           console.log("showdown called for room =>", roomid);
           showdown(roomid, io);
-        }, 200);
+        }, 500);
       }
     }
   } catch (error) {
@@ -2565,6 +2565,7 @@ export const elemination = async (roomData, io) => {
         }
       )
       .populate("tournament");
+      console.log("remainging player in showdown after game finish", newHandPlayer, upRoom.showDown)
     if (
       eleminated_players.length > 0 &&
       upRoom.tournament.havePlayers > 0 &&
@@ -3093,7 +3094,7 @@ export const doSitOut = async (data, io, socket) => {
           case 5:
             sitOut.push(
               roomData.showdown.find(
-                (el) => el.id.toString() === userid.toString()
+                (el) => el.id === userid
               )
             );
             updatedData = await roomModel.findOneAndUpdate(
