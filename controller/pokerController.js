@@ -26,7 +26,7 @@ export const getDocument = async (req, res) => {
   }
 };
 
-export const createTable = async (req, res) => {
+export const createTable = async (req, res,io) => {
   try {
     const {
       gameName,
@@ -95,7 +95,10 @@ export const createTable = async (req, res) => {
         },
       ],
     });
-
+    const getAllRunningRoom = await roomModel
+      .find({ public: true })
+      .populate("players.userid");
+    io.emit("AllTables",{tables:getAllRunningRoom})
     await User.updateOne({ _id }, { wallet: wallet - sitInAmount });
 
     if (Array.isArray(invitetedPlayerUserId) && invitetedPlayerUserId.length) {
@@ -171,14 +174,11 @@ export const checkIfUserInTable = async (req, res) => {
     return res.status(200).send({ inTable: true, players: checkTable.players });
   } catch (error) {
     console.log("error in checkIfUserInTable", error);
-
-    console.log(error);
     res.status(500).send({ message: "Internal server error" });
   }
 };
 
 export const getTablePlayers = async (req, res) => {
-  console.log("abbavv", req.params.tableId);
   try {
     const user = req.user;
     const tableId = req.params.tableId;
@@ -264,9 +264,7 @@ export const getTablePlayers = async (req, res) => {
 export const refillWallet = async (data, io, socket) => {
   process.nextTick(async () => {
     try {
-      console.log("body", data);
       let { tableId, amount, userid, username } = data;
-
       amount = parseInt(amount);
       let room = await roomModel.findOne({
         _id: tableId,
@@ -278,7 +276,6 @@ export const refillWallet = async (data, io, socket) => {
             mongoose.Types.ObjectId(el.userid).toString() === userid.toString()
         );
         if (!room.isGameRunning) {
-          console.log("abbbab");
           await roomModel.updateOne(
             {
               $and: [

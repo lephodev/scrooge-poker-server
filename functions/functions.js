@@ -16,7 +16,6 @@ var Hand = require("pokersolver").Hand;
 import MessageModal from "../models/messageModal";
 import Notification from "../models/notificationModal";
 import User from "../landing-server/models/user.model";
-import { decryptCard, EncryptCard } from "../validation/poker.validation";
 
 const gameRestartSeconds = 4000;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
@@ -221,12 +220,8 @@ export const preflopPlayerPush = async (players, roomid) => {
 
         if (playing) {
           checkcards = verifycards(distributedCards, 2);
-          checkcards = checkcards.map((e) => {
-            distributedCards.push(e);
-            return EncryptCard(e);
-          });
+          checkcards.map((e) => distributedCards.push(e));
         }
-
         newP.push({
           cards: checkcards,
           id: player.userid || player.id,
@@ -911,7 +906,7 @@ export const flopround = async (roomid, io) => {
           floproundPlayersData.push(p);
 
           e.cards.forEach((el) => {
-            distributedCards.push(decryptCard(el));
+            distributedCards.push(el);
           });
           if (actionType === null && e.playing) {
             playingPlayer++;
@@ -921,6 +916,7 @@ export const flopround = async (roomid, io) => {
        fetchDistributedCards();
       let communityCards = verifycards(distributedCards, 3);
       communityCards = communityCards.map((card) => EncryptCard(card));
+
       const updatedRoom = await roomModel.findOneAndUpdate(
         {
           _id: roomid,
@@ -1262,7 +1258,7 @@ export const turnround = async (roomid, io) => {
           turnroundPlayersData.push(p);
 
           e.cards.forEach((el) => {
-            distributedCards.push(decryptCard(el));
+            distributedCards.push(el);
           });
 
           if (actionType === null && e.playing) {
@@ -1271,14 +1267,13 @@ export const turnround = async (roomid, io) => {
         });
 
         roomData?.communityCard?.forEach((el) => {
-          distributedCards.push(decryptCard(el));
+          distributedCards.push(el);
         });
       };
 
        fetchDistributedCards();
 
-      let newCard = verifycards(distributedCards, 1);
-      newCard[0] = EncryptCard(newCard[0]);
+      let newCard = await verifycards(distributedCards, 1);
       let communityCards = roomData.communityCard;
       communityCards.push(newCard[0]);
 
@@ -1615,7 +1610,7 @@ export const riverround = async (roomid, io) => {
           riverroundPlayersData.push(p);
 
           e.cards.forEach((el) => {
-            distributedCards.push(decryptCard(el));
+            distributedCards.push(el);
           });
           if (actionType === null && e.playing) {
             playingPlayer++;
@@ -1623,14 +1618,13 @@ export const riverround = async (roomid, io) => {
         });
 
         roomData?.communityCard?.forEach((el) => {
-          distributedCards.push(decryptCard(el));
+          distributedCards.push(el);
         });
       };
 
        fetchDistributedCards();
 
-      let newCard = verifycards(distributedCards, 1);
-      newCard[0] = EncryptCard(newCard[0]);
+      let newCard = await verifycards(distributedCards, 1);
       let communityCards = roomData?.communityCard;
       communityCards.push(newCard[0]);
 
@@ -2042,9 +2036,8 @@ export const showdown = async (roomid, io) => {
           updatedRoom.showdown.forEach((el) => {
             if (!el.fold && e.players.indexOf(el.position) != -1) {
               let cards = updatedRoom.communityCard;
-
               let allCards = cards.concat(el.cards);
-              allCards = allCards.map((card) => decryptCard(card));
+
               let hand = Hand.solve(allCards);
 
               p.push({ id: el.id, position: el.position, hand: hand });
@@ -2061,7 +2054,7 @@ export const showdown = async (roomid, io) => {
           if (!el.fold) {
             let cards = updatedRoom.communityCard;
             let allCards = cards.concat(el.cards);
-            allCards = allCards.map((card) => decryptCard(card));
+
             let hand = Hand.solve(allCards);
 
             p.push({ id: el.id, position: el.position, hand: hand });
@@ -2109,8 +2102,8 @@ export const showdown = async (roomid, io) => {
                   winningAmount: winningAmount,
                   handName: winner[0].name,
                   winnerHand: winnerHand,
-                  winnerCards: winnerData[0].cards.map(card => decryptCard(card)),
-                  communityCards: updatedRoom.communityCard.map(card => decryptCard(card)),
+                  winnerCards: winnerData[0].cards,
+                  communityCards: updatedRoom.communityCard,
                 });
               }
             } else {
@@ -2121,8 +2114,8 @@ export const showdown = async (roomid, io) => {
                 winningAmount: winningAmount,
                 handName: winner[0].name,
                 winnerHand: winnerHand,
-                winnerCards: winnerData[0].cards.map(card => decryptCard(card)),
-                communityCards: updatedRoom.communityCard.map(card => decryptCard(card)),
+                winnerCards: winnerData[0].cards,
+                communityCards: updatedRoom.communityCard,
               });
             }
           }
@@ -2682,7 +2675,7 @@ export const distributeTournamentPrize = async (
                 { $inc: { ticket: player.amount } }
               );
               await transactionModel.create({
-                userId,
+                userId: top_4_7,
                 amount: player.amount,
                 transactionDetails: {},
                 prevWallet: parseFloat(user?.wallet),
@@ -2702,7 +2695,7 @@ export const distributeTournamentPrize = async (
                 { $inc: { ticket: player.amount } }
               );
               await transactionModel.create({
-                userId,
+                userId: top_11_25,
                 amount: player.amount,
                 transactionDetails: {},
                 prevWallet:parseFloat(user?.wallet),
@@ -3266,7 +3259,6 @@ export const doLeaveTable = async (data, io, socket) => {
         if (updatedData)
           io.in(updatedData._id.toString()).emit("playerleft", {
             msg: `${playerdata[0].name} has left the game`,
-            userId: userid
           });
       }
     } else {
@@ -5321,8 +5313,8 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         name: winnerPlayerData[0].name,
         position: winnerPlayerData[0].position,
         winningAmount: winningAmount,
-        winnerCards: winnerPlayerData[0].cards.map(card => decryptCard(card)),
-        communityCards: roomData.communityCard.map(card => decryptCard(card)),
+        winnerCards: winnerPlayerData[0].cards,
+        communityCards: roomData.communityCard,
       },
     ];
     const handWinner = roomData.handWinner;
@@ -5397,7 +5389,6 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
       } else {
         await updateRoomForNewHand(roomid, io);
         ///dgs
-        console.log("roomidroomidroomid", roomid);
         let updatedRoomPlayers = await roomModel.findOne({
           _id: roomid,
         });
@@ -5791,7 +5782,6 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
       }
     }
     const room = allRooms.find((r) => r._id.toString() === roomId.toString());
-    console.log("room that need to be transfer",room);
     const OtherRoom = allRooms.filter(
       (r) => r._id.toString() !== roomId.toString()
     );
@@ -5839,11 +5829,6 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         io.in(room._id.toString()).emit("roomchanged", {
           userIds,
         });
-        allRooms.forEach(r => {
-          if(userIds.find(user => user.newRoomId.toString() === r._id.toString()) && !r.gamestart){
-            preflopround(r,io);
-          }
-        })
       }
       if (playersToMove.length === 0) {
         await tournamentModel.updateOne(
@@ -5854,9 +5839,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
           }
         );
         await roomModel.deleteOne({ _id: room._id });
-
       }
-
     } else {
       console.log("Not enough blank spot");
       if (room.showdown.length > 1) {
@@ -7170,7 +7153,7 @@ console.log("Check table socket trigger")
       io.in(gameId).emit("updateGame", { game: gameUpdatedData });
       return;
     }
-    if (game.players.length >= 3) {
+    if (game.players.length >= 2) {
       return socket.emit("tablefull", { message: "This table is full." });
     }
     if (!sitInAmount) {
@@ -7350,8 +7333,8 @@ export const JoinTournament = async (data, socket) => {
           { new: true }
         );
         await transactionModel.create({
-          userId: userId,
-          amount: parseFloat(fees),
+          userId:userId,
+          amount:parseFloat(fees),
           transactionDetails: {},
           prevWallet: parseFloat(userData?.wallet),
           updatedWallet: updatedUser?.wallet,
@@ -7502,7 +7485,7 @@ const pushPlayerInRoom = async (
         { upsert: true, new: true }
       );
       const getAllTournament = await tournamentModel.find({}).populate("rooms");
-      socket.emit("updatePlayerList", getAllTournament);
+      io.emit("updatePlayerList", getAllTournament);
       const updatedUser = await User.findOneAndUpdate(
         { _id: userData._id },
         { $push: { tournaments: { tournamentId, roomId } } },
@@ -7532,10 +7515,9 @@ export const activateTournament = async (io) => {
           { _id: checkTournament?._id },
           { isStart: true }
         );
-        console.log("Tournament started");
         blindTimer(checkTournament, io);
-        for (let room of checkTournament?.rooms) {
-           preflopround(room, io);
+        for await (let room of checkTournament?.rooms) {
+          await preflopround(room, io);
         }
       }
     }
@@ -7555,7 +7537,6 @@ export const blindTimer = async (data, io) => {
       _id,
       isFinished,
     } = data;
-    console.log("blind Timer called", incBlindTime, isFinished)
     if (rooms && rooms.length && incBlindTime && !isFinished) {
       let getMinute = incBlindTime * 60;
       const interval = setInterval(async () => {
@@ -7588,8 +7569,7 @@ export const blindTimer = async (data, io) => {
             },
           };
           await tournamentModel.updateOne({ _id }, bliend);
-          const t = await tournamentModel.findOne({ _id }).populate("rooms")
-          .lean();
+          const t = await tournamentModel.findOne({ _id });
           blindTimer(t, io);
         }
       }, 1000);
