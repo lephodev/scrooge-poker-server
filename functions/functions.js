@@ -5768,12 +5768,14 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         let newPlayers = [...r.players];
         let tempSpotArr = [...Array(3 - r.players.length).keys()];
         for await (const temp of tempSpotArr) {
+          if(playersToMove[temp]){
           let position = await findAvailablePosition(newPlayers);
           newPlayers.push({ ...playersToMove[temp], position });
           userIds.push({
             userId: playersToMove[temp].userid,
             newRoomId: r._id,
           });
+        }
         }
         const updatedRoom = await roomModel.findOneAndUpdate(
           {
