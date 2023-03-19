@@ -1276,7 +1276,7 @@ export const turnround = async (roomid, io) => {
       };
 
        fetchDistributedCards();
-
+console.log("total pot in turn", totalPot)
       let newCard = verifycards(distributedCards, 1);
       newCard[0] = EncryptCard(newCard[0]);
       let communityCards = roomData.communityCard;
@@ -3575,246 +3575,158 @@ export const socketDoFold = async (dta, io, socket) => {
   }
 };
 
-export const doCall = async (roomData, playerid, io, amt) => {
-  console.log("do call executed");
-  try {
-    // const roomData = await roomModel.findOne({ _id: roomid });
-    const roomid = roomData._id;
-    let updatedRoom = null;
-    let res = true;
-    let filterData = null;
-    let roundData = null;
+export const doCall = async (roomData, playerid, io, amout) => {
+  let amt = amout;
+  const { _id: roomid } = roomData;
+  let updatedRoom = null;
+  const res = true;
 
-    const filterDta = roomData.players.filter(
-      (el) => el.userid.toString() === roomData.timerPlayer.toString()
-    );
+  let roundData = null;
 
-    if (roomData.timerPlayer.toString() === playerid.toString()) {
-      switch (roomData.runninground) {
-        case 1: {
-          if(roomData.preflopround.find(pl => pl.id === playerid)?.action){
-            return;
-          }
-          roundData = roomData.preflopround.filter(
-            (el) => el.id.toString() === playerid.toString()
-          );
-
-          amt = amt - roundData[0].pot;
-
-          let prefloprnd = [...roomData.preflopround];
-          prefloprnd = prefloprnd.map((preflprnd) => {
-            if (preflprnd.id.toString() === playerid.toString()) {
-              preflprnd.wallet = preflprnd.wallet - amt;
-              preflprnd.pot = preflprnd.pot + amt;
-              preflprnd.action = true;
-              preflprnd.actionType = "call";
-              preflprnd.tentativeAction = null;
-            }
-            return preflprnd;
-          });
-
-          roomData.preflopround = prefloprnd;
-          roomData.lastAction = "call";
-
-          io.in(roomData._id.toString()).emit("actionperformed", {
-            id: playerid,
-            action: "call",
-          });
-          io.in(roomData._id.toString()).emit("call", {
-            updatedRoom: roomData,
-          });
-
-          updatedRoom = await roomModel.findOneAndUpdate(
-            {
-              _id: roomid,
-              "preflopround.id": playerid,
-            },
-            {
-              $inc: {
-                "preflopround.$.wallet": -amt,
-                "preflopround.$.pot": +amt,
-              },
-              "preflopround.$.action": true,
-              "preflopround.$.actionType": "call",
-              "preflopround.$.tentativeAction": null,
-              lastAction: "call",
-            },
-            {
-              new: true,
-            }
-          );
-        
-          break;
+  if (roomData.timerPlayer.toString() === playerid.toString()) {
+    switch (roomData.runninground) {
+      case 1:
+        if(roomData.preflopround.find(pl => pl.id === playerid)?.action){
+          return;
         }
+        roundData = roomData.preflopround.filter((el) => el.id.toString() === playerid.toString());
 
-        case 2: {
-          if(roomData.flopround.find(pl => pl.id === playerid)?.action){
-            return;
+        amt -= roundData[0].pot;
+
+        await roomModel.updateOne(
+          {
+            _id: roomid,
+            'preflopround.id': playerid,
+          },
+          {
+            $inc: {
+              'preflopround.$.wallet': -amt,
+              'preflopround.$.pot': +amt,
+            },
+            'preflopround.$.action': true,
+            'preflopround.$.actionType': 'call',
+            lastAction: 'call',
+            'preflopround.$.tentativeAction': null,
+          },
+          {
+            new: true,
           }
-          roundData = roomData.flopround.filter(
-            (el) => el.id.toString() === playerid.toString()
-          );
-          amt = amt - roundData.pot;
+        );
+        updatedRoom = await roomModel.findOne({ _id: roomid });
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
+          id: playerid,
+          action: 'call',
+        });
+        io.in(updatedRoom._id.toString()).emit('call', { updatedRoom });
 
-          let floprnd = [...roomData.flopround];
-          floprnd = floprnd.map((flprnd) => {
-            if (flprnd.id.toString() === playerid.toString()) {
-              flprnd.wallet = flprnd.wallet - amt;
-              flprnd.pot = flprnd.pot + amt;
-              flprnd.action = true;
-              flprnd.actionType = "call";
-              flprnd.tentativeAction = null;
-            }
-            return flprnd;
-          });
+        break;
 
-          roomData.flopround = floprnd;
-          roomData.lastAction = "call";
-
-          io.in(roomData._id.toString()).emit("actionperformed", {
-            id: playerid,
-            action: "call",
-          });
-          io.in(roomData._id.toString()).emit("call", {
-            updatedRoom: roomData,
-          });
-
-          updatedRoom = await roomModel.findOneAndUpdate(
-            {
-              _id: roomid,
-              "flopround.id": playerid,
-            },
-            {
-              $inc: {
-                "flopround.$.wallet": -amt,
-                "flopround.$.pot": +amt,
-              },
-              "flopround.$.action": true,
-              "flopround.$.actionType": "call",
-              lastAction: "call",
-              "flopround.$.tentativeAction": null,
-            },
-            {
-              new: true,
-            }
-          );
-         
-          break;
+      case 2:
+        if(roomData.flopround.find(pl => pl.id === playerid)?.action){
+          return;
         }
+        roundData = roomData.flopround.filter((el) => el.id.toString() === playerid.toString());
+        amt -= roundData[0].pot;
 
-        case 3: {
-          if(roomData.turnround.find(pl => pl.id === playerid)?.action){
-            return;
+        await roomModel.updateOne(
+          {
+            _id: roomid,
+            'flopround.id': playerid,
+          },
+          {
+            $inc: {
+              'flopround.$.wallet': -amt,
+              'flopround.$.pot': +amt,
+            },
+            'flopround.$.action': true,
+            'flopround.$.actionType': 'call',
+            lastAction: 'call',
+            'flopround.$.tentativeAction': null,
+          },
+          {
+            new: true,
           }
-          roundData = roomData.turnround.filter(
-            (el) => el.id.toString() === playerid.toString()
-          );
-          amt = amt - roundData[0].pot;
+        );
+        updatedRoom = await roomModel.findOne({ _id: roomid });
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
+          id: playerid,
+          action: 'call',
+        });
+        io.in(updatedRoom._id.toString()).emit('call', { updatedRoom });
 
-          let turnrnd = [...roomData.turnround];
-          turnrnd = turnrnd.map((trnrnd) => {
-            if (trnrnd.id.toString() === playerid.toString()) {
-              trnrnd.wallet = trnrnd.wallet - amt;
-              trnrnd.pot = trnrnd.pot + amt;
-              trnrnd.action = true;
-              trnrnd.actionType = "call";
-              trnrnd.tentativeAction = null;
-            }
-            return trnrnd;
-          });
-
-          roomData.turnround = turnrnd;
-          roomData.lastAction = "call";
-
-          io.in(roomData._id.toString()).emit("actionperformed", {
-            id: playerid,
-            action: "call",
-          });
-          io.in(roomData._id.toString()).emit("call", {
-            updatedRoom: roomData,
-          });
-
-          updatedRoom = await roomModel.findOneAndUpdate(
-            {
-              _id: roomid,
-              "turnround.id": playerid,
-            },
-            {
-              $inc: {
-                "turnround.$.wallet": -amt,
-                "turnround.$.pot": +amt,
-              },
-              "turnround.$.action": true,
-              "turnround.$.actionType": "call",
-              lastAction: "call",
-              "turnround.$.tentativeAction": null,
-            },
-            {
-              new: true,
-            }
-          );
-
-          return res;
+        break;
+      case 3:
+        if(roomData.turnround.find(pl => pl.id === playerid)?.action){
+          return;
         }
+        roundData = roomData.turnround.filter((el) => el.id.toString() === playerid.toString());
+        amt -= roundData[0].pot;
 
-        case 4: {
-          if(roomData.riverround.find(pl => pl.id === playerid)?.action){
-            return;
+        await roomModel.updateOne(
+          {
+            _id: roomid,
+            'turnround.id': playerid,
+          },
+          {
+            $inc: {
+              'turnround.$.wallet': -amt,
+              'turnround.$.pot': +amt,
+            },
+            'turnround.$.action': true,
+            'turnround.$.actionType': 'call',
+            lastAction: 'call',
+            'turnround.$.tentativeAction': null,
+          },
+          {
+            new: true,
           }
-          roundData = roomData.riverround.filter(
-            (el) => el.id.toString() === playerid.toString()
-          );
-          amt = amt - roundData[0].pot;
+        );
+        updatedRoom = await roomModel.findOne({ _id: roomid });
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
+          id: playerid,
+          action: 'call',
+        });
+        io.in(updatedRoom._id.toString()).emit('call', { updatedRoom });
 
-          let riverrnd = [...roomData.riverround];
-          riverrnd = riverrnd.map((rivrrnd) => {
-            if (rivrrnd.id.toString() === playerid.toString()) {
-              rivrrnd.wallet = rivrrnd.wallet - amt;
-              rivrrnd.pot = rivrrnd.pot + amt;
-              rivrrnd.action = true;
-              rivrrnd.actionType = "call";
-              rivrrnd.tentativeAction = null;
-            }
-            return rivrrnd;
-          });
+        return res;
 
-          roomData.riverround = riverrnd;
-          roomData.lastAction = "call";
-
-          io.in(roomData._id.toString()).emit("actionperformed", {
-            id: playerid,
-            action: "call",
-          });
-          io.in(roomData._id.toString()).emit("call", {
-            updatedRoom: roomData,
-          });
-
-          updatedRoom = await roomModel.findOneAndUpdate(
-            {
-              _id: roomid,
-              "riverround.id": playerid,
-            },
-            {
-              $inc: {
-                "riverround.$.wallet": -amt,
-                "riverround.$.pot": +amt,
-              },
-              "riverround.$.action": true,
-              "riverround.$.actionType": "call",
-              lastAction: "call",
-              "riverround.$.tentativeAction": null,
-            },
-            {
-              new: true,
-            }
-          );
-
-          break;
+      case 4:
+        if(roomData.riverround.find(pl => pl.id === playerid)?.action){
+          return;
         }
-      }
+        roundData = roomData.riverround.filter((el) => el.id.toString() === playerid.toString());
+        amt -= roundData[0].pot;
+
+        await roomModel.updateOne(
+          {
+            _id: roomid,
+            'riverround.id': playerid,
+          },
+          {
+            $inc: {
+              'riverround.$.wallet': -amt,
+              'riverround.$.pot': +amt,
+            },
+            'riverround.$.action': true,
+            'riverround.$.actionType': 'call',
+            lastAction: 'call',
+            'riverround.$.tentativeAction': null,
+          },
+          {
+            new: true,
+          }
+        );
+        updatedRoom = await roomModel.findOne({ _id: roomid });
+        io.in(updatedRoom._id.toString()).emit('actionperformed', {
+          id: playerid,
+          action: 'call',
+        });
+        io.in(updatedRoom._id.toString()).emit('call', { updatedRoom });
+
+        break;
+      default:
+        return res;
     }
-  } catch (error) {
-    console.log("Error in do call", error);
   }
 };
 
@@ -3829,7 +3741,7 @@ export const socketDoCall = async (dta, io, socket) => {
     if (isValid) {
       roomid = mongoose.Types.ObjectId(roomid);
       let playerid = mongoose.Types.ObjectId(userid);
-      let amt = dta.amount;
+      let amt = parseInt(dta.amount);
       const data = await roomModel
         .findOne(
           {
@@ -4144,7 +4056,7 @@ export const socketDoBet = async (dta, io, socket) => {
   try {
     if (isValid) {
       let playerid = userid;
-      let amt = dta.amount;
+      let amt = parseInt(dta.amount);
       const data = await roomModel
         .findOne(
           {
@@ -4553,7 +4465,7 @@ export const socketDoRaise = async (dta, io, socket) => {
     if (isValid) {
       roomid = mongoose.Types.ObjectId(roomid);
       let playerid = userid;
-      let amt = dta.amount;
+      let amt = parseInt(dta.amount);
 
       console.log("amtamtamt 4122");
 
