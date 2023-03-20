@@ -2247,9 +2247,18 @@ export const showdown = async (roomid, io) => {
                 msg: "Game finished, Only one player left",
                 roomdata: updatedRoomPlayers,
               });
+              if (updatedRoomPlayers?.finish) {
+                await finishedTableGame(updatedRoomPlayers);
+      
+                io.in(updatedRoomPlayers._id.toString()).emit("roomFinished", {
+                  msg: "Room finished",
+                  finish: updatedRoomPlayers?.finish,
+                  roomdata: updatedRoomPlayers,
+                });
+              }
               if (updatedRoomPlayers.gameType === "pokerTournament_Tables") {
                 console.log("Line 2275 Game finished ");
-                // await finishedTableGame(updatedRoomPlayers);
+                 await finishedTableGame(updatedRoomPlayers);
                 io.in(updatedRoomPlayers._id.toString()).emit("roomFinished", {
                   msg: "Game finished",
                   finish: updatedRoomPlayers.finish,
@@ -2265,6 +2274,7 @@ export const showdown = async (roomid, io) => {
         }
         const roomUpdate = await roomModel.findOne({ _id: upRoom._id });
         if (roomUpdate?.finish) {
+          await finishedTableGame(roomUpdate);
           io.in(roomUpdate._id.toString()).emit("roomFinished", {
             msg: "Game finished",
             finish: roomUpdate?.finish,
