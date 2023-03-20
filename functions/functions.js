@@ -657,7 +657,7 @@ export const prefloptimer = async (roomid, io) => {
           i += 1;
           return timer(i, maxPosition);
         }
-        console.log("timerplayer =>", cp)
+        console.log("timerplayer preflop =>", cp)
         // let playerinterval = udata.players[i].userid;
         const tempRoomData = await roomModel.findOneAndUpdate(
           { _id: roomid },
@@ -995,6 +995,8 @@ export const flopTimer = async (roomid, io) => {
           return timer(i, maxPosition);
         }
 
+        console.log("timerplayer flop =>", cp)
+
         const tempRoomData = await roomModel.findOneAndUpdate(
           { _id: roomid },
           { timerPlayer: cp },
@@ -1277,7 +1279,6 @@ export const turnround = async (roomid, io) => {
       };
 
        fetchDistributedCards();
-console.log("total pot in turn", totalPot)
       let newCard = verifycards(distributedCards, 1);
       newCard[0] = EncryptCard(newCard[0]);
       let communityCards = roomData.communityCard;
@@ -1353,6 +1354,7 @@ export const turnTimer = async (roomid, io) => {
           i += 1;
           return timer(i, maxPosition);
         }
+        console.log("timerplayer turn =>", cp)
         const tempRoomData = await roomModel.findOneAndUpdate(
           { _id: roomid },
           { timerPlayer: cp },
@@ -1707,6 +1709,7 @@ export const riverTimer = async (roomid, io) => {
         i += 1;
         return timer(i, maxPosition);
       }
+      console.log("timerplayer river =>", cp)
         const tempRoomData = await roomModel.findOneAndUpdate(
           { _id: roomid },
           { timerPlayer: cp },
@@ -4153,11 +4156,7 @@ export const doRaise = async (roomData, playerid, io, amt) => {
     let roundData = null;
     let p;
 
-    const filterDta = roomData.players.filter(
-      (el) => el.userid.toString() === roomData.timerPlayer.toString()
-    );
-
-    if (roomData.timerPlayer.toString() === playerid.toString()) {
+    if (roomData?.timerPlayer?.toString() === playerid?.toString()) {
       switch (roomData.runninground) {
         case 1: {
           if(roomData.preflopround.find(pl => pl.id === playerid)?.action){
@@ -4497,7 +4496,7 @@ export const doRaise = async (roomData, playerid, io, amt) => {
       }
     }
   } catch (error) {
-    console.log("ffgfagfa", error);
+    console.log("Error in doRaise", error);
   }
 };
 
@@ -4512,8 +4511,6 @@ export const socketDoRaise = async (dta, io, socket) => {
       roomid = mongoose.Types.ObjectId(roomid);
       let playerid = userid;
       let amt = parseInt(dta.amount);
-
-      console.log("amtamtamt 4122");
 
       const data = await roomModel
         .findOne(
@@ -7415,7 +7412,6 @@ const pushPlayerInRoom = async (
         { $inc: { havePlayers: 1 } },
         { new: true }
       );
-      console.log("updatedTournament", updatedTournament);
 
       await User.findOneAndUpdate(
         { _id: userData._id },
@@ -7426,11 +7422,8 @@ const pushPlayerInRoom = async (
       const updatedTournaments = await tournamentModel.findOne({
         _id: tournamentId,
       });
-
-      console.log("updatedTournaments", updatedTournaments);
       let smallBlind = updatedTournaments?.levels?.smallBlind?.amount;
       let bigBlind = updatedTournaments?.levels?.bigBlind?.amount;
-      console.log("smallBlind", smallBlind);
       const payload = {
         players: [
           {
