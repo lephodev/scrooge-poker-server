@@ -37,6 +37,7 @@ import { connetToLanding, landingSocket } from "./landing_Connection";
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
 let returnSocket = (io) => {
+  connetToLanding(socket);
   const users = {};
 
   const socketToRoom = {};
@@ -48,7 +49,6 @@ let returnSocket = (io) => {
       socket.join(roomData.roomid);
       socket.emit("welcome", { msg: "hello welcome to socket.io" });
     });
-    connetToLanding(socket);
     socket.on("checkTable", async (data) => {
       try {
         await checkForGameTable(data, socket, io);
