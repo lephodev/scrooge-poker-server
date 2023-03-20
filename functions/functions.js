@@ -5752,7 +5752,17 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
     if (allRooms.length === 1) {
       if (allRooms[0].showdown.length > 1) {
         return preflopround(allRooms[0], io);
-      } else {
+      }
+      else {
+        let totalPlayers = allRooms[0].showdown.length;
+        allRooms[0].players.forEach(pl => {
+          if(allRooms[0].showdown.find(sPl => pl.userid.toString() !== sPl.userid.toString() )){
+            totalPlayers += 1;
+          }
+        })
+        if(totalPlayers > 1){
+          return preflopround(allRooms[0], io);
+        }
         console.log("only one player =>", allRooms[0]);
         await distributeTournamentPrize(tournamentId, allRooms[0].showdown[0]);
         io.in(allRooms[0]._id.toString()).emit("tournamentFinished", {
