@@ -42,7 +42,6 @@ const findAvailablePosition = async (playerList) => {
 };
 
 const pushUserInRoom = async (roomId, userId, position, sitInAmount) => {
-  console.log("push user in room executed ====== >");
   try {
     const userData = await userService.getUserById(userId);
     const { username, wallet, email, _id, avatar, profile } = userData;
@@ -85,7 +84,6 @@ const pushUserInRoom = async (roomId, userId, position, sitInAmount) => {
 };
 
 const joinRoomByUserId = async (game, userId, sitInAmount) => {
-  console.log("user joind");
   // if public table -
   // check empty slot for table else return slot full,
   // join user in game if there is empty slot
@@ -128,21 +126,15 @@ const joinRoomByUserId = async (game, userId, sitInAmount) => {
 // leave roomId empty if you want exclude any room to come in search
 // Because in check game function we want to exclude it from there
 const checkIfUserInGame = async (userId, roomId = "") => {
-  console.log("userId----", userId);
   try {
     let query = { gameType: "poker", "players.userid": converMongoId(userId) };
-
     if (roomId) {
       query["_id"] = { $ne: converMongoId(roomId) };
     }
-
-    console.log({ query });
     const checkRoom = await roomModel.findOne(query);
-
     if (checkRoom) {
       return true;
     }
-
     return false;
   } catch (error) {
     console.log(error);
@@ -151,7 +143,6 @@ const checkIfUserInGame = async (userId, roomId = "") => {
 };
 
 const playerTentativeActionSelection = async (game, userId, actionType) => {
-  console.log("gameJivannnna", actionType, userId);
   try {
     const { runninground, id } = game;
 
@@ -196,11 +187,6 @@ const subSubtractTimeForSendMail = (tournamentDate, startDate) => {
     newTime
   ).getUTCMinutes()}:00`;
   const currentTime = `${new Date().getUTCHours()}:${new Date().getUTCMinutes()}:00`;
-  console.log("ne date-->", {
-    nt: newTime,
-    before: beforeTime,
-    curTime: currentTime,
-  });
   return currentDate === startDate && beforeTime === currentTime;
 };
 const findRoom = (rooms) => {

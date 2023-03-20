@@ -18,7 +18,8 @@ const tournamentSchema = new Schema(
     winTotalPlayer: { type: Number, required: true},
     winPlayer: { type: Object},
     buyIn: { type: Number, required: true},
-    isStart:{ type: Boolean, default: false }
+    isStart:{ type: Boolean, default: false },
+    eleminatedPlayers: [],
   },
   { timestamps: true }
 );

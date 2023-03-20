@@ -15,15 +15,15 @@ import {
 } from "./landing-server/config/morgan.js";
 import pokerRoute from "./routes/pokerRoutes.js";
 import tournamentRoute from "./routes/tournamentRoutes.js";
-
+import dotenv from "dotenv";
 import auth from "./landing-server/middlewares/auth.js";
 import mongoose from "mongoose";
 import User from "./landing-server/models/user.model";
 import returnCron from "./cron/cron";
 import tournamentModel from "./models/tournament";
-import { log } from "console";
 
 let app = express();
+dotenv.config();
 const server = http.createServer(app);
 const io = socket(server, {
   pingInterval: 10000,
@@ -69,6 +69,7 @@ if (process.env.ENVIROMENT !== "test") {
 }
 
 require("./socketconnection/socketconnection")(io);
+
 // app.use("/api/user", tournamentRoute(socket));
 app.get("/checkTableExist/:tableId", async (req, res) => {
   try {
@@ -283,7 +284,6 @@ app.get("/getUserForInvite/:tableId", async (req, res) => {
     }
 
     const { leavereq, invPlayers, players } = roomData;
-    console.log({ leavereq, invPlayers, players });
     const allId = [...leavereq, ...invPlayers, ...players.map((el) => el.id)];
 
     const allUsers = await User.find({
@@ -298,7 +298,7 @@ app.get("/getUserForInvite/:tableId", async (req, res) => {
   }
 });
 
-app.use("/poker", auth(), pokerRoute);
+app.use("/poker", auth(), pokerRoute(io));
 app.use("/tournament", auth(), tournamentRoute);
 
 app.use("*", (req, res) => res.status(404).send({ message: "Api not found" }));
