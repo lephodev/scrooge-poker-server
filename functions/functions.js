@@ -2334,6 +2334,9 @@ export const updateRoomForNewHand = async (roomid, io) => {
               plrs,
               function (x, next) {
                 try {
+                  if(roomData.tournament && roomData.tournament.eleminatedPlayers.find(el => el.userid.toString() === x.userid.toString())){
+                    return;
+                  }
                   if (roomData.runninground > 0) {
                     const playerexist = data.find(
                       (el) => el.userid.toString() === x.userid.toString()
@@ -2362,6 +2365,9 @@ export const updateRoomForNewHand = async (roomid, io) => {
           async function (el, next) {
             try {
               let uid = el.userid || el.id;
+              if(roomData.tournament && roomData.tournament.eleminatedPlayers.find(el => el.userid.toString() === uid.toString())){
+                return;
+              }
               let buyinchips = 0;
               let stripeBuy = el.hands;
               let haveBuyin = buyin.filter(
