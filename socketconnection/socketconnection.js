@@ -37,13 +37,14 @@ import { connetToLanding, landingSocket } from "./landing_Connection";
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
 let returnSocket = (io) => {
-  connetToLanding(socket);
+  
   const users = {};
 
   const socketToRoom = {};
   io.users = [];
   io.room = [];
   io.on("connection", async (socket) => {
+    connetToLanding(socket);
     console.log("sockket connecteds")
     socket.on("room", (roomData) => {
       socket.join(roomData.roomid);
