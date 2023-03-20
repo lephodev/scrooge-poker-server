@@ -336,7 +336,6 @@ export const preflopround = async (room, io) => {
           const room1111 = await roomModel
             .findOne(
               { _id: room._id },
-              { _id: 1, preflopround: 1, smallBlind: 1, bigBlind: 1 }
             )
             .populate("tournament");
 
@@ -350,7 +349,7 @@ export const preflopround = async (room, io) => {
           let smallBlindPosition = null;
           let bigBlindPosition = null;
           let dealerPosition = null;
-          let totalplayer = room.players.length + room.eleminated.length;
+          let totalplayer = room1111.preflopround.length + room1111.eleminated.length;
 
           const checkIsPlaying = (d, type) => {
             if (typeof type === 'number') {
@@ -369,10 +368,10 @@ export const preflopround = async (room, io) => {
             return checkIsPlaying(d, type);
           };
 
-          if (room.dealerPosition === null || room.dealerPosition === totalplayer - 1) {
+          if (room1111.dealerPosition === null || room1111.dealerPosition === totalplayer - 1) {
             dealerPosition = 0;
-          } else if (room.dealerPosition < totalplayer - 1) {
-            dealerPosition = room.dealerPosition + 1;
+          } else if (room1111.dealerPosition < totalplayer - 1) {
+            dealerPosition = room1111.dealerPosition + 1;
           }
   
           dealerPosition = checkIsPlaying(dealerPosition);
@@ -393,9 +392,11 @@ export const preflopround = async (room, io) => {
 
 
           let smallLoopTime = 0;
-          const allinPlayer = room.allinPlayers;
+          const allinPlayer = room1111.allinPlayers;
+
+
         const deductSmallBlind = async () => {
-          const playerAvilable = room.players.filter(
+          const playerAvilable = room1111.players.filter(
             (el) => el.position === smallBlindPosition && el.playing && el.wallet > 0
           );
           if (playerAvilable.length) {
@@ -499,7 +500,7 @@ export const preflopround = async (room, io) => {
         let bigLoopTime = 0;
 
         const deductBigBlind = async () => {
-          const playerAvilable = room.players.filter(
+          const playerAvilable = room1111.players.filter(
             (el) => el.position === bigBlindPosition && el.playing && el.wallet > 0
           );
           if (playerAvilable.length) {
@@ -555,7 +556,7 @@ export const preflopround = async (room, io) => {
             }
             bigBlindDeducted = 1;
           } else {
-            const isPlayerSitOut = room.preflopround.filter((el) => el.position === bigBlindPosition && !el.playing);
+            const isPlayerSitOut = room1111.preflopround.filter((el) => el.position === bigBlindPosition && !el.playing);
             if (isPlayerSitOut.length) {
               await roomModel.updateOne(
                 {
@@ -657,7 +658,7 @@ export const prefloptimer = async (roomid, io) => {
           i += 1;
           return timer(i, maxPosition);
         }
-        console.log("timerplayer =>", cp)
+        console.log("timerplayer preflop =>", cp)
         // let playerinterval = udata.players[i].userid;
         const tempRoomData = await roomModel.findOneAndUpdate(
           { _id: roomid },
@@ -995,6 +996,8 @@ export const flopTimer = async (roomid, io) => {
           return timer(i, maxPosition);
         }
 
+        console.log("timerplayer flop =>", cp)
+
         const tempRoomData = await roomModel.findOneAndUpdate(
           { _id: roomid },
           { timerPlayer: cp },
@@ -1277,7 +1280,6 @@ export const turnround = async (roomid, io) => {
       };
 
        fetchDistributedCards();
-console.log("total pot in turn", totalPot)
       let newCard = verifycards(distributedCards, 1);
       newCard[0] = EncryptCard(newCard[0]);
       let communityCards = roomData.communityCard;
@@ -1353,6 +1355,7 @@ export const turnTimer = async (roomid, io) => {
           i += 1;
           return timer(i, maxPosition);
         }
+        console.log("timerplayer turn =>", cp)
         const tempRoomData = await roomModel.findOneAndUpdate(
           { _id: roomid },
           { timerPlayer: cp },
@@ -1707,6 +1710,7 @@ export const riverTimer = async (roomid, io) => {
         i += 1;
         return timer(i, maxPosition);
       }
+      console.log("timerplayer river =>", cp)
         const tempRoomData = await roomModel.findOneAndUpdate(
           { _id: roomid },
           { timerPlayer: cp },
@@ -1890,7 +1894,6 @@ export const riverTimer = async (roomid, io) => {
           udata?.raisePlayerPosition === null ||
           i === udata?.raisePlayerPosition
         ) {
-          console.log("<<<-----show down second----->>>", roomid);
           setTimeout(() => {
             showdown(roomid, io);
           },200);
@@ -2244,9 +2247,18 @@ export const showdown = async (roomid, io) => {
                 msg: "Game finished, Only one player left",
                 roomdata: updatedRoomPlayers,
               });
+              if (updatedRoomPlayers?.finish) {
+                await finishedTableGame(updatedRoomPlayers);
+      
+                io.in(updatedRoomPlayers._id.toString()).emit("roomFinished", {
+                  msg: "Room finished",
+                  finish: updatedRoomPlayers?.finish,
+                  roomdata: updatedRoomPlayers,
+                });
+              }
               if (updatedRoomPlayers.gameType === "pokerTournament_Tables") {
                 console.log("Line 2275 Game finished ");
-                // await finishedTableGame(updatedRoomPlayers);
+                 await finishedTableGame(updatedRoomPlayers);
                 io.in(updatedRoomPlayers._id.toString()).emit("roomFinished", {
                   msg: "Game finished",
                   finish: updatedRoomPlayers.finish,
@@ -2262,6 +2274,7 @@ export const showdown = async (roomid, io) => {
         }
         const roomUpdate = await roomModel.findOne({ _id: upRoom._id });
         if (roomUpdate?.finish) {
+          await finishedTableGame(roomUpdate);
           io.in(roomUpdate._id.toString()).emit("roomFinished", {
             msg: "Game finished",
             finish: roomUpdate?.finish,
@@ -2391,7 +2404,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 );
               } else {
                 newHandPlayer.push({
-                  chipsBeforeHandStart: el.wallet,
+                  chipsBeforeHandStart: el.wallet+buyinchips,
                   userid: uid,
                   id: uid,
                   name: el.name,
@@ -2526,10 +2539,6 @@ export const elemination = async (roomData, io) => {
       }
     });
 
-    if (eleminated_players.length === 0) {
-      eleminated_players = roomData.eleminated;
-    }
-
     // console.log("eleminated_players", eleminated_players);
     // console.log("newHandPlayer", newHandPlayer);
     const upRoom = await roomModel
@@ -2574,7 +2583,7 @@ export const elemination = async (roomData, io) => {
         }
       )
       .populate("tournament");
-      console.log("remainging player in showdown after game finish", newHandPlayer)
+      console.log("remainging player in showdown after game finish", upRoom)
     if (
       eleminated_players.length > 0 &&
       upRoom.tournament.havePlayers > 0 &&
@@ -2694,7 +2703,8 @@ export const distributeTournamentPrize = async (
     
     const tournament = await tournamentModel.findOneAndUpdate(
       { _id: tournamentId },
-      { winPlayer, isFinished: true, isStart: false }
+      { winPlayer, isFinished: true, isStart: false, eleminatedPlayers: elem },
+      { new: true}
     );
     console.log("winner tournamet", lastPlayer, tournament.winPlayer, winPlayer);
     for await (let player of Object.values(tournament.winPlayer)) {
@@ -2702,15 +2712,16 @@ export const distributeTournamentPrize = async (
         //player.userId is the winner of amount player.amount
         const user = await userModel.findOneAndUpdate(
           { _id: player.userId },
-          { $inc: { wallet: player.amount } },
+          { $inc: { ticket: player.amount } },
           { new: true }
         );
+        console.log("user =>", user)
         await transactionModel.create({
           userId: player.userId,
           amount: player.amount,
           transactionDetails: {},
-          prevWallet: parseFloat(user?.wallet),
-          updatedWallet: parseFloat(user?.wallet),
+          prevToken: parseFloat(user?.ticket),
+          updatedToken: parseFloat(user?.ticket),
           transactionType: "poker tournament",
         });
         console.log("winner =>", player);
@@ -2723,14 +2734,16 @@ export const distributeTournamentPrize = async (
             for await (let userId of player?.userIds) {
               const user = await userModel.findOneAndUpdate(
                 { _id: userId },
-                { $inc: { ticket: player.amount } }
+                { $inc: { ticket: player.amount } },
+                {new: true}
               );
+              console.log("user =>", user)
               await transactionModel.create({
                 userId,
                 amount: player.amount,
                 transactionDetails: {},
-                prevWallet: parseFloat(user?.wallet),
-                updatedWallet: parseFloat(user?.wallet),
+                prevToken: parseFloat(user?.ticket),
+          updatedToken: parseFloat(user?.ticket),
                 transactionType: "poker tournament",
               });
             }
@@ -2743,14 +2756,16 @@ export const distributeTournamentPrize = async (
             for await (let userId of player?.userIds) {
               const user = await userModel.findOneAndUpdate(
                 { _id: userId },
-                { $inc: { ticket: player.amount } }
+                { $inc: { ticket: player.amount } },
+                {new: true}
               );
+              console.log("user =>", user)
               await transactionModel.create({
                 userId,
                 amount: player.amount,
                 transactionDetails: {},
-                prevWallet:parseFloat(user?.wallet),
-                updatedWallet: parseFloat(user?.wallet),
+                prevToken: parseFloat(user?.ticket),
+                updatedToken: parseFloat(user?.ticket),
                 transactionType: "poker tournament",
               });
             }
@@ -4153,11 +4168,7 @@ export const doRaise = async (roomData, playerid, io, amt) => {
     let roundData = null;
     let p;
 
-    const filterDta = roomData.players.filter(
-      (el) => el.userid.toString() === roomData.timerPlayer.toString()
-    );
-
-    if (roomData.timerPlayer.toString() === playerid.toString()) {
+    if (roomData?.timerPlayer?.toString() === playerid?.toString()) {
       switch (roomData.runninground) {
         case 1: {
           if(roomData.preflopround.find(pl => pl.id === playerid)?.action){
@@ -4497,7 +4508,7 @@ export const doRaise = async (roomData, playerid, io, amt) => {
       }
     }
   } catch (error) {
-    console.log("ffgfagfa", error);
+    console.log("Error in doRaise", error);
   }
 };
 
@@ -4512,8 +4523,6 @@ export const socketDoRaise = async (dta, io, socket) => {
       roomid = mongoose.Types.ObjectId(roomid);
       let playerid = userid;
       let amt = parseInt(dta.amount);
-
-      console.log("amtamtamt 4122");
 
       const data = await roomModel
         .findOne(
@@ -5743,7 +5752,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         });
         //delete room push in destoryed room of tournament
         await tournamentModel.updateOne(
-          { _id: room.tournament },
+          { _id: tournamentId },
           { $push: { destroyedRooms: allRooms[0]._id } },
           {
             new: true,
@@ -5801,11 +5810,14 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         io.in(room._id.toString()).emit("roomchanged", {
           userIds,
         });
-        allRooms.forEach(r => {
-          if(userIds.find(user => user.newRoomId.toString() === r._id.toString()) && !r.gamestart){
-            preflopround(r,io);
-          }
-        })
+        setTimeout(() => {
+          allRooms.forEach(r => {
+            if(userIds.find(user => user.newRoomId.toString() === r._id.toString()) && !r.gamestart){
+              preflopround(r,io);
+            }
+          })
+        },1000)
+        
       }
       if (playersToMove.length === 0) {
         await tournamentModel.updateOne(
@@ -7415,7 +7427,6 @@ const pushPlayerInRoom = async (
         { $inc: { havePlayers: 1 } },
         { new: true }
       );
-      console.log("updatedTournament", updatedTournament);
 
       await User.findOneAndUpdate(
         { _id: userData._id },
@@ -7426,11 +7437,8 @@ const pushPlayerInRoom = async (
       const updatedTournaments = await tournamentModel.findOne({
         _id: tournamentId,
       });
-
-      console.log("updatedTournaments", updatedTournaments);
       let smallBlind = updatedTournaments?.levels?.smallBlind?.amount;
       let bigBlind = updatedTournaments?.levels?.bigBlind?.amount;
-      console.log("smallBlind", smallBlind);
       const payload = {
         players: [
           {
