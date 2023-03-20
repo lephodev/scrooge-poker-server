@@ -193,7 +193,6 @@ export const verifycards = (distributedCards, noOfCards) => {
 
 export const preflopPlayerPush = async (players, roomid) => {
   try {
-    console.log("PREFLOP PLAYER PUSH", players);
     const roomData = await roomModel
       .findOne({ _id: convertMongoId(roomid) })
       .lean();
@@ -253,6 +252,7 @@ export const preflopPlayerPush = async (players, roomid) => {
           hands: player.hands,
           meetingToken: player.meetingToken,
           items: player.items,
+          chipsBeforeHandStart: player.chipsBeforeHandStart,
         });
       }
     });
@@ -306,7 +306,6 @@ export const preflopround = async (room, io) => {
         i++;
       }
       playingPlayer = [...newPos];
-      console.log("positions player", playingPlayer);
       room = await roomModel.findOneAndUpdate(
         { _id: room._id },
         {
@@ -885,6 +884,7 @@ export const flopround = async (roomid, io) => {
             id: e.id,
             name: e.name,
             wallet: e.wallet,
+            chipsBeforeHandStart: e.chipsBeforeHandStart,
             photoURI: e.photoURI,
             fold: e.fold,
             timebank: e.timebank,
@@ -1237,6 +1237,7 @@ export const turnround = async (roomid, io) => {
             name: e.name,
             photoURI: e.photoURI,
             wallet: e.wallet,
+            chipsBeforeHandStart: e.chipsBeforeHandStart,
             fold: e.fold,
             timebank: e.timebank,
             playerchance: playerchance,
@@ -1590,6 +1591,7 @@ export const riverround = async (roomid, io) => {
             name: e.name,
             photoURI: e.photoURI,
             wallet: e.wallet,
+            chipsBeforeHandStart: e.chipsBeforeHandStart,
             fold: e.fold,
             timebank: e.timebank,
             playerchance: playerchance,
@@ -1937,6 +1939,7 @@ export const showdown = async (roomid, io) => {
         name: e.name,
         photoURI: e.photoURI,
         wallet: e.wallet,
+        chipsBeforeHandStart: e.chipsBeforeHandStart,
         fold: e.fold,
         playerchance: 0,
         playing: e.playing,
@@ -2323,7 +2326,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                       (el) => el.userid.toString() === x.userid.toString()
                     );
                     if (!playerexist) {
-                      data.push(x);
+                      data.push({...x, chipsBeforeHandStart: x.wallet});
                     }
                   }
                   next();
@@ -2388,6 +2391,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 );
               } else {
                 newHandPlayer.push({
+                  chipsBeforeHandStart: el.wallet,
                   userid: uid,
                   id: uid,
                   name: el.name,
@@ -2496,6 +2500,7 @@ export const elemination = async (roomData, io) => {
           name: el.name,
           photoURI: el.photoURI,
           wallet: el.wallet,
+          chipsBeforeHandStart: el.chipsBeforeHandStart,
           position: el.position,
           timebank: el.timebank,
           stats: el.stats,
@@ -2511,6 +2516,7 @@ export const elemination = async (roomData, io) => {
           name: el.name,
           photoURI: el.photoURI,
           wallet: el.wallet,
+          chipsBeforeHandStart: el.chipsBeforeHandStart,
           position: el.position,
           timebank: el.timebank,
           stats: el.stats,
@@ -2568,7 +2574,7 @@ export const elemination = async (roomData, io) => {
         }
       )
       .populate("tournament");
-      console.log("remainging player in showdown after game finish", newHandPlayer, players, upRoom)
+      console.log("remainging player in showdown after game finish", newHandPlayer)
     if (
       eleminated_players.length > 0 &&
       upRoom.tournament.havePlayers > 0 &&
@@ -2577,16 +2583,21 @@ export const elemination = async (roomData, io) => {
       const availablePlayerCount =
         parseInt(upRoom.tournament.havePlayers) -
         parseInt(upRoom?.eliminationCount);
-      if (availablePlayerCount <= upRoom.tournament.winTotalPlayer) {
-        await calculateTournamentPrize(
-          upRoom.tournament._id,
-          upRoom.eleminated
-        );
-      }
+        let eleminatedPlayers = [...upRoom.tournament.eleminatedPlayers].concat(eleminated_players.sort((a,b) => a.chipsBeforeHandStart - b.chipsBeforeHandStart))
+console.log("ele",eleminatedPlayers.length)
+        
+
+      // if (availablePlayerCount <= upRoom.tournament.winTotalPlayer) {
+      //   await calculateTournamentPrize(
+      //     upRoom.tournament._id,
+      //     upRoom.eleminated
+      //   );
+      // }
       await tournamentModel.updateOne(
         { _id: upRoom.tournament._id },
         {
           havePlayers: parseInt(availablePlayerCount),
+          eleminatedPlayers,
         }
       );
     }
@@ -2644,10 +2655,43 @@ export const distributeTournamentPrize = async (
 ) => {
   try {
     const tournamentdata = await tournamentModel.findOne({ _id: tournamentId });
-    let winPlayer = {
-      ...tournamentdata.winPlayer,
-      first: { ...tournamentdata.winPlayer.first, userId: lastPlayer.userid || lastPlayer.id },
-    };
+    let elem = [...tournamentdata.eleminatedPlayers];
+    elem.push(lastPlayer);
+    // if 3
+    //elem.slice(elem.length-3, elem.length);
+    let { winPlayer, winTotalPlayer } = tournamentdata;
+    let winners = elem.slice(elem.length-tournamentdata.winTotalPlayer, elem.length)
+    winners.forEach((ele) => {
+      if (
+        winTotalPlayer === 25 &&
+        winPlayer["11-25"] &&
+        winPlayer["11-25"].userIds.length < winPlayer["11-25"].playerCount
+      ) {
+        winPlayer["11-25"].userIds.push(ele.id || ele.userid);
+        return;
+      }
+      if (
+        winTotalPlayer === 10 &&
+        winPlayer["4-10"] &&
+        winPlayer["4-10"].userIds.length <= winPlayer["4-10"].playerCount
+      ) {
+        winPlayer["4-10"].userIds.push(ele.id || ele.userid);
+        return;
+      }
+      if (!winPlayer.third.userId) {
+        winPlayer.third.userId = ele.id || ele.userid;
+        return;
+      }
+      if (!winPlayer.second.userId) {
+        winPlayer.second.userId = ele.id || ele.userid;
+        return;
+      }
+      if (!winPlayer.first.userId) {
+        winPlayer.first.userId = ele.id || ele.userid;
+        return;
+      }
+    });
+    
     const tournament = await tournamentModel.findOneAndUpdate(
       { _id: tournamentId },
       { winPlayer, isFinished: true, isStart: false }
@@ -3112,6 +3156,7 @@ export const doSitOut = async (data, io, socket) => {
               },
               { new: true }
             );
+            if(updatedData){
             if (action !== "Leave") {
               io.in(updatedData._id.toString()).emit("notification", {
                 id: userid,
@@ -3119,6 +3164,7 @@ export const doSitOut = async (data, io, socket) => {
               });
             }
             if (socket) socket.emit("sitInOut", { updatedRoom: updatedData });
+          }
             break;
 
           default:
@@ -5120,7 +5166,7 @@ export const doAllin = async (roomData, playerid, io) => {
 };
 
 export const socketDoAllin = async (dta, io, socket) => {
-  console.log("ALLIN 4395");
+
   let userid = mongoose.Types.ObjectId(dta.userid);
   let roomid = mongoose.Types.ObjectId(dta.roomid);
 
@@ -5128,7 +5174,6 @@ export const socketDoAllin = async (dta, io, socket) => {
 
   try {
     if (isValid) {
-      console.log("=================== ALLIN 4532");
       roomid = mongoose.Types.ObjectId(roomid);
       let playerid = userid;
       // let amt  = body.amount;
@@ -5141,16 +5186,12 @@ export const socketDoAllin = async (dta, io, socket) => {
           // { _id: 1, raiseAmount: 1 }
         )
         .lean();
-      console.log({ data });
       if (data !== null) {
-        console.log("=================== ALLIN 4420");
         await doAllin(data, playerid, io);
       } else {
-        console.log("=================== ALLIN 4442");
         socket.emit("actionError", { code: 404, msg: "Data not found" });
       }
     } else {
-      console.log("=================== ALLIN 4427");
       socket.emit("actionError", { code: 400, msg: "Bad request" });
     }
   } catch (e) {
@@ -5214,6 +5255,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         gameJoinedAt: e.gameJoinedAt,
         meetingToken: e.meetingToken,
         items: e.items,
+        chipsBeforeHandStart: e.chipsBeforeHandStart,
       };
       showDownPlayers.push(p);
     });
@@ -5699,6 +5741,15 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         io.in(allRooms[0]._id.toString()).emit("tournamentFinished", {
           tournamentId,
         });
+        //delete room push in destoryed room of tournament
+        await tournamentModel.updateOne(
+          { _id: room.tournament },
+          { $push: { destroyedRooms: allRooms[0]._id } },
+          {
+            new: true,
+          }
+        );
+        await roomModel.deleteOne({ _id: allRooms[0]._id });
         return;
       }
     }
@@ -5774,7 +5825,9 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         preflopround(room, io);
       } else {
         // emit please wait for re-arrange/blank spot
-        io.in(room._id.toString()).emit("waitForReArrange");
+        io.in(room._id.toString()).emit("waitForReArrange", {
+          userIds: room.showdown.map(p => p.id || p.userid)
+        });
       }
     }
     //////////////////////////////////////////////
