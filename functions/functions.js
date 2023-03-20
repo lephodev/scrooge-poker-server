@@ -2335,7 +2335,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
               function (x, next) {
                 try {
                   if(roomData.tournament && roomData.tournament.eleminatedPlayers.find(el => el.userid.toString() === x.userid.toString())){
-                    return;
+                    next();
                   }
                   if (roomData.runninground > 0) {
                     const playerexist = data.find(
@@ -2366,7 +2366,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
             try {
               let uid = el.userid || el.id;
               if(roomData.tournament && roomData.tournament.eleminatedPlayers.find(el => el.userid.toString() === uid.toString())){
-                return;
+                next();
               }
               let buyinchips = 0;
               let stripeBuy = el.hands;
@@ -2512,10 +2512,12 @@ export const elemination = async (roomData, io) => {
     const bigBlindAmt = roomData.bigBlind;
     const smallBlindAmt = roomData.smallBlind;
     let players = roomData.players;
+    console.log("players =>", players, showDown);
     showDown.forEach((el) => {
       if (parseFloat(el.wallet) > 0) {
         newHandPlayer.push({
           userid: el.id,
+          id: el.id,
           name: el.name,
           photoURI: el.photoURI,
           wallet: el.wallet,
@@ -2528,7 +2530,7 @@ export const elemination = async (roomData, io) => {
           playing: true,
         });
       } else {
-        players = players.filter(p => p.userid !== el.id);
+        players = players.filter(p => p.userid.toString() !== el.id.toString());
         noOfElemination++;
         eleminated_players.push({
           userid: el.id,
