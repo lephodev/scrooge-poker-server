@@ -318,7 +318,7 @@ export const preflopround = async (room, io) => {
         { new: true }
       );
     }
-    if (!room.finish && !room.gamestart) {
+    if (!room.finish) {
       if (room.runninground === 0) {
         if (playingPlayer.length > 1) {
           await roomModel.updateOne(
@@ -2281,10 +2281,7 @@ export const showdown = async (roomid, io) => {
             finish: roomUpdate?.finish,
             roomdata: roomUpdate,
           });
-        } else
-          io.in(upRoom._id.toString()).emit("newhand", {
-            updatedRoom: roomUpdate,
-          });
+        }
       }
     }, gameRestartSeconds);
   } catch (error) {
@@ -2458,7 +2455,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                   pot: 0,
                   communityCard: [],
                   runninground: 0,
-                  gamestart: false,
+                  gamestart: roomData.autoNextHand,
                   isGameRunning: false,
                   smallBlind: smallBlindAmt,
                   bigBlind: bigBlindAmt,
@@ -2567,7 +2564,7 @@ export const elemination = async (roomData, io) => {
           riverround: [],
           pot: 0,
           communityCard: [],
-          gamestart: false,
+          gamestart:  roomData.autoNextHand,
           isGameRunning: false,
           smallBlind: smallBlindAmt,
           bigBlind: bigBlindAmt,
@@ -5417,10 +5414,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
             finish: roomUpdate?.finish,
             roomdata: roomUpdate,
           });
-        } else
-          io.in(updatedRoom._id.toString()).emit("newhand", {
-            updatedRoom: roomUpdate,
-          });
+        }
       }
     }, gameRestartSeconds);
   } catch (error) {
@@ -7044,7 +7038,8 @@ console.log("Check table socket trigger")
     const updatedRoom = await gameService.joinRoomByUserId(
       game,
       userId,
-      sitInAmount
+      sitInAmount,
+      playerLimit
     );
 
     if (updatedRoom && Object.keys(updatedRoom).length > 0) {
