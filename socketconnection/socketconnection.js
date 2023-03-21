@@ -339,7 +339,7 @@ let returnSocket = (io) => {
     });
 
     socket.on("joinTournament", async (data) => {
-      await JoinTournament(data, socket, io);
+      await JoinTournament(data, io, socket);
     });
   });
 };
