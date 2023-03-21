@@ -18,7 +18,8 @@ import Notification from "../models/notificationModal";
 import User from "../landing-server/models/user.model";
 import { decryptCard, EncryptCard } from "../validation/poker.validation";
 
-const gameRestartSeconds = 4000;
+const gameRestartSeconds = 8000;
+const playerLimit = 9;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
@@ -2674,8 +2675,6 @@ export const distributeTournamentPrize = async (
     const tournamentdata = await tournamentModel.findOne({ _id: tournamentId });
     let elem = [...tournamentdata.eleminatedPlayers];
     elem.push(lastPlayer);
-    // if 3
-    //elem.slice(elem.length-3, elem.length);
     let { winPlayer, winTotalPlayer } = tournamentdata;
     let winners = elem.slice(elem.length-tournamentdata.winTotalPlayer, elem.length)
     winners.forEach((ele) => {
@@ -3311,10 +3310,8 @@ export const doLeaveTable = async (data, io, socket) => {
           roomdata.players.filter((ele) => ele.playing).length ||
           data.isWatcher
         ) {
-          console.log("LEAVE API CALL 3135");
           await leaveApiCall(roomdata, userid);
         } else {
-          console.log("doFinishGame CALL 3138");
           await doFinishGame(
             { roomid: roomdata._id, userid: userid },
             io,
@@ -5786,7 +5783,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
     );
     let blankSpot = 0;
     OtherRoom.forEach((c) => {
-      blankSpot += 3 - c.players.length;
+      blankSpot += playerLimit - c.players.length;
     });
     if (blankSpot >= room.showdown.length) {
       let playersToMove = [...room.showdown];
@@ -5795,11 +5792,11 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         if (playersToMove.length === 0 || blankSpot === 0) {
           break;
         }
-        if (r.players.length >= 3) {
+        if (r.players.length >= playerLimit) {
           continue;
         }
         let newPlayers = [...r.players];
-        let tempSpotArr = [...Array(3 - r.players.length).keys()];
+        let tempSpotArr = [...Array(playerLimit - r.players.length).keys()];
         for await (const temp of tempSpotArr) {
           if(playersToMove[temp]){
           let position = await findAvailablePosition(newPlayers);
@@ -5854,142 +5851,12 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
       if (room.showdown.length > 1) {
         preflopround(room, io);
       } else {
-        // emit please wait for re-arrange/blank spot
         io.in(room._id.toString()).emit("waitForReArrange", {
           userIds: room.showdown.map(p => p.id || p.userid)
         });
       }
     }
-    //////////////////////////////////////////////
-    // for await (let room of allRooms) {
-    //   i+=1;
-    //   //blank_spot
-    //   let blankSpot = 3-room.players.length;
-    //   if(blankSpot === 0){
-    //       console.log(
-    //         "not enough space to fill the spot in room =>",
-    //         room._id
-    //       );
-    //       if (allRooms[i].players.length > 1) {
-    //          preflopround(allRooms[i], io);
-    //       }
-    //       continue;
-    //     }
-    //     j=i+1;
-    //     let arr = Array(allRooms.length -j).keys();
-
-    //   for await (let roomJ of arr){
-    //     if(allRooms[j].players.length <=blankSpot){
-    //       blankSpot = blankSpot-allRooms[j].players.length
-    //       let newPlayers = [...allRooms[i].players];
-    //       let userIds = [];
-    //       for await(let pl of allRooms[j].players){
-    //         let position = await findAvailablePosition(newPlayers);
-    //         newPlayers.push({ ...pl, position})
-    //         userIds.push(pl.userid);
-    //       }
-    //       const updatedRoom = await roomModel.findOneAndUpdate(
-    //         {
-    //           _id: allRooms[i]._id,
-    //         },
-    //         {
-    //           players: currentPlayer,
-    //         },
-    //         {
-    //           new: true,
-    //         }
-    //       );
-    //       io.in(allRooms[j]._id.toString()).emit("roomchanged", {
-    //         changeIds: userIds,
-    //         newRoomId: allRooms[i]._id,
-    //         updatedRoom: updatedRoom,
-    //       });
-
-    //       await tournamentModel.updateOne(
-    //         { _id: allRooms[j].tournament },
-    //         { $push: { destroyedRooms: allRooms[j]._id } },
-    //         {
-    //           new: true,
-    //         }
-    //       );
-    //       await roomModel.deleteOne({ _id: allRooms[j]._id });
-    //     }
-    //     j++;
-    //   }
-    //   if (allRooms[i].players.length <= 2) {
-    //     if (allRooms.length === 1) {
-    //       if (allRooms[i].players.length > 1) {
-    //         await preflopround(allRooms[i], io);
-    //       } else {
-    //         console.log("only one player =>", allRooms[i]);
-    //         await distributeTournamentPrize(
-    //           tournamentId,
-    //           allRooms[i].players[0]
-    //         );
-    //         io.in(allRooms[i]._id.toString()).emit("tournamentFinished");
-    //       }
-    //     }
-    //     for (let j = i + 1; j < allRooms.length; j++) {
-    //       if (allRooms[j].players.length <= 1) {
-    //         let currentPlayer = [...allRooms[j].players];
-    //         let userIds = [];
-    //         for await (let player of allRooms[i].players) {
-    //           const position = await findAvailablePosition(currentPlayer);
-    //           currentPlayer.push({ ...player, position });
-    //           userIds.push(player.userid);
-    //           const userData = await userModel.findOneAndUpdate(
-    //             {
-    //               _id: player.userid,
-    //               "tournaments.tournamentId": allRooms[j].tournament,
-    //             },
-    //             {
-    //               players: currentPlayer,
-    //             },
-    //             { new: true }
-    //           );
-    //         }
-    //         const updatedRoom = await roomModel.findOneAndUpdate(
-    //           {
-    //             _id: allRooms[j]._id,
-    //           },
-    //           {
-    //             players: currentPlayer,
-    //           },
-    //           {
-    //             new: true,
-    //           }
-    //         );
-
-    //         io.in(allRooms[i]._id.toString()).emit("roomchanged", {
-    //           changeIds: userIds,
-    //           newRoomId: allRooms[j]._id,
-    //           updatedRoom: updatedRoom,
-    //         });
-    //         // io.in(allRooms[j]._id.toString()).emit("newhand", {
-    //         //   updatedRoom: updatedRoom,
-    //         // });
-    //         await tournamentModel.updateOne(
-    //           { _id: allRooms[j].tournament },
-    //           { $push: { destroyedRooms: allRooms[i]._id } },
-    //           {
-    //             new: true,
-    //           }
-    //         );
-    //         await roomModel.deleteOne({ _id: allRooms[i]._id });
-    //         // await updateRoomForNewHand(allRooms[i]._id, io);
-    //         await preflopround(allRooms[j], io);
-    //       }
-    //     }
-    //   } else {
-    //     console.log(
-    //       "not enough space to fill the spot in room =>",
-    //       allRooms[i]._id
-    //     );
-    //     if (allRooms[i].players.length > 1) {
-    //       await preflopround(allRooms[i], io);
-    //     }
-    //   }
-    // }
+   
   } catch (error) {
     console.log("error in fillSpot function =>", error);
   }
@@ -6236,7 +6103,7 @@ export const findAvailablePosition = async (playerList) => {
     try {
       let i = 0;
       let isFound = false;
-      while (i < 3 && !isFound) {
+      while (i < 9 && !isFound) {
         let have = playerList.filter((el) => el.position === i);
         if (!have.length) {
           isFound = true;
@@ -6705,7 +6572,6 @@ export const InvitePlayers = async (data, socket, io) => {
       { new: true }
     );
     if (updateRoom) {
-      // http://localhost:3000/table?gamecollection=poker&tableid=63a05540685ad21d89ac1e9b
       const sendMessageToInvitedUsers = [
         ...newInvPlayers.map((el) => {
           return {
@@ -7164,7 +7030,7 @@ console.log("Check table socket trigger")
       io.in(gameId).emit("updateGame", { game: gameUpdatedData });
       return;
     }
-    if (game.players.length >= 3) {
+    if (game.players.length >= playerLimit) {
       return socket.emit("tablefull", { message: "This table is full." });
     }
     if (!sitInAmount) {
@@ -7313,108 +7179,104 @@ export const emitTyping = async (data, socket, io) => {
   }
 };
 
-export const JoinTournament = async (data, socket) => {
+export const JoinTournament = async (data, io, socket) => {
   try {
     const { userId, tournamentId, fees } = data;
 
     const tournament = await tournamentModel.findOne({
       _id: tournamentId,
-    });
+    }).populate('rooms');
 
-    if (tournament.isStart) {
-      socket.emit("tournamentAlreadyStarted", {
+    if(!tournament){
+      socket.emit("NoTournamentFound", {
+        message: "No tournament found"
+      })
+    }
+
+    const { rooms = [], isStart, isFinished } = tournament;
+
+    if (isStart) {
+     return socket.emit("tournamentAlreadyStarted", {
         message: "Tournament Has been already started",
         code: 400,
       });
-      return;
     }
 
-    const checkTable = await roomModel.findOne({
-      tournament: mongoose.Types.ObjectId(tournamentId),
-      "players.userid": mongoose.Types.ObjectId(userId),
-    });
+    if(isFinished) {
+     return socket.emit("tournamentAlreadyFinished", {
+        message: "Tournament Has been finished",
+        code: 400,
+      });
+    }
 
-    if (!checkTable) {
-      const userData = await User.findById(userId).lean();
-      if (userData?.wallet >= fees) {
-        await Tournament(userId, tournamentId, fees, socket);
-        const updatedUser = await User.findOneAndUpdate(
-          { _id: userId },
-          { $inc: { wallet: -parseFloat(fees) } },
-          { new: true }
-        );
-        await transactionModel.create({
-          userId: userId,
-          amount: parseFloat(fees),
-          transactionDetails: {},
-          prevWallet: parseFloat(userData?.wallet),
-          updatedWallet: updatedUser?.wallet,
-          transactionType: "poker tournament",
-        });
-        return socket.emit("alreadyInTournament", {
-          message: "You joined in game.",
-          code: 200,
-          user: updatedUser || {},
-        });
-      } else {
-        return socket.emit("notEnoughAmount", {
-          message: "You have not much amount to join.",
-          code: 400,
-        });
-      }
-    } else {
+    if(rooms.find(room => room.players.find(pl => pl.userid.toString() === userId.toString() || pl.id.toString() === userId.toString()) ? true : false)){
       return socket.emit("alreadyInTournament", {
         message: "You are already in game.",
         code: 400,
       });
     }
+
+    if(tournament.havePlayers >=10000){
+      return socket.emit("tournamentSlotFull", {
+        message: "No empty slot",
+      })
+    }
+
+    let roomWithSpace = rooms.find(room => room.players.length < playerLimit);
+    const userData = await User.findById(userId).lean();
+    if (userData?.wallet < fees) {
+      return socket.emit("notEnoughAmount", {
+        message: "You have not much amount to join.",
+        code: 400,
+      });
+    }
+    await pushPlayerInRoom(
+      tournament,
+      userData,
+      tournamentId,
+      roomWithSpace,
+      socket, 
+      io
+    );
+      const updatedUser = await User.findOneAndUpdate(
+        { _id: userId },
+        { $inc: { wallet: -parseFloat(fees) } },
+        { new: true }
+      );
+      await transactionModel.create({
+        userId: userId,
+        amount: parseFloat(fees),
+        transactionDetails: {},
+        prevWallet: parseFloat(userData?.wallet),
+        updatedWallet: updatedUser?.wallet,
+        transactionType: "poker tournament",
+      });
+      return socket.emit("alreadyInTournament", {
+        message: "You joined in game.",
+        code: 200,
+        user: updatedUser || {},
+      });
+   
   } catch (error) {
     console.log("Error on line 7658", error);
   }
 };
 
-const Tournament = async (userId, tournamentId, tournamentAmount, socket) => {
-  try {
-    const userData = await User.findById(userId).lean();
-    let checkTournament = await tournamentModel
-      .findOne({ _id: tournamentId })
-      .lean();
-    if (checkTournament) {
-      if (checkTournament.havePlayers < 10000) {
-        await pushPlayerInRoom(
-          checkTournament,
-          userData,
-          tournamentId,
-          tournamentAmount,
-          socket
-        );
-      }
-    }
-  } catch (error) {
-    console.log("error in tournament function =>", error);
-  }
-};
 
 const pushPlayerInRoom = async (
   checkTournament,
   userData,
   tournamentId,
-  tournamentAmount,
-  socket
+  room,
+  socket,
+  io
 ) => {
-  // console.log("checkTournamentin PushPlayer", checkTournament);
   try {
-    let roomId;
     const { username, _id, avatar, profile } = userData;
-    let lastRoom = null;
-    if (checkTournament?.rooms?.length) {
-      lastRoom = await roomModel
-        .findById(checkTournament.rooms[checkTournament.rooms.length - 1])
-        .lean();
-    }
-    if (checkTournament?.rooms?.length && lastRoom?.players?.length < 3) {
-      roomId = lastRoom._id;
-      let players = lastRoom.players;
+   let roomId;
+    if (room) {
+      roomId = room._id;
+      let players = room.players;
       let position = await findAvailablePosition(players);
       players.push({
         name: username,
@@ -7431,7 +7293,6 @@ const pushPlayerInRoom = async (
         initialCoinBeforeStart: parseFloat(checkTournament.buyIn),
         gameJoinedAt: new Date(),
         hands: [],
-        // timebank: tournamentconfig.emergencyTimer,
       });
 
       const payload = {
@@ -7439,24 +7300,15 @@ const pushPlayerInRoom = async (
         tournament: tournamentId,
       };
 
-      await roomModel.findOneAndUpdate({ _id: roomId }, payload, { new: true });
-      const updatedTournament = await tournamentModel.findOneAndUpdate(
+      await roomModel.updateOne({ _id: roomId }, payload);
+       await tournamentModel.findOneAndUpdate(
         { _id: tournamentId },
         { $inc: { havePlayers: 1 } },
         { new: true }
       );
-
-      await User.findOneAndUpdate(
-        { _id: userData._id },
-        { $push: { tournaments: { tournamentId, roomId } } },
-        { upsert: true, new: true }
-      );
     } else {
-      const updatedTournaments = await tournamentModel.findOne({
-        _id: tournamentId,
-      });
-      let smallBlind = updatedTournaments?.levels?.smallBlind?.amount;
-      let bigBlind = updatedTournaments?.levels?.bigBlind?.amount;
+      let smallBlind = checkTournament?.levels?.smallBlind?.amount;
+      let bigBlind = checkTournament?.levels?.bigBlind?.amount;
       const payload = {
         players: [
           {
@@ -7491,14 +7343,9 @@ const pushPlayerInRoom = async (
         { $inc: { havePlayers: 1 }, $push: { rooms: roomId } },
         { upsert: true, new: true }
       );
-      const getAllTournament = await tournamentModel.find({}).populate("rooms");
-      socket.emit("updatePlayerList", getAllTournament);
-      const updatedUser = await User.findOneAndUpdate(
-        { _id: userData._id },
-        { $push: { tournaments: { tournamentId, roomId } } },
-        { upsert: true, new: true }
-      );
     }
+    const getAllTournament = await tournamentModel.find({}).populate("rooms");
+    io.emit("updatePlayerList", getAllTournament);
   } catch (error) {
     console.log("error in push player in room function =>", error);
   }
@@ -7580,10 +7427,11 @@ export const blindTimer = async (data, io) => {
           await tournamentModel.updateOne({ _id }, bliend);
           const t = await tournamentModel.findOne({ _id }).populate("rooms")
           .lean();
-          blindTimer(t, io);
+         return blindTimer(t, io);
         }
       }, 1000);
     }
+    return;
   } catch (error) {
     console.log("error in blindTimer", error);
   }
