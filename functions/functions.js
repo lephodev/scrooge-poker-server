@@ -2269,8 +2269,10 @@ export const showdown = async (roomid, io) => {
             }
           }
         } else {
+          const room = await roomModel.findOneAndUpdate({ _id: upRoom._id}, { gamestart: false }, { new: true});
           io.in(upRoom._id.toString()).emit("tablestopped", {
             msg: "Table stopped by host",
+            game: room
           });
         }
         const roomUpdate = await roomModel.findOne({ _id: upRoom._id });
@@ -2455,7 +2457,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                   pot: 0,
                   communityCard: [],
                   runninground: 0,
-                  gamestart: roomData.autoNextHand,
+                  gamestart: newHandPlayer.filter(pl => pl.wallet>0 && pl.playing)?.length <=1? false: roomData.autoNextHand,
                   isGameRunning: false,
                   smallBlind: smallBlindAmt,
                   bigBlind: bigBlindAmt,
@@ -5402,8 +5404,10 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
             }
           }
         } else {
+          const room = await roomModel.findOneAndUpdate({ _id: updatedRoom._id}, { gamestart: false }, { new: true });
           io.in(updatedRoom._id.toString()).emit("tablestopped", {
             msg: "Table stopped by host",
+            game: room
           });
         }
         const roomUpdate = await roomModel.findOne({ _id: updatedRoom._id });
