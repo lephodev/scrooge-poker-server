@@ -2123,7 +2123,7 @@ export const showdown = async (roomid, io) => {
       { new: true }
     );
 
-      if(updateRoom.sidePots.length){
+      if(updateRoom.sidePots.length || updateRoom.allinPlayers.length){
         await getSidePOt(updateRoom._id)
       }
       const updatedRoom = await roomModel.findOne({ _id: roomid });
