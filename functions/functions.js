@@ -192,6 +192,152 @@ export const verifycards = (distributedCards, noOfCards) => {
   }
 };
 
+
+export const getSidePOt = async (roomId) => {
+  const updatedRoomData = await roomModel.findOne({ _id: roomId });
+  let sidePot = updatedRoomData.sidePots;
+  let playerData = [];
+  switch (updatedRoomData.runninground) {
+    case 0:
+      playerData = updatedRoomData.players;
+      break;
+    case 1:
+      playerData = updatedRoomData.preflopround;
+      break;
+    case 2:
+      playerData = updatedRoomData.flopround;
+      break;
+    case 3:
+      playerData = updatedRoomData.turnround;
+      break;
+    case 4:
+      playerData = updatedRoomData.riverround;
+      break;
+    case 5:
+      playerData = updatedRoomData.showdown;
+      break;
+    default:
+      playerData = updatedRoomData.players;
+  }
+  if (updatedRoomData.allinPlayers.length && updatedRoomData.allinPlayers.length + 1 > sidePot.length) {
+    const roundData = playerData;
+    const z = (roundData1) => {
+      let otherPlayer = roundData1.filter((el) => el.prevPot > 0 && el.fold === false);
+      const foldPlayer = roundData1.filter((el) => el.prevPot > 0 && el.fold === true);
+      const pots = [];
+      otherPlayer.forEach((element) => {
+        pots.push(element.prevPot);
+      });
+      pots.sort(function (a, b) {
+        return a - b;
+      });
+      let sidePotValue = 0;
+      const playersOfPot = [];
+      otherPlayer.forEach((el) => {
+        if (el.prevPot < pots[0]) {
+          sidePotValue += el.prevPot;
+          el.prevPot = 0;
+        } else {
+          el.prevPot -= pots[0];
+          sidePotValue += pots[0];
+        }
+        playersOfPot.push(el.position);
+      });
+
+      foldPlayer.forEach((el) => {
+        if (el.prevPot < pots[0]) {
+          sidePotValue += el.prevPot;
+          el.prevPot = 0;
+        } else {
+          el.prevPot -= pots[0];
+          sidePotValue += pots[0];
+        }
+      });
+      if (playersOfPot.length === 1) {
+        playerData[playersOfPot[0]].wallet += sidePotValue;
+      } else {
+        sidePot.push({ pot: sidePotValue, players: playersOfPot });
+      }
+
+      otherPlayer = roundData1.filter((el) => el.prevPot > 0 && el.fold === false);
+      if (otherPlayer.length) {
+        z(otherPlayer);
+      }
+    };
+    z(roundData);
+    sidePot = sidePot.filter((el) => el.pot > 0 && el.players.length > 0);
+    if (sidePot.length > 2) {
+      const pots = [];
+      // eslint-disable-next-line no-plusplus
+      for (let i = 0; i < sidePot.length; i++) {
+        const p = { pot: sidePot[i].pot, players: sidePot[i].players };
+        // eslint-disable-next-line no-plusplus
+        for (let j = i + 1; j < sidePot.length; j++) {
+          // eslint-disable-next-line no-loop-func
+          if (p.players.every((val, index) => val === sidePot[j].players[index])) {
+            p.pot += sidePot[j].pot;
+          }
+        }
+        pots.push(p);
+      }
+      const filterPot = pots.filter(
+        (value, index, self) => index === self.findIndex((t) => t.players.toString() === value.players.toString())
+      );
+      sidePot = filterPot;
+    }
+    switch (updatedRoomData.runninground) {
+      case 0:
+        await roomModel.updateOne({ _id: updatedRoomData._id }, { sidePots: sidePot, players: playerData, pot: 0 });
+        break;
+      case 1:
+        await roomModel.updateOne({ _id: updatedRoomData._id }, { sidePots: sidePot, preflopround: playerData, pot: 0 });
+        break;
+      case 2:
+        await roomModel.updateOne({ _id: updatedRoomData._id }, { sidePots: sidePot, flopround: playerData, pot: 0 });
+        break;
+      case 3:
+        await roomModel.updateOne({ _id: updatedRoomData._id }, { sidePots: sidePot, turnround: playerData, pot: 0 });
+        break;
+      case 4:
+        await roomModel.updateOne({ _id: updatedRoomData._id }, { sidePots: sidePot, riverround: playerData, pot: 0 });
+        break;
+      case 5:
+        await roomModel.updateOne({ _id: updatedRoomData._id }, { sidePots: sidePot, showdown: playerData, pot: 0 });
+        break;
+      default:
+        await roomModel.updateOne({ _id: updatedRoomData._id }, { sidePots: sidePot, players: playerData, pot: 0 });
+    }
+  } else if (updatedRoomData.allinPlayers.length && sidePot.length) {
+    playerData.forEach((el) => {
+      sidePot[sidePot.length - 1].pot += el.prevPot;
+      el.prevPot = 0;
+    });
+    // sidePot[sidePot.length - 1].pot += updatedRoomData.pot;
+    switch (updatedRoomData.runninground) {
+      case 0:
+        await roomModel.updateOne({ _id: updatedRoomData._id }, { sidePots: sidePot, players: playerData, pot: 0 });
+        break;
+      case 1:
+        await roomModel.updateOne({ _id: updatedRoomData._id }, { sidePots: sidePot, preflopround: playerData, pot: 0 });
+        break;
+      case 2:
+        await roomModel.updateOne({ _id: updatedRoomData._id }, { sidePots: sidePot, flopround: playerData, pot: 0 });
+        break;
+      case 3:
+        await roomModel.updateOne({ _id: updatedRoomData._id }, { sidePots: sidePot, turnround: playerData, pot: 0 });
+        break;
+      case 4:
+        await roomModel.updateOne({ _id: updatedRoomData._id }, { sidePots: sidePot, riverround: playerData, pot: 0 });
+        break;
+      case 5:
+        await roomModel.updateOne({ _id: updatedRoomData._id }, { sidePots: sidePot, showdown: playerData, pot: 0 });
+        break;
+      default:
+        await roomModel.updateOne({ _id: updatedRoomData._id }, { sidePots: sidePot, players: playerData, pot: 0 });
+    }
+  }
+};
+
 export const preflopPlayerPush = async (players, roomid) => {
   try {
     const roomData = await roomModel
@@ -923,7 +1069,7 @@ export const flopround = async (roomid, io) => {
        fetchDistributedCards();
       let communityCards = verifycards(distributedCards, 3);
       communityCards = communityCards.map((card) => EncryptCard(card));
-      const updatedRoom = await roomModel.findOneAndUpdate(
+      await roomModel.updateOne(
         {
           _id: roomid,
         },
@@ -937,12 +1083,10 @@ export const flopround = async (roomid, io) => {
           raiseAmount: roomData.bigBlind,
           lastAction: "check",
           isCircleCompleted: false,
-        },
-
-        {
-          new: true,
         }
       );
+      await getSidePOt(roomid);
+      const updatedRoom = await roomModel.findOne({ _id: roomid });
 
       io.in(updatedRoom?._id?.toString()).emit("flopround", updatedRoom);
       if (playingPlayer > 1) {
@@ -1286,7 +1430,7 @@ export const turnround = async (roomid, io) => {
       let communityCards = roomData.communityCard;
       communityCards.push(newCard[0]);
 
-      const updatedRoom = await roomModel.findOneAndUpdate(
+      await roomModel.updateOne(
         {
           _id: roomid,
         },
@@ -1300,13 +1444,10 @@ export const turnround = async (roomid, io) => {
           raiseAmount: roomData.bigBlind,
           lastAction: "check",
           isCircleCompleted: false,
-        },
-
-        {
-          new: true,
         }
       );
-
+      await getSidePOt(roomid);
+      const updatedRoom = await roomModel.findOne({ _id: roomid });
       io.in(updatedRoom?._id?.toString()).emit("turnround", updatedRoom);
       if (playingPlayer > 1) {
         setTimeout(() => {
@@ -1640,7 +1781,7 @@ export const riverround = async (roomid, io) => {
       let communityCards = roomData?.communityCard;
       communityCards.push(newCard[0]);
 
-      const updatedRoom = await roomModel.findOneAndUpdate(
+     await roomModel.updateOne(
         {
           _id: roomid,
         },
@@ -1660,6 +1801,8 @@ export const riverround = async (roomid, io) => {
           new: true,
         }
       );
+      await getSidePOt(roomid);
+      const updatedRoom = await roomModel.findOne({ _id: roomid });
 
       io.in(updatedRoom?._id?.toString()).emit("riverround", updatedRoom);
       if (playingPlayer > 1) {
@@ -1967,7 +2110,7 @@ export const showdown = async (roomid, io) => {
       totalPot += e.pot;
       showDownPlayers.push(p);
     });
-    const updatedRoom = await roomModel.findOneAndUpdate(
+    const updateRoom =  await roomModel.findOneAndUpdate(
       {
         _id: roomid,
       },
@@ -1977,68 +2120,13 @@ export const showdown = async (roomid, io) => {
         timerPlayer: null,
         pot: totalPot,
       },
-      {
-        new: true,
-      }
+      { new: true }
     );
 
-    const getSidePOt = async (updatedRoom) => {
-      if (updatedRoom.allinPlayers.length) {
-        let roundData = updatedRoom.showdown;
-
-        let sidePot = [];
-        const z = (roundData) => {
-          let otherPlayer = roundData.filter(
-            (el) => el.prevPot > 0 && el.fold === false
-          );
-          let foldPlayer = roundData.filter(
-            (el) => el.prevPot > 0 && el.fold === true
-          );
-          let pots = [];
-          otherPlayer.forEach((element) => {
-            pots.push(element.prevPot);
-          });
-          pots.sort(function (a, b) {
-            return a - b;
-          });
-          let side_pot = 0;
-          let playersOfPot = [];
-          otherPlayer.forEach((el) => {
-            if (el.prevPot < pots[0]) {
-              side_pot += el.prevPot;
-              el.prevPot = 0;
-            } else {
-              el.prevPot -= pots[0];
-              side_pot += pots[0];
-            }
-            playersOfPot.push(el.position);
-          });
-
-          foldPlayer.forEach((el) => {
-            if (el.prevPot < pots[0]) {
-              side_pot += el.prevPot;
-              el.prevPot = 0;
-            } else {
-              el.prevPot -= pots[0];
-              side_pot += pots[0];
-            }
-          });
-
-          sidePot.push({ pot: side_pot, players: playersOfPot });
-          otherPlayer = roundData.filter(
-            (el) => el.prevPot > 0 && el.fold === false
-          );
-          if (otherPlayer.length) {
-            z(roundData);
-          }
-        };
-        z(roundData);
-
-        return sidePot;
-      } else {
-        return [];
+      if(updateRoom.sidePots.length){
+        await getSidePOt(updateRoom._id)
       }
-    };
+      const updatedRoom = await roomModel.findOne({ _id: roomid });
 
     const clcHand = (x) => {
       if (x.length) {
@@ -2079,16 +2167,18 @@ export const showdown = async (roomid, io) => {
       }
     };
 
-    let x = await getSidePOt(updatedRoom);
-
-    clcHand(x);
+    clcHand(updatedRoom.sidePots)
     console.log({ hands });
     let showdownData = updatedRoom.showdown;
     let winnerPlayers = [];
+    let sidePots = [...updatedRoom.sidePots];
+    let i=0;
     const findWinner = async () => {
       hands.forEach((e) => {
         let winner = Hand.winners(e.h);
+        console.log("HH",e)
         e.p.forEach((el) => {
+          console.log(el)
           if (JSON.stringify(el.hand) == JSON.stringify(winner[0])) {
             let winnerData = showdownData.filter(
               (p) => p.position === el.position
@@ -2103,12 +2193,7 @@ export const showdown = async (roomid, io) => {
             let winningAmount = e.pot - totalPlayerTablePot;
 
             if (winnerPlayers.length) {
-              let playerExist = winnerPlayers.filter(
-                (wp) => wp.position === el.position
-              );
-              if (playerExist.length) {
-                playerExist[0].winningAmount += e.pot;
-              } else {
+             
                 winnerPlayers.push({
                   id: winnerData[0].id,
                   name: winnerData[0].name,
@@ -2116,11 +2201,19 @@ export const showdown = async (roomid, io) => {
                   winningAmount: winningAmount,
                   handName: winner[0].name,
                   winnerHand: winnerHand,
+                  potPlayer: e.p,
                   winnerCards: winnerData[0].cards.map(card => decryptCard(card)),
                   communityCards: updatedRoom.communityCard.map(card => decryptCard(card)),
                 });
-              }
+                if(sidePots.length){
+                sidePots[i] = { ...sidePots[i], winner: winnerData[0].position};
+                i++;
+                }
             } else {
+              if(sidePots.length){
+              sidePots[i] = { ...sidePots[i], winner: winnerData[0].position};
+              i++;
+              }
               winnerPlayers.push({
                 id: winnerData[0].id,
                 name: winnerData[0].name,
@@ -2128,6 +2221,7 @@ export const showdown = async (roomid, io) => {
                 winningAmount: winningAmount,
                 handName: winner[0].name,
                 winnerHand: winnerHand,
+                potPlayer: e.p,
                 winnerCards: winnerData[0].cards.map(card => decryptCard(card)),
                 communityCards: updatedRoom.communityCard.map(card => decryptCard(card)),
               });
@@ -2183,8 +2277,8 @@ export const showdown = async (roomid, io) => {
 
     upRoomData.winnerPlayer = winnerPlayers;
     upRoomData.handWinner = handWinner;
-    upRoomData.sidePots = x;
     upRoomData.isShowdown = true;
+    upRoomData.sidePots = sidePots;
 
     io.in(upRoomData._id.toString()).emit("winner", {
       updatedRoom: upRoomData,
@@ -2198,7 +2292,6 @@ export const showdown = async (roomid, io) => {
         showdown: upRoomData.showdown,
         winnerPlayer: winnerPlayers,
         handWinner: handWinner,
-        sidePots: x,
         isShowdown: true,
       },
       {
