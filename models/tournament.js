@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 const Schema = mongoose.Schema;
 
 const tournamentSchema = new Schema(
@@ -11,18 +11,21 @@ const tournamentSchema = new Schema(
     active: { type: Boolean, default: false },
     isFinished: { type: Boolean, default: false },
     havePlayers: { type: Number, default: 0 },
-    rooms: [{ type: Schema.Types.ObjectId, ref: 'rooms', default: [] }],
-    destroyedRooms: [{ type: Schema.Types.ObjectId, ref: 'rooms', default: [] }],
+    rooms: [{ type: Schema.Types.ObjectId, ref: "rooms", default: [] }],
+    destroyedRooms: [
+      { type: Schema.Types.ObjectId, ref: "rooms", default: [] },
+    ],
     tournamentDate: { type: Date, required: true, default: new Date() },
-    incBlindTime: { type: Number, required: true},
-    winTotalPlayer: { type: Number, required: true},
-    winPlayer: { type: Object},
-    buyIn: { type: Number, required: true},
-    isStart:{ type: Boolean, default: false },
+    incBlindTime: { type: Number, required: true },
+    winTotalPlayer: { type: Number, required: true },
+    winPlayer: { type: Object },
+    buyIn: { type: Number, required: true },
+    isStart: { type: Boolean, default: false },
     eleminatedPlayers: [],
+    totalJoinPlayer: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
-const tournamentModel = mongoose.model('tournament', tournamentSchema);
+const tournamentModel = mongoose.model("tournament", tournamentSchema);
 
 export default tournamentModel;
