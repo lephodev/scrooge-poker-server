@@ -59,20 +59,23 @@ export const jointournament = async (req, res) => {
 };
 export const enterRoom = async (req, res) => {
   try {
-    const { _id } = req.user;
-    const { tournamentId } = req.body;
-    const data = await User.findOne(
-      { _id: _id, "tournaments.tournamentId": tournamentId },
-      {
-        tournaments: 1,
-      }
-    );
-    const getCurrentTournament = data.tournaments.filter(
-      (el) => el.tournamentId === tournamentId
-    );
-    let p = JSON.parse(JSON.stringify(getCurrentTournament));
-    let roomId = p[p.length - 1].roomId;
-    res.send({ code: 200, roomId });
+    const { body: {tournamentId}, user: { id } } = req;
+
+    const tournament = await tournamentModel.findOne(
+      { _id: tournamentId}
+    ).populate('rooms');
+    if(!tournament){
+      return res.send({ status: 404, msg: "Tournament not found" });
+    }
+    if(tournament.isFinished){
+     return res.send({ status: 400, msg: "Tournament already finished" });
+    }
+
+    const room = tournament.rooms.find(room => room.players.find(player => player.id.toString() === id.toString() ? true : false))
+    if(room){
+      return res.send({ code: 200, roomId: room._id });
+    }
+    return res.send({ code: 404, msg: 'You have not joined the tournament' });
   } catch (e) {
     console.log("error in enterRoom", e);
     res.send({ status: 406, msg: "Some error has occured!" });
