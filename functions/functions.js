@@ -17,6 +17,7 @@ import MessageModal from "../models/messageModal";
 import Notification from "../models/notificationModal";
 import User from "../landing-server/models/user.model";
 import { decryptCard, EncryptCard } from "../validation/poker.validation";
+import payouts from "../config/payout.json";
 
 const gameRestartSeconds = 8000;
 const playerLimit = 9;
@@ -2928,7 +2929,9 @@ export const distributeTournamentPrize = async (
   io
 ) => {
   try {
+    console.log("payouts =====>", payouts);
     const tournamentdata = await tournamentModel.findOne({ _id: tournamentId });
+
     let elem = [...tournamentdata.eleminatedPlayers];
     elem.push(lastPlayer);
     let { winPlayer, winTotalPlayer, prizeType, prizeDistribution } =
@@ -3022,12 +3025,57 @@ export const distributeTournamentPrize = async (
   }
 };
 
-const calculatePercentagePrizes = async () => {
+const calculatePercentagePrizes = async (tournamentdata, elem) => {
   try {
-    let winners = elem.slice(
-      elem.length - tournamentdata.winTotalPlayer,
-      elem.length
+    const { totalJoinPlayer, prizeDistribution, prizeType, tournamentFee } =
+      tournamentdata;
+    let percnt = 0;
+    elem = elem.reverse();
+    if (prizeDistribution === "top-10") {
+      percnt = Math.ceil(totalJoinPlayer * 0.1);
+    } else if (prizeDistribution === "top-15") {
+      percnt = Math.ceil(totalJoinPlayer * 0.15);
+    } else {
+      percnt = Math.ceil(totalJoinPlayer * 0.2);
+    }
+    let winners = elem.slice(0, percnt);
+
+    let values = Object.vlaues(payouts[prizeType]);
+
+    let reqPayout = values.find(
+      (el) => el.min < totalJoinPlayer && el.max >= totalJoinPlayer
     );
+    console.log("reqPayout ===>", reqPayout);
+    const totalPoolAmt = totalJoinPlayer * tournamentFee;
+
+    const { amount } = reqPayout;
+    console.log("amount ===>", amount);
+    let allWinnersWithAmount = {};
+    amount.forEach((el, i) => {
+      if (i < 10) {
+        allWinnersWithAmount[i] = {
+          userId: winners[i].id || winners[i].userid,
+          amount: totalPoolAmt * (el[i] / 100),
+        };
+      } else {
+        const key = Object.keys(el)[0];
+        let splitdIndxs = key.split("-");
+        const startIndx = parseInt(splitdIndxs[0]) - 1;
+        const endIndx = parseInt(splitdIndxs[1]) - 1;
+        let reqData = winners.slice(startIndx, endIndx + 1);
+        reqData.forEach((winnr) => {
+          allWinnersWithAmount[key] = {
+            userIds: [
+              ...allWinnersWithAmount[key].userIds,
+              winnr[i].id || winnr[i].userid,
+            ],
+            amount: totalPoolAmt * (el[key] / 100),
+          };
+        });
+      }
+    });
+    console.log("allWinnersWithAmount ===>", amount);
+    return allWinnersWithAmount;
   } catch (error) {
     console.log("error in calculatePercentagePrizes", error);
   }
@@ -7503,7 +7551,7 @@ export const emitTyping = async (data, socket, io) => {
 export const JoinTournament = async (data, io, socket) => {
   try {
     const { userId, tournamentId, fees } = data;
-
+    console.log("Join user id", userId);
     const tournament = await tournamentModel
       .findOne({
         _id: tournamentId,
