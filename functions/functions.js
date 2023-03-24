@@ -2844,7 +2844,6 @@ export const calculateTournamentPrize = async (tournamentId, eleminated) => {
       .findOne({ _id: tournamentId })
       .populate("rooms", null)
       .lean();
-
     let { winPlayer, winTotalPlayer } = tournamentData;
     console.log("eleimiated plauer", eleminated);
     eleminated.forEach((ele) => {
