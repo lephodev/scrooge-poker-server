@@ -23,6 +23,8 @@ const tournamentSchema = new Schema(
     isStart: { type: Boolean, default: false },
     eleminatedPlayers: [],
     totalJoinPlayer: { type: Number, default: 0 },
+    prizeType:{ type: String, required: true },
+    prizeDistribution:{ type: String, required: true },
   },
   { timestamps: true }
 );

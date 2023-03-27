@@ -20,7 +20,7 @@ import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
 
 const gameRestartSeconds = 8000;
-const playerLimit = 9;
+const playerLimit = 3;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
@@ -2938,14 +2938,14 @@ export const distributeTournamentPrize = async (
       tournamentdata;
 
     if (prizeType === "Fixed") {
-      winPlayer = fixedPrizeDistribution(tournamentdata, elem);
+      winPlayer = await fixedPrizeDistribution(tournamentdata, elem);
     } else {
-      winPlayer = calculatePercentagePrizes(tournamentdata, elem);
+      winPlayer = await calculatePercentagePrizes(tournamentdata, elem);
     }
-
+   console.log("Win playere",winPlayer)
     const tournament = await tournamentModel.findOneAndUpdate(
       { _id: tournamentId },
-      { winPlayer, isFinished: true, isStart: false, eleminatedPlayers: elem },
+      { winPlayer:winPlayer, isFinished: true, isStart: false, eleminatedPlayers: elem },
       { new: true }
     );
     console.log(
@@ -3027,23 +3027,25 @@ export const distributeTournamentPrize = async (
 
 const calculatePercentagePrizes = async (tournamentdata, elem) => {
   try {
-    const { totalJoinPlayer, prizeDistribution, prizeType, tournamentFee } =
+    console.log("Tournament Data---->",tournamentdata,elem)
+    const { totalJoinPlayer, prizeDistribution, tournamentFee } =
       tournamentdata;
     let percnt = 0;
+    console.log("totalJoinPlayer--->",elem)
     elem = elem.reverse();
     if (prizeDistribution === "top-10") {
-      percnt = Math.ceil(totalJoinPlayer * 0.1);
+      percnt = Math.ceil(totalJoinPlayer * 0.1)*6;
     } else if (prizeDistribution === "top-15") {
       percnt = Math.ceil(totalJoinPlayer * 0.15);
     } else {
       percnt = Math.ceil(totalJoinPlayer * 0.2);
     }
+    console.log("Percent--->",percnt)
     let winners = elem.slice(0, percnt);
-
-    let values = Object.vlaues(payouts[prizeType]);
-
+  console.log("Winners--->",winners)
+    let values =await payouts[prizeDistribution] && Object.values(payouts[prizeDistribution]);
     let reqPayout = values.find(
-      (el) => el.min < totalJoinPlayer && el.max >= totalJoinPlayer
+      (el) => el.min <= totalJoinPlayer && el.max >= totalJoinPlayer
     );
     console.log("reqPayout ===>", reqPayout);
     const totalPoolAmt = totalJoinPlayer * tournamentFee;
@@ -3052,29 +3054,39 @@ const calculatePercentagePrizes = async (tournamentdata, elem) => {
     console.log("amount ===>", amount);
     let allWinnersWithAmount = {};
     amount.forEach((el, i) => {
-      if (i < 10) {
+      console.log(" winners[i]-->", winners[i])
+      if (i < 2) {
         allWinnersWithAmount[i] = {
-          userId: winners[i].id || winners[i].userid,
+          userId: winners[i]?.id || winners[i].userid,
           amount: totalPoolAmt * (el[i] / 100),
         };
       } else {
         const key = Object.keys(el)[0];
+        console.log("Keys--->",key)
         let splitdIndxs = key.split("-");
-        const startIndx = parseInt(splitdIndxs[0]) - 1;
+        console.log(
+          "Split index-->",splitdIndxs
+        )
+        let startIndx = parseInt(splitdIndxs[0]) - 1;
         const endIndx = parseInt(splitdIndxs[1]) - 1;
+        console.log("End Index and startIndex",endIndx,startIndx)
         let reqData = winners.slice(startIndx, endIndx + 1);
+        console.log("req data--->",reqData)
+         //allWinnersWithAmount[key].userIds=[]
         reqData.forEach((winnr) => {
+          console.log("start index--->",startIndx)
+          
           allWinnersWithAmount[key] = {
             userIds: [
-              ...allWinnersWithAmount[key].userIds,
-              winnr[i].id || winnr[i].userid,
+              ...allWinnersWithAmount[key]?.userIds,
+              winnr.id || winnr.userid,
             ],
             amount: totalPoolAmt * (el[key] / 100),
           };
         });
       }
     });
-    console.log("allWinnersWithAmount ===>", amount);
+    console.log("allWinnersWithAmount ===>", allWinnersWithAmount);
     return allWinnersWithAmount;
   } catch (error) {
     console.log("error in calculatePercentagePrizes", error);
