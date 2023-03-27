@@ -2929,7 +2929,6 @@ export const distributeTournamentPrize = async (
   io
 ) => {
   try {
-    console.log("payouts =====>", payouts);
     const tournamentdata = await tournamentModel.findOne({ _id: tournamentId });
 
     let elem = [...tournamentdata.eleminatedPlayers];
