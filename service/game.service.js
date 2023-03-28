@@ -41,15 +41,28 @@ const findAvailablePosition = async (playerList) => {
   });
 };
 
-const pushUserInRoom = async (roomId, userId, position, sitInAmount) => {
+const pushUserInRoom = async (
+  room,
+  userId,
+  position,
+  sitInAmount,
+  type = 1
+) => {
   try {
     const userData = await userService.getUserById(userId);
     const { username, wallet, email, _id, avatar, profile } = userData;
 
+    let hostId = null;
+    if (!room.hostId && type === 1) {
+      hostId = _id;
+    } else {
+      hostId = room.hostId;
+    }
+
     await Promise.allSettled([
       // userService.updateUserWallet(_id),
       roomModel.updateOne(
-        { _id: roomId },
+        { _id: room._id },
         {
           $push: {
             players: {
@@ -68,6 +81,7 @@ const pushUserInRoom = async (roomId, userId, position, sitInAmount) => {
               hands: [],
             },
           },
+          hostId,
           $pull: {
             leavereq: converMongoId(userId),
           },
@@ -75,7 +89,7 @@ const pushUserInRoom = async (roomId, userId, position, sitInAmount) => {
       ),
     ]);
 
-    const room = await getGameById(roomId);
+    const room = await getGameById(room._id);
     return room;
   } catch (error) {
     console.log(error);
@@ -92,11 +106,13 @@ const joinRoomByUserId = async (game, userId, sitInAmount, playerLimit) => {
     if (!availblePosition.isFound) {
       return null;
     }
+    const Type = game.players.length === 0 ? 1 : 2;
     const room = pushUserInRoom(
-      game._id,
+      game,
       userId,
       availblePosition.i,
-      sitInAmount
+      sitInAmount,
+      Type
     );
     return room;
     // else check invite array for private tables
@@ -109,11 +125,13 @@ const joinRoomByUserId = async (game, userId, sitInAmount, playerLimit) => {
     if (!availblePosition.isFound) {
       return null;
     }
+    const Type = game.players.length === 0 ? 1 : 2;
     const room = pushUserInRoom(
-      game._id,
+      game,
       userId,
       availblePosition.i,
-      sitInAmount
+      sitInAmount,
+      Type
     );
     return room;
   } else if (game.public && game.players.length >= playerLimit) {

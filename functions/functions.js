@@ -17,9 +17,10 @@ import MessageModal from "../models/messageModal";
 import Notification from "../models/notificationModal";
 import User from "../landing-server/models/user.model";
 import { decryptCard, EncryptCard } from "../validation/poker.validation";
+import payouts from "../config/payout.json";
 
 const gameRestartSeconds = 8000;
-const playerLimit = 9;
+const playerLimit = 3;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
@@ -2826,13 +2827,13 @@ export const elemination = async (roomData, io) => {
     console.log("error in eleminite function =>", error);
   }
 };
+
 export const calculateTournamentPrize = async (tournamentId, eleminated) => {
   try {
     const tournamentData = await tournamentModel
       .findOne({ _id: tournamentId })
       .populate("rooms", null)
       .lean();
-
     let { winPlayer, winTotalPlayer } = tournamentData;
     console.log("eleimiated plauer", eleminated);
     eleminated.forEach((ele) => {
@@ -2868,15 +2869,8 @@ export const calculateTournamentPrize = async (tournamentId, eleminated) => {
   }
 };
 
-export const distributeTournamentPrize = async (
-  tournamentId,
-  lastPlayer,
-  io
-) => {
+const fixedPrizeDistribution = (tournamentdata, elem) => {
   try {
-    const tournamentdata = await tournamentModel.findOne({ _id: tournamentId });
-    let elem = [...tournamentdata.eleminatedPlayers];
-    elem.push(lastPlayer);
     let { winPlayer, winTotalPlayer } = tournamentdata;
     let winners = elem.slice(
       elem.length - tournamentdata.winTotalPlayer,
@@ -2912,10 +2906,39 @@ export const distributeTournamentPrize = async (
         return;
       }
     });
+    return winPlayer;
+  } catch (error) {
+    console.log("error in fixedPrizeDistribution", error);
+  }
+};
 
+export const distributeTournamentPrize = async (
+  tournamentId,
+  lastPlayer,
+  io
+) => {
+  try {
+    const tournamentdata = await tournamentModel.findOne({ _id: tournamentId });
+
+    let elem = [...tournamentdata.eleminatedPlayers];
+    elem.push(lastPlayer);
+    let { winPlayer, winTotalPlayer, prizeType, prizeDistribution } =
+      tournamentdata;
+
+    if (prizeType === "Fixed") {
+      winPlayer = await fixedPrizeDistribution(tournamentdata, elem);
+    } else {
+      winPlayer = await calculatePercentagePrizes(tournamentdata, elem);
+    }
+    console.log("Win playere", winPlayer);
     const tournament = await tournamentModel.findOneAndUpdate(
       { _id: tournamentId },
-      { winPlayer, isFinished: true, isStart: false, eleminatedPlayers: elem },
+      {
+        winPlayer: winPlayer,
+        isFinished: true,
+        isStart: false,
+        eleminatedPlayers: elem,
+      },
       { new: true }
     );
     console.log(
@@ -2992,6 +3015,68 @@ export const distributeTournamentPrize = async (
     }
   } catch (error) {
     console.log("error in distributeTournamentPrize", error);
+  }
+};
+
+const calculatePercentagePrizes = async (tournamentdata, elem) => {
+  try {
+    const { totalJoinPlayer, prizeDistribution, tournamentFee } =
+      tournamentdata;
+    let percnt = 0;
+    elem = elem.reverse();
+    if (prizeDistribution === "top-10") {
+      percnt = Math.ceil(totalJoinPlayer * 0.1);
+    } else if (prizeDistribution === "top-15") {
+      percnt = Math.ceil(totalJoinPlayer * 0.15);
+    } else {
+      percnt = Math.ceil(totalJoinPlayer * 0.2);
+    }
+    let winners = elem.slice(0, percnt);
+    let values =
+      (await payouts[prizeDistribution]) &&
+      Object.values(payouts[prizeDistribution]);
+    let reqPayout = values.find(
+      (el) => el.min <= totalJoinPlayer && el.max >= totalJoinPlayer
+    );
+    const totalPoolAmt = totalJoinPlayer * tournamentFee;
+
+    const { amount } = reqPayout;
+    let allWinnersWithAmount = {};
+    amount.forEach((el, i) => {
+      if (i < 2) {
+        allWinnersWithAmount[i] = {
+          userId: winners[i]?.id || winners[i].userid,
+          amount: totalPoolAmt * (el[i] / 100),
+          name: winners[i]?.name,
+          profile: winners[i]?.photoURI,
+        };
+      } else {
+        const key = Object.keys(el)[0];
+        let splitdIndxs = key.split("-");
+        let startIndx = parseInt(splitdIndxs[0]) - 1;
+        const endIndx = parseInt(splitdIndxs[1]) - 1;
+        let reqData = winners.slice(startIndx, endIndx + 1);
+        allWinnersWithAmount[key] = {
+          userIds: [],
+        };
+        reqData.forEach((winnr) => {
+          allWinnersWithAmount[key] = {
+            userIds: [
+              ...allWinnersWithAmount[key]?.userIds,
+              {
+                id: winnr.id || winnr.userid,
+                name: winnr.name,
+                profile: winnr.photoURI,
+              },
+            ],
+            amount: totalPoolAmt * (el[key] / 100),
+          };
+        });
+      }
+    });
+    return allWinnersWithAmount;
+  } catch (error) {
+    console.log("error in calculatePercentagePrizes", error);
   }
 };
 
@@ -6717,7 +6802,7 @@ export const finishedTableGame = async (room) => {
   try {
     console.log("LEAVE API CALL 6885");
     const dd = await leaveApiCall(room);
-    if (dd || room.finish) await roomModel.deleteOne({ _id: room._id });
+    // if (dd || room.finish) await roomModel.deleteOne({ _id: room._id });
   } catch (err) {
     console.log("Error in finished game function =>", err.message);
   }
@@ -7465,7 +7550,7 @@ export const emitTyping = async (data, socket, io) => {
 export const JoinTournament = async (data, io, socket) => {
   try {
     const { userId, tournamentId, fees } = data;
-
+    console.log("Join user id", userId);
     const tournament = await tournamentModel
       .findOne({
         _id: tournamentId,
@@ -7596,7 +7681,7 @@ const pushPlayerInRoom = async (
       await roomModel.updateOne({ _id: roomId }, payload);
       await tournamentModel.findOneAndUpdate(
         { _id: tournamentId },
-        { $inc: { havePlayers: 1 } },
+        { $inc: { havePlayers: 1, totalJoinPlayer: 1 } },
         { new: true }
       );
     } else {
@@ -7633,7 +7718,10 @@ const pushPlayerInRoom = async (
 
       await tournamentModel.findOneAndUpdate(
         { _id: tournamentId },
-        { $inc: { havePlayers: 1 }, $push: { rooms: roomId } },
+        {
+          $inc: { havePlayers: 1, totalJoinPlayer: 1 },
+          $push: { rooms: roomId },
+        },
         { upsert: true, new: true }
       );
     }
