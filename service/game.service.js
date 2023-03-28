@@ -41,28 +41,22 @@ const findAvailablePosition = async (playerList) => {
   });
 };
 
-const pushUserInRoom = async (
-  room,
-  userId,
-  position,
-  sitInAmount,
-  type = 1
-) => {
+const pushUserInRoom = async (game, userId, position, sitInAmount, type) => {
   try {
     const userData = await userService.getUserById(userId);
     const { username, wallet, email, _id, avatar, profile } = userData;
 
     let hostId = null;
-    if (!room.hostId && type === 1) {
+    if (!game?.hostId && type === 1) {
       hostId = _id;
     } else {
-      hostId = room.hostId;
+      hostId = room?.hostId;
     }
 
     await Promise.allSettled([
       // userService.updateUserWallet(_id),
       roomModel.updateOne(
-        { _id: room._id },
+        { _id: game._id },
         {
           $push: {
             players: {
@@ -89,7 +83,7 @@ const pushUserInRoom = async (
       ),
     ]);
 
-    const room = await getGameById(room._id);
+    const room = await getGameById(game._id);
     return room;
   } catch (error) {
     console.log(error);
