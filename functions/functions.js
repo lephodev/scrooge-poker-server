@@ -2941,10 +2941,15 @@ export const distributeTournamentPrize = async (
     } else {
       winPlayer = await calculatePercentagePrizes(tournamentdata, elem);
     }
-   console.log("Win playere",winPlayer)
+    console.log("Win playere", winPlayer);
     const tournament = await tournamentModel.findOneAndUpdate(
       { _id: tournamentId },
-      { winPlayer:winPlayer, isFinished: true, isStart: false, eleminatedPlayers: elem },
+      {
+        winPlayer: winPlayer,
+        isFinished: true,
+        isStart: false,
+        eleminatedPlayers: elem,
+      },
       { new: true }
     );
     console.log(
@@ -3026,66 +3031,60 @@ export const distributeTournamentPrize = async (
 
 const calculatePercentagePrizes = async (tournamentdata, elem) => {
   try {
-    console.log("Tournament Data---->",tournamentdata,elem)
     const { totalJoinPlayer, prizeDistribution, tournamentFee } =
       tournamentdata;
     let percnt = 0;
-    console.log("totalJoinPlayer--->",elem)
     elem = elem.reverse();
     if (prizeDistribution === "top-10") {
-      percnt = Math.ceil(totalJoinPlayer * 0.1)*6;
+      percnt = Math.ceil(totalJoinPlayer * 0.1);
     } else if (prizeDistribution === "top-15") {
       percnt = Math.ceil(totalJoinPlayer * 0.15);
     } else {
       percnt = Math.ceil(totalJoinPlayer * 0.2);
     }
-    console.log("Percent--->",percnt)
     let winners = elem.slice(0, percnt);
-  console.log("Winners--->",winners)
-    let values =await payouts[prizeDistribution] && Object.values(payouts[prizeDistribution]);
+    let values =
+      (await payouts[prizeDistribution]) &&
+      Object.values(payouts[prizeDistribution]);
     let reqPayout = values.find(
       (el) => el.min <= totalJoinPlayer && el.max >= totalJoinPlayer
     );
-    console.log("reqPayout ===>", reqPayout);
     const totalPoolAmt = totalJoinPlayer * tournamentFee;
 
     const { amount } = reqPayout;
-    console.log("amount ===>", amount);
     let allWinnersWithAmount = {};
     amount.forEach((el, i) => {
-      console.log(" winners[i]-->", winners[i])
       if (i < 2) {
         allWinnersWithAmount[i] = {
           userId: winners[i]?.id || winners[i].userid,
           amount: totalPoolAmt * (el[i] / 100),
+          name: winners[i]?.name,
+          profile: winners[i]?.photoURI,
         };
       } else {
         const key = Object.keys(el)[0];
-        console.log("Keys--->",key)
         let splitdIndxs = key.split("-");
-        console.log(
-          "Split index-->",splitdIndxs
-        )
         let startIndx = parseInt(splitdIndxs[0]) - 1;
         const endIndx = parseInt(splitdIndxs[1]) - 1;
-        console.log("End Index and startIndex",endIndx,startIndx)
         let reqData = winners.slice(startIndx, endIndx + 1);
-        console.log("req data--->",reqData)
-         //allWinnersWithAmount[key].userIds=[]
+        allWinnersWithAmount[key] = {
+          userIds: [],
+        };
         reqData.forEach((winnr) => {
-          console.log("start index--->",startIndx)
-          
           allWinnersWithAmount[key] = {
             userIds: [
               ...allWinnersWithAmount[key]?.userIds,
-              winnr.id || winnr.userid,
+              {
+                id: winnr.id || winnr.userid,
+                name: winnr.name,
+                profile: winnr.photoURI,
+              },
             ],
             amount: totalPoolAmt * (el[key] / 100),
           };
         });
       }
     });
-    console.log("allWinnersWithAmount ===>", allWinnersWithAmount);
     return allWinnersWithAmount;
   } catch (error) {
     console.log("error in calculatePercentagePrizes", error);
@@ -6814,7 +6813,7 @@ export const finishedTableGame = async (room) => {
   try {
     console.log("LEAVE API CALL 6885");
     const dd = await leaveApiCall(room);
-    if (dd || room.finish) await roomModel.deleteOne({ _id: room._id });
+    // if (dd || room.finish) await roomModel.deleteOne({ _id: room._id });
   } catch (err) {
     console.log("Error in finished game function =>", err.message);
   }
