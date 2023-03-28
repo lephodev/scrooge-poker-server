@@ -47,11 +47,16 @@ const pushUserInRoom = async (game, userId, position, sitInAmount, type) => {
     const { username, wallet, email, _id, avatar, profile } = userData;
 
     let hostId = null;
+    console.log("type ===>", type);
+    console.log("game?.hostId ===>", game?.hostId);
+
     if (!game?.hostId && type === 1) {
       hostId = _id;
     } else {
-      hostId = room?.hostId;
+      hostId = game?.hostId;
     }
+
+    console.log("hostId ========>", hostId);
 
     await Promise.allSettled([
       // userService.updateUserWallet(_id),
