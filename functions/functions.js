@@ -2175,59 +2175,61 @@ export const showdown = async (roomid, io) => {
     let i=0;
     const findWinner = async () => {
       hands.forEach((e) => {
-        let winner = Hand.winners(e.h);
-        console.log("HH",e)
-        e.p.forEach((el) => {
-          console.log(el)
-          if (JSON.stringify(el.hand) == JSON.stringify(winner[0])) {
-            let winnerData = showdownData.filter(
-              (p) => p.position === el.position
-            );
-            winnerData[0].wallet += e.pot;
-            let winnerHand = [];
-            winner[0].cards.forEach((c) => {
+        let winners = Hand.winners(e.h);
+        winners.forEach(winner => {
+          e.p.forEach((el) => {
+            if (JSON.stringify(el.hand) == JSON.stringify(winner)) {
+              let winnerData = showdownData.filter(
+                (p) => p.position === el.position
+              );
+              winnerData[0].wallet += winners.length >1 ?parseInt(e.pot/winners.length, 10) : e.pot;
+              let winnerHand = [];
+              winner.cards.forEach((c) => {
               winnerHand.push(`${c.value}${c.suit}`);
             });
             const totalPlayerTablePot = winnerData[0].prevPot;
-            console.log("totalPlayerTablePot", totalPlayerTablePot);
-            let winningAmount = e.pot - totalPlayerTablePot;
-
-            if (winnerPlayers.length) {
-             
+            
+              console.log("totalPlayerTablePot", totalPlayerTablePot);
+              let winningAmount = (winners.length >1 ?parseInt(e.pot/winners.length, 10) : e.pot) - totalPlayerTablePot;
+  
+              if (winnerPlayers.length) {
+               
+                  winnerPlayers.push({
+                    id: winnerData[0].id,
+                    name: winnerData[0].name,
+                    position: winnerData[0].position,
+                    winningAmount: winningAmount,
+                    handName: winner.name,
+                    winnerHand: winnerHand,
+                    potPlayer: e.p,
+                    winnerCards: winnerData[0].cards.map(card => decryptCard(card)),
+                    communityCards: updatedRoom.communityCard.map(card => decryptCard(card)),
+                  });
+                  if(sidePots.length){
+                  sidePots[i] = { ...sidePots[i], winner: winnerData[0].position};
+                  i++;
+                  }
+              } else {
+                if(sidePots.length){
+                sidePots[i] = { ...sidePots[i], winner: winnerData[0].position};
+                i++;
+                }
                 winnerPlayers.push({
                   id: winnerData[0].id,
                   name: winnerData[0].name,
                   position: winnerData[0].position,
                   winningAmount: winningAmount,
-                  handName: winner[0].name,
+                  handName: winner.name,
                   winnerHand: winnerHand,
                   potPlayer: e.p,
                   winnerCards: winnerData[0].cards.map(card => decryptCard(card)),
                   communityCards: updatedRoom.communityCard.map(card => decryptCard(card)),
                 });
-                if(sidePots.length){
-                sidePots[i] = { ...sidePots[i], winner: winnerData[0].position};
-                i++;
-                }
-            } else {
-              if(sidePots.length){
-              sidePots[i] = { ...sidePots[i], winner: winnerData[0].position};
-              i++;
               }
-              winnerPlayers.push({
-                id: winnerData[0].id,
-                name: winnerData[0].name,
-                position: winnerData[0].position,
-                winningAmount: winningAmount,
-                handName: winner[0].name,
-                winnerHand: winnerHand,
-                potPlayer: e.p,
-                winnerCards: winnerData[0].cards.map(card => decryptCard(card)),
-                communityCards: updatedRoom.communityCard.map(card => decryptCard(card)),
-              });
             }
-          }
-        });
+          });
+        })
+       
       });
     };
     await findWinner();
