@@ -4882,6 +4882,7 @@ export const socketDoRaise = async (dta, io, socket) => {
       if (data !== null) {
         if (data.raiseAmount <= amt) {
           const walletAmt = await getPlayerwallet(data, playerid);
+          console.log("walletAmt ======>", walletAmt, amt);
           if (walletAmt >= amt) {
             await doRaise(data, playerid, io, amt);
           } else {
@@ -5808,7 +5809,7 @@ export const getPlayerwallet = async (roomData, playerid) => {
         filterData = roomData.preflopround.filter(
           (el) => el.id.toString() === playerid.toString()
         );
-        res = filterData[0].wallet;
+        res = filterData[0].wallet + filterData[0].pot;
         return res;
 
       case 2:
