@@ -50,7 +50,7 @@ const pushUserInRoom = async (game, userId, position, sitInAmount, type) => {
     console.log("type ===>", type);
     console.log("game?.hostId ===>", game?.hostId);
 
-    if (!game?.hostId && type === 1) {
+    if (!game?.hostId || type === 1) {
       hostId = _id;
     } else {
       hostId = game?.hostId;
