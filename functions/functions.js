@@ -2385,6 +2385,7 @@ export const showdown = async (roomid, io) => {
 
     io.in(upRoomData._id.toString()).emit("winner", {
       updatedRoom: upRoomData,
+      gameRestartSeconds,
     });
 
     const upRoom = await roomModel.findOneAndUpdate(
@@ -7276,6 +7277,7 @@ export const leaveApiCall = async (room, userId) => {
           {
             $pull: {
               players: { userid: userId },
+              handWinner: { id: userId },
             },
           }
         ),
