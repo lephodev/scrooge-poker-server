@@ -7268,6 +7268,11 @@ export const leaveApiCall = async (room, userId) => {
       );
     });
 
+    const filterdHndWinnerData = room?.handWinner?.map((el) => {
+      let filtrd = el.filter((obj) => obj.id.toString() !== userId.toString());
+      return filtrd;
+    });
+
     console.log("userId ======>", userId);
     if (userId) {
       const response = await Promise.allSettled([
@@ -7277,8 +7282,8 @@ export const leaveApiCall = async (room, userId) => {
           {
             $pull: {
               players: { userid: userId },
-              handWinner: { id: userId },
             },
+            handWinner: filterdHndWinnerData,
           }
         ),
         // Create transaction
