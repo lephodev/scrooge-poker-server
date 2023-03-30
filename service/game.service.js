@@ -41,15 +41,27 @@ const findAvailablePosition = async (playerList) => {
   });
 };
 
-const pushUserInRoom = async (roomId, userId, position, sitInAmount) => {
+const pushUserInRoom = async (game, userId, position, sitInAmount, type) => {
   try {
     const userData = await userService.getUserById(userId);
     const { username, wallet, email, _id, avatar, profile } = userData;
 
+    let hostId = null;
+    console.log("type ===>", type);
+    console.log("game?.hostId ===>", game?.hostId);
+
+    if (!game?.hostId || type === 1) {
+      hostId = _id;
+    } else {
+      hostId = game?.hostId;
+    }
+
+    console.log("hostId ========>", hostId);
+
     await Promise.allSettled([
       // userService.updateUserWallet(_id),
       roomModel.updateOne(
-        { _id: roomId },
+        { _id: game._id },
         {
           $push: {
             players: {
@@ -68,6 +80,7 @@ const pushUserInRoom = async (roomId, userId, position, sitInAmount) => {
               hands: [],
             },
           },
+          hostId,
           $pull: {
             leavereq: converMongoId(userId),
           },
@@ -75,7 +88,7 @@ const pushUserInRoom = async (roomId, userId, position, sitInAmount) => {
       ),
     ]);
 
-    const room = await getGameById(roomId);
+    const room = await getGameById(game._id);
     return room;
   } catch (error) {
     console.log(error);
@@ -92,11 +105,13 @@ const joinRoomByUserId = async (game, userId, sitInAmount, playerLimit) => {
     if (!availblePosition.isFound) {
       return null;
     }
+    const Type = game.players.length === 0 ? 1 : 2;
     const room = pushUserInRoom(
-      game._id,
+      game,
       userId,
       availblePosition.i,
-      sitInAmount
+      sitInAmount,
+      Type
     );
     return room;
     // else check invite array for private tables
@@ -109,11 +124,13 @@ const joinRoomByUserId = async (game, userId, sitInAmount, playerLimit) => {
     if (!availblePosition.isFound) {
       return null;
     }
+    const Type = game.players.length === 0 ? 1 : 2;
     const room = pushUserInRoom(
-      game._id,
+      game,
       userId,
       availblePosition.i,
-      sitInAmount
+      sitInAmount,
+      Type
     );
     return room;
   } else if (game.public && game.players.length >= playerLimit) {

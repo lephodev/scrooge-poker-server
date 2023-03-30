@@ -17,6 +17,7 @@ import MessageModal from "../models/messageModal";
 import Notification from "../models/notificationModal";
 import User from "../landing-server/models/user.model";
 import { decryptCard, EncryptCard } from "../validation/poker.validation";
+import payouts from "../config/payout.json";
 
 const gameRestartSeconds = 8000;
 const playerLimit = 9;
@@ -2249,71 +2250,78 @@ export const showdown = async (roomid, io) => {
     let i = 0;
     const findWinner = async () => {
       hands.forEach((e) => {
-        let winner = Hand.winners(e.h);
-        console.log("HH", e);
-        e.p.forEach((el) => {
-          console.log(el);
-          if (JSON.stringify(el.hand) == JSON.stringify(winner[0])) {
-            let winnerData = showdownData.filter(
-              (p) => p.position === el.position
-            );
-            winnerData[0].wallet += e.pot;
-            let winnerHand = [];
-            winner[0].cards.forEach((c) => {
-              winnerHand.push(`${c.value}${c.suit}`);
-            });
-            const totalPlayerTablePot = winnerData[0].prevPot;
-            console.log("totalPlayerTablePot", totalPlayerTablePot);
-            let winningAmount = e.pot - totalPlayerTablePot;
+        let winners = Hand.winners(e.h);
+        winners.forEach((winner) => {
+          e.p.forEach((el) => {
+            if (JSON.stringify(el.hand) == JSON.stringify(winner)) {
+              let winnerData = showdownData.filter(
+                (p) => p.position === el.position
+              );
+              winnerData[0].wallet +=
+                winners.length > 1
+                  ? parseInt(e.pot / winners.length, 10)
+                  : e.pot;
+              let winnerHand = [];
+              winner.cards.forEach((c) => {
+                winnerHand.push(`${c.value}${c.suit}`);
+              });
+              const totalPlayerTablePot = winnerData[0].prevPot;
 
-            if (winnerPlayers.length) {
-              winnerPlayers.push({
-                id: winnerData[0].id,
-                name: winnerData[0].name,
-                position: winnerData[0].position,
-                winningAmount: winningAmount,
-                handName: winner[0].name,
-                winnerHand: winnerHand,
-                potPlayer: e.p,
-                winnerCards: winnerData[0].cards.map((card) =>
-                  decryptCard(card)
-                ),
-                communityCards: updatedRoom.communityCard.map((card) =>
-                  decryptCard(card)
-                ),
-              });
-              if (sidePots.length) {
-                sidePots[i] = {
-                  ...sidePots[i],
-                  winner: winnerData[0].position,
-                };
-                i++;
+              console.log("totalPlayerTablePot", totalPlayerTablePot);
+              let winningAmount =
+                (winners.length > 1
+                  ? parseInt(e.pot / winners.length, 10)
+                  : e.pot) - totalPlayerTablePot;
+
+              if (winnerPlayers.length) {
+                winnerPlayers.push({
+                  id: winnerData[0].id,
+                  name: winnerData[0].name,
+                  position: winnerData[0].position,
+                  winningAmount: winningAmount,
+                  handName: winner.name,
+                  winnerHand: winnerHand,
+                  potPlayer: e.p,
+                  winnerCards: winnerData[0].cards.map((card) =>
+                    decryptCard(card)
+                  ),
+                  communityCards: updatedRoom.communityCard.map((card) =>
+                    decryptCard(card)
+                  ),
+                });
+                if (sidePots.length) {
+                  sidePots[i] = {
+                    ...sidePots[i],
+                    winner: winnerData[0].position,
+                  };
+                  i++;
+                }
+              } else {
+                if (sidePots.length) {
+                  sidePots[i] = {
+                    ...sidePots[i],
+                    winner: winnerData[0].position,
+                  };
+                  i++;
+                }
+                winnerPlayers.push({
+                  id: winnerData[0].id,
+                  name: winnerData[0].name,
+                  position: winnerData[0].position,
+                  winningAmount: winningAmount,
+                  handName: winner.name,
+                  winnerHand: winnerHand,
+                  potPlayer: e.p,
+                  winnerCards: winnerData[0].cards.map((card) =>
+                    decryptCard(card)
+                  ),
+                  communityCards: updatedRoom.communityCard.map((card) =>
+                    decryptCard(card)
+                  ),
+                });
               }
-            } else {
-              if (sidePots.length) {
-                sidePots[i] = {
-                  ...sidePots[i],
-                  winner: winnerData[0].position,
-                };
-                i++;
-              }
-              winnerPlayers.push({
-                id: winnerData[0].id,
-                name: winnerData[0].name,
-                position: winnerData[0].position,
-                winningAmount: winningAmount,
-                handName: winner[0].name,
-                winnerHand: winnerHand,
-                potPlayer: e.p,
-                winnerCards: winnerData[0].cards.map((card) =>
-                  decryptCard(card)
-                ),
-                communityCards: updatedRoom.communityCard.map((card) =>
-                  decryptCard(card)
-                ),
-              });
             }
-          }
+          });
         });
       });
     };
@@ -2377,6 +2385,7 @@ export const showdown = async (roomid, io) => {
 
     io.in(upRoomData._id.toString()).emit("winner", {
       updatedRoom: upRoomData,
+      gameRestartSeconds,
     });
 
     const upRoom = await roomModel.findOneAndUpdate(
@@ -2837,13 +2846,13 @@ export const elemination = async (roomData, io) => {
     console.log("error in eleminite function =>", error);
   }
 };
+
 export const calculateTournamentPrize = async (tournamentId, eleminated) => {
   try {
     const tournamentData = await tournamentModel
       .findOne({ _id: tournamentId })
       .populate("rooms", null)
       .lean();
-
     let { winPlayer, winTotalPlayer } = tournamentData;
     console.log("eleimiated plauer", eleminated);
     eleminated.forEach((ele) => {
@@ -2879,15 +2888,8 @@ export const calculateTournamentPrize = async (tournamentId, eleminated) => {
   }
 };
 
-export const distributeTournamentPrize = async (
-  tournamentId,
-  lastPlayer,
-  io
-) => {
+const fixedPrizeDistribution = (tournamentdata, elem) => {
   try {
-    const tournamentdata = await tournamentModel.findOne({ _id: tournamentId });
-    let elem = [...tournamentdata.eleminatedPlayers];
-    elem.push(lastPlayer);
     let { winPlayer, winTotalPlayer } = tournamentdata;
     let winners = elem.slice(
       elem.length - tournamentdata.winTotalPlayer,
@@ -2923,10 +2925,39 @@ export const distributeTournamentPrize = async (
         return;
       }
     });
+    return winPlayer;
+  } catch (error) {
+    console.log("error in fixedPrizeDistribution", error);
+  }
+};
 
+export const distributeTournamentPrize = async (
+  tournamentId,
+  lastPlayer,
+  io
+) => {
+  try {
+    const tournamentdata = await tournamentModel.findOne({ _id: tournamentId });
+
+    let elem = [...tournamentdata.eleminatedPlayers];
+    elem.push(lastPlayer);
+    let { winPlayer, winTotalPlayer, prizeType, prizeDistribution } =
+      tournamentdata;
+
+    if (prizeType === "Fixed") {
+      winPlayer = await fixedPrizeDistribution(tournamentdata, elem);
+    } else {
+      winPlayer = await calculatePercentagePrizes(tournamentdata, elem);
+    }
+    console.log("Win playere", winPlayer);
     const tournament = await tournamentModel.findOneAndUpdate(
       { _id: tournamentId },
-      { winPlayer, isFinished: true, isStart: false, eleminatedPlayers: elem },
+      {
+        winPlayer: winPlayer,
+        isFinished: true,
+        isStart: false,
+        eleminatedPlayers: elem,
+      },
       { new: true }
     );
     console.log(
@@ -3006,6 +3037,68 @@ export const distributeTournamentPrize = async (
   }
 };
 
+const calculatePercentagePrizes = async (tournamentdata, elem) => {
+  try {
+    const { totalJoinPlayer, prizeDistribution, tournamentFee } =
+      tournamentdata;
+    let percnt = 0;
+    elem = elem.reverse();
+    if (prizeDistribution === "top-10") {
+      percnt = Math.ceil(totalJoinPlayer * 0.1);
+    } else if (prizeDistribution === "top-15") {
+      percnt = Math.ceil(totalJoinPlayer * 0.15);
+    } else {
+      percnt = Math.ceil(totalJoinPlayer * 0.2);
+    }
+    let winners = elem.slice(0, percnt);
+    let values =
+      (await payouts[prizeDistribution]) &&
+      Object.values(payouts[prizeDistribution]);
+    let reqPayout = values.find(
+      (el) => el.min <= totalJoinPlayer && el.max >= totalJoinPlayer
+    );
+    const totalPoolAmt = totalJoinPlayer * tournamentFee;
+
+    const { amount } = reqPayout;
+    let allWinnersWithAmount = {};
+    amount.forEach((el, i) => {
+      if (i < 2) {
+        allWinnersWithAmount[i] = {
+          userId: winners[i]?.id || winners[i].userid,
+          amount: totalPoolAmt * (el[i] / 100),
+          name: winners[i]?.name,
+          profile: winners[i]?.photoURI,
+        };
+      } else {
+        const key = Object.keys(el)[0];
+        let splitdIndxs = key.split("-");
+        let startIndx = parseInt(splitdIndxs[0]) - 1;
+        const endIndx = parseInt(splitdIndxs[1]) - 1;
+        let reqData = winners.slice(startIndx, endIndx + 1);
+        allWinnersWithAmount[key] = {
+          userIds: [],
+        };
+        reqData.forEach((winnr) => {
+          allWinnersWithAmount[key] = {
+            userIds: [
+              ...allWinnersWithAmount[key]?.userIds,
+              {
+                id: winnr.id || winnr.userid,
+                name: winnr.name,
+                profile: winnr.photoURI,
+              },
+            ],
+            amount: totalPoolAmt * (el[key] / 100),
+          };
+        });
+      }
+    });
+    return allWinnersWithAmount;
+  } catch (error) {
+    console.log("error in calculatePercentagePrizes", error);
+  }
+};
+
 export const doPauseGame = async (data, io, socket) => {
   const userid = data.userid;
   let roomid = data.roomid;
@@ -3060,7 +3153,9 @@ export const doFinishGame = async (data, io, socket) => {
           roomdata: updatedData,
         });
       } else {
+        console.log("userId =====;...>", userid);
         await finishedTableGame(roomData, userid);
+        console.log("action error executed");
         if (socket)
           socket.emit("actionError", { code: 400, msg: "Bad request" });
       }
@@ -3477,6 +3572,7 @@ export const doSitIn = async (data, io, socket) => {
 
 export const doLeaveTable = async (data, io, socket) => {
   // console.log("datadatadata", data);
+  console.log("doleave table executed");
   const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
   let roomid;
@@ -3495,13 +3591,13 @@ export const doLeaveTable = async (data, io, socket) => {
         )
         .lean();
       if (roomdata) {
-        console.log("IN ROOM DATA");
+        console.log("IN ROOM DATA ====>");
         roomid = roomdata._id;
         if (roomdata?.hostId?.toString() === userid?.toString()) {
           let p = roomdata.players.filter(
             (ele) => ele?.userid?.toString() !== userid.toString()
           )[0];
-
+          console.log("p ====>", p);
           if (p) {
             console.log("In P");
             roomdata.players
@@ -3527,8 +3623,10 @@ export const doLeaveTable = async (data, io, socket) => {
           roomdata.players.filter((ele) => ele.playing).length ||
           data.isWatcher
         ) {
+          console.log("entered in first if");
           await leaveApiCall(roomdata, userid);
         } else {
+          console.log("entered in else condition do leave");
           await doFinishGame(
             { roomid: roomdata._id, userid: userid },
             io,
@@ -4785,6 +4883,7 @@ export const socketDoRaise = async (dta, io, socket) => {
       if (data !== null) {
         if (data.raiseAmount <= amt) {
           const walletAmt = await getPlayerwallet(data, playerid);
+          console.log("walletAmt ======>", walletAmt, amt);
           if (walletAmt >= amt) {
             await doRaise(data, playerid, io, amt);
           } else {
@@ -5711,7 +5810,7 @@ export const getPlayerwallet = async (roomData, playerid) => {
         filterData = roomData.preflopround.filter(
           (el) => el.id.toString() === playerid.toString()
         );
-        res = filterData[0].wallet;
+        res = filterData[0].wallet + filterData[0].pot;
         return res;
 
       case 2:
@@ -6724,11 +6823,11 @@ export const findLoserAndWinner = async (room) => {
   }
 };
 
-export const finishedTableGame = async (room) => {
+export const finishedTableGame = async (room, userid) => {
   try {
     console.log("LEAVE API CALL 6885");
-    const dd = await leaveApiCall(room);
-    if (dd || room.finish) await roomModel.deleteOne({ _id: room._id });
+    const dd = await leaveApiCall(room, userid);
+    // if (dd || room.finish) await roomModel.deleteOne({ _id: room._id });
   } catch (err) {
     console.log("Error in finished game function =>", err.message);
   }
@@ -7169,6 +7268,12 @@ export const leaveApiCall = async (room, userId) => {
       );
     });
 
+    const filterdHndWinnerData = room?.handWinner?.map((el) => {
+      let filtrd = el.filter((obj) => obj.id.toString() !== userId.toString());
+      return filtrd;
+    });
+
+    console.log("userId ======>", userId);
     if (userId) {
       const response = await Promise.allSettled([
         // Remove user from the room
@@ -7178,6 +7283,7 @@ export const leaveApiCall = async (room, userId) => {
             $pull: {
               players: { userid: userId },
             },
+            handWinner: filterdHndWinnerData,
           }
         ),
         // Create transaction
@@ -7286,7 +7392,7 @@ export const checkForGameTable = async (data, socket, io) => {
   console.log("Check table socket trigger");
   try {
     const { gameId, userId, sitInAmount } = data;
-    const game = await gameService.getGameById(gameId);
+    let game = await gameService.getGameById(gameId);
 
     if (!game) {
       return socket.emit("tablenotFound", {
@@ -7300,6 +7406,20 @@ export const checkForGameTable = async (data, socket, io) => {
       return socket.emit("notAuthorized", {
         message: "You are not authorized",
       });
+    }
+
+    console.log("game players =====>", game.players);
+    if (game.players.length === 0) {
+      game = await roomModel.findOneAndUpdate(
+        {
+          _id: gameId,
+        },
+        {
+          finish: false,
+          gamestart: false,
+        },
+        { new: true }
+      );
     }
 
     if (game.finish) {
@@ -7476,7 +7596,7 @@ export const emitTyping = async (data, socket, io) => {
 export const JoinTournament = async (data, io, socket) => {
   try {
     const { userId, tournamentId, fees } = data;
-
+    console.log("Join user id", userId);
     const tournament = await tournamentModel
       .findOne({
         _id: tournamentId,
@@ -7607,7 +7727,7 @@ const pushPlayerInRoom = async (
       await roomModel.updateOne({ _id: roomId }, payload);
       await tournamentModel.findOneAndUpdate(
         { _id: tournamentId },
-        { $inc: { havePlayers: 1 } },
+        { $inc: { havePlayers: 1, totalJoinPlayer: 1 } },
         { new: true }
       );
     } else {
@@ -7644,7 +7764,10 @@ const pushPlayerInRoom = async (
 
       await tournamentModel.findOneAndUpdate(
         { _id: tournamentId },
-        { $inc: { havePlayers: 1 }, $push: { rooms: roomId } },
+        {
+          $inc: { havePlayers: 1, totalJoinPlayer: 1 },
+          $push: { rooms: roomId },
+        },
         { upsert: true, new: true }
       );
     }

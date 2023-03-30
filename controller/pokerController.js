@@ -26,7 +26,7 @@ export const getDocument = async (req, res) => {
   }
 };
 
-export const createTable = async (req, res,io) => {
+export const createTable = async (req, res, io) => {
   try {
     const {
       gameName,
@@ -98,7 +98,7 @@ export const createTable = async (req, res,io) => {
     const getAllRunningRoom = await roomModel
       .find({ public: true })
       .populate("players.userid");
-    io.emit("AllTables",{tables:getAllRunningRoom})
+    io.emit("AllTables", { tables: getAllRunningRoom });
     await User.updateOne({ _id }, { wallet: wallet - sitInAmount });
 
     if (Array.isArray(invitetedPlayerUserId) && invitetedPlayerUserId.length) {

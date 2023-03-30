@@ -18,6 +18,9 @@ const connetToLanding = (pokerSocket) => {
          console.log("tournament created at landing");
          pokerSocket.emit('tournamentCreated', { tournaments: getAllTournament }); 
     })
+    socket.on('tableCreate', async(data) => {
+        pokerSocket.emit("AllTables",{tables:data?.tables}) 
+   })
     
     const tryReconnect = () => {
         setTimeout(() => {
