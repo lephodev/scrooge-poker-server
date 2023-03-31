@@ -3050,6 +3050,7 @@ const calculatePercentagePrizes = async (tournamentdata, elem) => {
     } else {
       percnt = Math.ceil(totalJoinPlayer * 0.2);
     }
+    // console.log("Percnt ---->: " + percnt);
     let winners = elem.slice(0, percnt);
     let values =
       (await payouts[prizeDistribution]) &&
@@ -3058,17 +3059,19 @@ const calculatePercentagePrizes = async (tournamentdata, elem) => {
       (el) => el.min <= totalJoinPlayer && el.max >= totalJoinPlayer
     );
     const totalPoolAmt = totalJoinPlayer * tournamentFee;
-
+    console.log("winners ==>", winners);
     const { amount } = reqPayout;
     let allWinnersWithAmount = {};
     amount.forEach((el, i) => {
-      if (i < 2) {
-        allWinnersWithAmount[i] = {
-          userId: winners[i]?.id || winners[i].userid,
-          amount: totalPoolAmt * (el[i] / 100),
-          name: winners[i]?.name,
-          profile: winners[i]?.photoURI,
-        };
+      if (i < 9) {
+        if (winners[i]) {
+          allWinnersWithAmount[i] = {
+            userId: winners[i]?.id || winners[i]?.userid,
+            amount: totalPoolAmt * (el[i] / 100),
+            name: winners[i]?.name,
+            profile: winners[i]?.photoURI,
+          };
+        }
       } else {
         const key = Object.keys(el)[0];
         let splitdIndxs = key.split("-");
