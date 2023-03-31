@@ -3061,6 +3061,11 @@ const calculatePercentagePrizes = async (tournamentdata, elem) => {
     const totalPoolAmt = totalJoinPlayer * tournamentFee;
     console.log("winners ==>", winners);
     const { amount } = reqPayout;
+
+    if (winners.length < amount.length) {
+      winners = elem;
+    }
+
     let allWinnersWithAmount = {};
     amount.forEach((el, i) => {
       if (i < 9) {
