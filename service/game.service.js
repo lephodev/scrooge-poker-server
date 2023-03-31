@@ -41,16 +41,27 @@ const findAvailablePosition = async (playerList) => {
   });
 };
 
-const pushUserInRoom = async (roomId, userId, position, sitInAmount) => {
-  console.log("push user in room executed ====== >");
+const pushUserInRoom = async (game, userId, position, sitInAmount, type) => {
   try {
     const userData = await userService.getUserById(userId);
     const { username, wallet, email, _id, avatar, profile } = userData;
 
+    let hostId = null;
+    console.log("type ===>", type);
+    console.log("game?.hostId ===>", game?.hostId);
+
+    if (!game?.hostId || type === 1) {
+      hostId = _id;
+    } else {
+      hostId = game?.hostId;
+    }
+
+    console.log("hostId ========>", hostId);
+
     await Promise.allSettled([
       // userService.updateUserWallet(_id),
       roomModel.updateOne(
-        { _id: roomId },
+        { _id: game._id },
         {
           $push: {
             players: {
@@ -69,6 +80,7 @@ const pushUserInRoom = async (roomId, userId, position, sitInAmount) => {
               hands: [],
             },
           },
+          hostId,
           $pull: {
             leavereq: converMongoId(userId),
           },
@@ -76,7 +88,7 @@ const pushUserInRoom = async (roomId, userId, position, sitInAmount) => {
       ),
     ]);
 
-    const room = await getGameById(roomId);
+    const room = await getGameById(game._id);
     return room;
   } catch (error) {
     console.log(error);
@@ -84,41 +96,44 @@ const pushUserInRoom = async (roomId, userId, position, sitInAmount) => {
   }
 };
 
-const joinRoomByUserId = async (game, userId, sitInAmount) => {
-  console.log("user joind");
+const joinRoomByUserId = async (game, userId, sitInAmount, playerLimit) => {
   // if public table -
   // check empty slot for table else return slot full,
   // join user in game if there is empty slot
-  if (game.public && game.players.length < 9) {
+  if (game.public && game.players.length < playerLimit) {
     const availblePosition = await findAvailablePosition(game.players);
     if (!availblePosition.isFound) {
       return null;
     }
+    const Type = game.players.length === 0 ? 1 : 2;
     const room = pushUserInRoom(
-      game._id,
+      game,
       userId,
       availblePosition.i,
-      sitInAmount
+      sitInAmount,
+      Type
     );
     return room;
     // else check invite array for private tables
     // join user in game if there is empty slot else return slot full
   } else if (
     game.invPlayers.find((uId) => uId.toString() === userId.toString()) &&
-    game.players.length < 9
+    game.players.length < playerLimit
   ) {
     const availblePosition = await findAvailablePosition(game.players);
     if (!availblePosition.isFound) {
       return null;
     }
+    const Type = game.players.length === 0 ? 1 : 2;
     const room = pushUserInRoom(
-      game._id,
+      game,
       userId,
       availblePosition.i,
-      sitInAmount
+      sitInAmount,
+      Type
     );
     return room;
-  } else if (game.public && game.players.length >= 9) {
+  } else if (game.public && game.players.length >= playerLimit) {
     return null;
   } else {
     return null;
@@ -128,21 +143,15 @@ const joinRoomByUserId = async (game, userId, sitInAmount) => {
 // leave roomId empty if you want exclude any room to come in search
 // Because in check game function we want to exclude it from there
 const checkIfUserInGame = async (userId, roomId = "") => {
-  console.log("userId----", userId);
   try {
     let query = { gameType: "poker", "players.userid": converMongoId(userId) };
-
     if (roomId) {
       query["_id"] = { $ne: converMongoId(roomId) };
     }
-
-    console.log({ query });
     const checkRoom = await roomModel.findOne(query);
-
     if (checkRoom) {
       return true;
     }
-
     return false;
   } catch (error) {
     console.log(error);
@@ -151,7 +160,6 @@ const checkIfUserInGame = async (userId, roomId = "") => {
 };
 
 const playerTentativeActionSelection = async (game, userId, actionType) => {
-  console.log("gameJivannnna", actionType, userId);
   try {
     const { runninground, id } = game;
 
@@ -191,16 +199,11 @@ const playerTentativeActionSelection = async (game, userId, actionType) => {
 const subSubtractTimeForSendMail = (tournamentDate, startDate) => {
   const currentDate = new Date().toISOString().split("T")[0];
   const oldTime = new Date(tournamentDate);
-  const newTime = oldTime.setMinutes(oldTime.getUTCMinutes() - 2);
+  const newTime = oldTime.setUTCMinutes(oldTime.getUTCMinutes() - 2);
   const beforeTime = `${new Date(newTime).getUTCHours()}:${new Date(
     newTime
   ).getUTCMinutes()}:00`;
   const currentTime = `${new Date().getUTCHours()}:${new Date().getUTCMinutes()}:00`;
-  console.log("ne date-->", {
-    nt: newTime,
-    before: beforeTime,
-    curTime: currentTime,
-  });
   return currentDate === startDate && beforeTime === currentTime;
 };
 const findRoom = (rooms) => {
@@ -212,7 +215,7 @@ const findRoom = (rooms) => {
   });
   return { players: data, roomId };
 };
-const sendAcknowledgementForJoinTournament = async () => {
+const sendAcknowledgementForJoinTournament = async (io) => {
   try {
     const findTournament = await tournamentModel
       .find({})
@@ -221,13 +224,18 @@ const sendAcknowledgementForJoinTournament = async () => {
       })
       .exec();
     if (findTournament?.length > 0) {
-      findTournament.forEach((el) => {
+      findTournament.forEach(async (el) => {
         const matched = subSubtractTimeForSendMail(
           el.tournamentDate,
           el.startDate
         );
         if (matched) {
-          console.log("client url--->", process.env.CLIENTURL);
+          await tournamentModel.updateOne(
+            { _id: el._id },
+            { showButton: true },
+            { new: true }
+          );
+          io.emit("tournamentUpdate", { updateTournament: true });
           const room = findRoom(el.rooms);
           const { players, roomId } = room;
           if (players && players?.length > 0) {
@@ -238,6 +246,7 @@ const sendAcknowledgementForJoinTournament = async () => {
                 message: "Poker tournament start in 2 minutes",
                 url: `${process.env.CLIENTURL}/table?gamecollection=poker&tableid=${roomId}`,
               };
+
               await Notification.create(payload);
             });
           }

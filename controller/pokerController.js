@@ -26,7 +26,7 @@ export const getDocument = async (req, res) => {
   }
 };
 
-export const createTable = async (req, res) => {
+export const createTable = async (req, res, io) => {
   try {
     const {
       gameName,
@@ -95,7 +95,10 @@ export const createTable = async (req, res) => {
         },
       ],
     });
-
+    const getAllRunningRoom = await roomModel
+      .find({ public: true })
+      .populate("players.userid");
+    io.emit("AllTables", { tables: getAllRunningRoom });
     await User.updateOne({ _id }, { wallet: wallet - sitInAmount });
 
     if (Array.isArray(invitetedPlayerUserId) && invitetedPlayerUserId.length) {
@@ -147,7 +150,6 @@ export const getAllUsers = async (req, res) => {
   try {
     const allUsers = await User.find({
       _id: { $ne: req.user._id },
-      isRegistrationComplete: true,
     }).select("_id username");
 
     return res.status(200).send({ allUsers });
@@ -172,21 +174,18 @@ export const checkIfUserInTable = async (req, res) => {
     return res.status(200).send({ inTable: true, players: checkTable.players });
   } catch (error) {
     console.log("error in checkIfUserInTable", error);
-
-    console.log(error);
     res.status(500).send({ message: "Internal server error" });
   }
 };
 
 export const getTablePlayers = async (req, res) => {
-  console.log("abbavv", req.params.tableId);
   try {
     const user = req.user;
     const tableId = req.params.tableId;
 
     const roomData = await roomModel.find({
       _id: mongoose.Types.ObjectId(tableId),
-      "players.id": user.id,
+      "players.id": userid,
     });
     if (!roomData) {
       return res.status(403).send({ message: "Room not found" });
@@ -262,67 +261,81 @@ export const getTablePlayers = async (req, res) => {
 //   }
 // };
 
-export const refillWallet = async (req, res) => {
-  try {
-    const user = req.user;
-    let { tableId, amount } = req.body;
-    amount = parseInt(amount);
-    let room = await roomModel.findOne({
-      _id: tableId,
-    });
-
-    if (room != null) {
-      const playerExist = room.players.filter(
-        (el) =>
-          mongoose.Types.ObjectId(el.userid).toString() === user.id.toString()
-      );
-      if (playerExist?.length) {
-        const userData = await User.findById(user.id).lean();
-        let buyinrequest = room.buyinrequest;
-        let buyin = {
-          userid: user.id,
-          name: userData?.username,
-          wallet: amount,
-          redeem: 0,
-        };
-        buyinrequest.push(buyin);
-        await roomModel.findByIdAndUpdate(room._id, {
-          buyin: buyinrequest,
-        });
-        const roomId = room._id.toString();
-        const updatedRoom = await roomModel.findById(roomId);
-        console.log("updatedRoom", updatedRoom);
-        console.log("room id==>", roomId);
-        const roomData = await roomModel.findOne({
-          $and: [
-            { _id: tableId },
-            {
-              players: {
-                $elemMatch: { userid: mongoose.Types.ObjectId(user.id) },
-              },
-            },
-          ],
-        });
-        await User.updateOne(
-          { _id: mongoose.Types.ObjectId(user.id) },
-          { $inc: { wallet: -amount } }
-        );
-        res.status(200).send({ msg: "Success" });
-      } else {
-        res.send({
-          code: 404,
-          msg: "Player not exist in this teble.",
-        });
-      }
-    } else {
-      res.send({
-        code: 404,
-        msg: "Room not found",
+export const refillWallet = async (data, io, socket) => {
+  process.nextTick(async () => {
+    try {
+      let { tableId, amount, userid, username } = data;
+      amount = parseInt(amount);
+      let room = await roomModel.findOne({
+        _id: tableId,
       });
+
+      if (room != null) {
+        const playerExist = room.players.filter(
+          (el) =>
+            mongoose.Types.ObjectId(el.userid).toString() === userid.toString()
+        );
+        if (!room.isGameRunning) {
+          await roomModel.updateOne(
+            {
+              $and: [
+                { _id: tableId },
+                {
+                  players: {
+                    $elemMatch: { id: mongoose.Types.ObjectId(userid) },
+                  },
+                },
+              ],
+            },
+            {
+              $inc: {
+                "players.$.wallet": amount,
+                "players.$.initialCoinBeforeStart": amount,
+              },
+            }
+          );
+
+          const roomData = await roomModel.findOne({
+            $and: [
+              { _id: tableId },
+              {
+                players: {
+                  $elemMatch: { userid: mongoose.Types.ObjectId(userid) },
+                },
+              },
+            ],
+          });
+          await User.updateOne(
+            { _id: mongoose.Types.ObjectId(userid) },
+            { $inc: { wallet: -amount } }
+          );
+          if (roomData) {
+            socket.emit("updateRoom", roomData);
+          }
+        }
+        if (playerExist?.length && room.isGameRunning) {
+          let buyinrequest = room.buyinrequest;
+          let buyin = {
+            userid: userid,
+            name: username,
+            wallet: amount,
+            redeem: 0,
+          };
+          buyinrequest.push(buyin);
+
+          await roomModel.findByIdAndUpdate(room._id, {
+            buyin: buyinrequest,
+          });
+
+          await User.updateOne(
+            { _id: mongoose.Types.ObjectId(userid) },
+            { $inc: { wallet: -amount } }
+          );
+          socket.emit("InrunningGame");
+        }
+      }
+    } catch (error) {
+      console.log("error in  refillWallet", error);
     }
-  } catch (error) {
-    console.log("error in  refillWallet", error);
-    res.status(500).send({ msg: "Internel server error" });
-    console.log(error);
-  }
+  });
 };
