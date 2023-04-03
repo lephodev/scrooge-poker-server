@@ -2363,11 +2363,12 @@ export const showdown = async (roomid, io) => {
             amt = winnerObj.winningAmount;
           }
         } else {
+          console.log("game loose executed");
           action = "game-lose";
           amt = player.prevPot;
         }
         player.wallet = showdownData[i].wallet;
-        console.log("user wallet ======>", userData[i]);
+        console.log("Amount for hand ======>", amt);
         player.tickets = amt;
         player.hands.push({
           action,
@@ -7019,7 +7020,11 @@ export const doLeaveWatcher = async (data, io, socket) => {
   }
 };
 
-const createTransactionFromUsersArray = async (roomId, users = []) => {
+const createTransactionFromUsersArray = async (
+  roomId,
+  users = [],
+  tournament
+) => {
   try {
     console.log({ roomId, users: JSON.stringify(users) });
     console.log("users ===>", users);
@@ -7047,57 +7052,61 @@ const createTransactionFromUsersArray = async (roomId, users = []) => {
       let totalWin = 0;
       let totalLose = 0;
       let prevAmount = 0;
-      const handsTransaction = el.hands.map((elem) => {
-        console.log({ elem });
-        if (elem.action === "game-lose") {
-          console.log("GAME LOSE");
-          totalLossAmount += elem.amount;
-          totalLose++;
-        } else {
-          console.log("GAME WIN");
-          totalWinAmount += elem.amount;
-          totalWin++;
-        }
-        const prvAmt = updatedAmount + usersWalltAmt[i];
-        updatedAmount -= elem.amount;
-        // Get each transaction last and update wallet amount
-        console.log(
-          "update amount: ------------------------------------------------>",
-          updatedAmount
-        );
+      let handsTransaction = [];
+      if (!tournament) {
+        handsTransaction = el.hands.map((elem) => {
+          console.log({ elem });
+          if (elem.action === "game-lose") {
+            console.log("GAME LOSE");
+            totalLossAmount += elem.amount;
+            totalLose++;
+          } else {
+            console.log("GAME WIN");
+            totalWinAmount += elem.amount;
+            totalWin++;
+          }
+          const prvAmt = updatedAmount + usersWalltAmt[i];
+          updatedAmount -= elem.amount;
+          // Get each transaction last and update wallet amount
+          console.log(
+            "update amount: ------------------------------------------------>",
+            updatedAmount
+          );
 
-        const gameWinOrLoseamount =
-          elem.action === "game-lose" ? -elem.amount : elem.amount;
-        const lastAmount = updatedAmount + usersWalltAmt[i];
-        const prevTickets = userTickets[i];
-        const crrTicket =
-          userTickets[i] + (gameWinOrLoseamount > 0 ? elem.amount * 2 : 0);
-        userTickets[i] = crrTicket;
-        // updatedAmount = updatedAmount + gameWinOrLoseamount;
-        console.log("updated amount ----->", updatedAmount);
-        const ddd = {
-          prevWallet: 1000,
-          updatedWallet: 900,
-        };
-        const d = {
-          prevTicket: prevTickets,
-          updatedTicket: crrTicket,
-        };
-        return {
-          userId,
-          roomId,
-          amount:
-            gameWinOrLoseamount >= 0
-              ? gameWinOrLoseamount * 2
-              : gameWinOrLoseamount,
-          transactionDetails: {},
-          prevWallet: prvAmt,
-          updatedWallet: updatedAmount + usersWalltAmt[i],
-          transactionType: "poker",
-          prevTicket: prevTickets,
-          updatedTicket: crrTicket,
-        };
-      });
+          const gameWinOrLoseamount =
+            elem.action === "game-lose" ? -elem.amount : elem.amount;
+          const lastAmount = updatedAmount + usersWalltAmt[i];
+          const prevTickets = userTickets[i];
+          const crrTicket =
+            userTickets[i] + (gameWinOrLoseamount > 0 ? elem.amount * 2 : 0);
+          userTickets[i] = crrTicket;
+          // updatedAmount = updatedAmount + gameWinOrLoseamount;
+          console.log("updated amount ----->", updatedAmount);
+          const ddd = {
+            prevWallet: 1000,
+            updatedWallet: 900,
+          };
+          const d = {
+            prevTicket: prevTickets,
+            updatedTicket: crrTicket,
+          };
+          return {
+            userId,
+            roomId,
+            amount:
+              gameWinOrLoseamount >= 0
+                ? gameWinOrLoseamount * 2
+                : gameWinOrLoseamount,
+            transactionDetails: {},
+            prevWallet: prvAmt,
+            updatedWallet: updatedAmount + usersWalltAmt[i],
+            transactionType: "poker",
+            prevTicket: prevTickets,
+            updatedTicket: crrTicket,
+          };
+        });
+      }
+
       console.log({ totalWin, totalLose, totalWinAmount, totalLossAmount });
 
       if (totalWin || totalLose || totalWinAmount || totalLossAmount) {
@@ -7248,7 +7257,7 @@ export const leaveApiCall = async (room, userId) => {
     // console.log("users1====>", users);
 
     const [transactions, rankModelUpdate] =
-      await createTransactionFromUsersArray(room._id, users);
+      await createTransactionFromUsersArray(room._id, users, room.tournament);
 
     // console.log("users2====>", users);
     const userBalancePromise = users.map((el) => {
@@ -7275,6 +7284,8 @@ export const leaveApiCall = async (room, userId) => {
         }
       );
     });
+
+    console.log("transactions ====>", transactions);
 
     const filterdHndWinnerData = room?.handWinner?.map((el) => {
       let filtrd = el.filter((obj) => obj.id.toString() !== userId.toString());
