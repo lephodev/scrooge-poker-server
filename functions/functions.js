@@ -5613,7 +5613,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
   try {
     // console.log("winner before show down executed");
     const roomData = await roomModel.findOne({ _id: roomid });
-    console.log("ROOM DATA PLAYERS ", roomData.players);
+    // console.log("ROOM DATA PLAYERS ", roomData.players);
     let winnerAmount = 0;
     let showDownPlayers = [];
     let playerData = null;
