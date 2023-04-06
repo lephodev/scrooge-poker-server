@@ -20,7 +20,7 @@ import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
 
 const gameRestartSeconds = 8000;
-const playerLimit = 9;
+const playerLimit = 3;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
@@ -1048,7 +1048,6 @@ export const prefloptimer = async (roomid, io) => {
           udata?.raisePlayerPosition === null ||
           i === udata?.raisePlayerPosition
         ) {
-          console.log("before Flop round start---->");
           setTimeout(() => {
             flopround(roomid, io);
           }, 500);
@@ -7734,6 +7733,7 @@ const pushPlayerInRoom = async (
 ) => {
   try {
     const { username, _id, avatar, profile } = userData;
+    const { rooms = [] } = checkTournament;
     let roomId;
     if (room) {
       roomId = room._id;
@@ -7762,11 +7762,24 @@ const pushPlayerInRoom = async (
       };
 
       await roomModel.updateOne({ _id: roomId }, payload);
-      await tournamentModel.findOneAndUpdate(
+     const tournament= await tournamentModel.findOneAndUpdate(
         { _id: tournamentId },
-        { $inc: { havePlayers: 1, totalJoinPlayer: 1 } },
+        { $inc: { havePlayers: 1, totalJoinPlayer: 1,prizePool:checkTournament?.tournamentFee } },
+
         { new: true }
       );
+      if(tournament?.tournamentType==='sit&go'&&tournament?.totalJoinPlayer ===playerLimit && rooms.find((room) => room.players.length === playerLimit)){
+        await tournamentModel.updateOne(
+          { _id: tournamentId },
+          { isStart: true }
+        );
+        console.log("Tournament started");
+        blindTimer(checkTournament, io);
+        setTimeout(()=>{
+          preflopround(rooms.find((room) => room.players.length === playerLimit), io);
+        },5000) 
+        return 
+      }
     } else {
       let smallBlind = checkTournament?.levels?.smallBlind?.amount;
       let bigBlind = checkTournament?.levels?.bigBlind?.amount;
@@ -7802,7 +7815,7 @@ const pushPlayerInRoom = async (
       await tournamentModel.findOneAndUpdate(
         { _id: tournamentId },
         {
-          $inc: { havePlayers: 1, totalJoinPlayer: 1 },
+          $inc: { havePlayers: 1, totalJoinPlayer: 1 ,prizePool:checkTournament?.tournamentFee},
           $push: { rooms: roomId },
         },
         { upsert: true, new: true }
@@ -7828,7 +7841,10 @@ export const activateTournament = async (io) => {
       .lean();
     if (checkTournament) {
       //preflopround()
-      if (checkTournament?.rooms?.length > 0) {
+      if(checkTournament?.isStart){
+       return
+      }
+      if (checkTournament?.rooms?.length > 0 && !checkTournament?.isStart) {
         await tournamentModel.updateOne(
           { _id: checkTournament?._id },
           { isStart: true }
