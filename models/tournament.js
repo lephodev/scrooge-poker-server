@@ -24,7 +24,9 @@ const tournamentSchema = new Schema(
     eleminatedPlayers: [],
     totalJoinPlayer: { type: Number, default: 0 },
     prizeType:{ type: String, required: true },
+    tournamentType:{ type: String, required: true },
     prizeDistribution:{ type: String, required: true },
+    prizePool: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
