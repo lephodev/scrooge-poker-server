@@ -11,7 +11,7 @@ import auth from "../landing-server/middlewares/auth";
 const router = express.Router();
 
 router.get("/tournaments", getAllGame);
-router.get('/tournamentById',getTournamentById)
+router.get("/tournamentById", getTournamentById);
 router.post("/enterroom", auth(), enterRoom);
 router.post("/jointournament", auth(), JoinTournament);
 
