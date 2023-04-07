@@ -137,7 +137,7 @@ export const createTable = async (req, res, io) => {
 export const getAllGame = async (req, res) => {
   try {
     const getAllRunningRoom = await roomModel
-      .find({})
+      .find({finish: false})
       .populate("players.userid");
     return res.status(200).send({ rooms: getAllRunningRoom || [] });
   } catch (error) {
