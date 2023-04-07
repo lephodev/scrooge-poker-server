@@ -7860,6 +7860,7 @@ export const activateTournament = async (io) => {
       .findOne({
         startDate: date,
         startTime: time,
+        tournamentType : { $ne : "sit&go"}
       })
       .populate("rooms")
       .lean();
