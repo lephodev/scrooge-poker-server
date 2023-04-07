@@ -2913,11 +2913,13 @@ const fixedPrizeDistribution = (tournamentdata, elem) => {
       elem.length - tournamentdata.winTotalPlayer,
       elem.length
     );
+    console.log("winners ====>", winners);
     winners.forEach((ele) => {
       if (
         winTotalPlayer === 25 &&
         winPlayer["11-25"] &&
-        winPlayer["11-25"].userIds.length < winPlayer["11-25"].playerCount
+        winPlayer["11-25"].userIds.length < winPlayer["11-25"].playerCount &&
+        winners.length > 10
       ) {
         winPlayer["11-25"].userIds.push(ele.id || ele.userid);
         return;
@@ -2925,20 +2927,25 @@ const fixedPrizeDistribution = (tournamentdata, elem) => {
       if (
         winTotalPlayer === 10 &&
         winPlayer["4-10"] &&
-        winPlayer["4-10"].userIds.length <= winPlayer["4-10"].playerCount
+        winPlayer["4-10"].userIds.length <= winPlayer["4-10"].playerCount &&
+        winners.length > 3
       ) {
+        console.log("enterd in second if ===>");
         winPlayer["4-10"].userIds.push(ele.id || ele.userid);
         return;
       }
-      if (!winPlayer.third.userId) {
+      if (!winPlayer.third.userId && winners.length > 2) {
+        console.log("enterd in third if ===>");
         winPlayer.third.userId = ele.id || ele.userid;
         return;
       }
-      if (!winPlayer.second.userId) {
+      if (!winPlayer.second.userId && winners.length > 1) {
+        console.log("enterd in forth if ===>");
         winPlayer.second.userId = ele.id || ele.userid;
         return;
       }
       if (!winPlayer.first.userId) {
+        console.log("enterd in fifth if ===>");
         winPlayer.first.userId = ele.id || ele.userid;
         return;
       }
@@ -7762,23 +7769,36 @@ const pushPlayerInRoom = async (
       };
 
       await roomModel.updateOne({ _id: roomId }, payload);
-     const tournament= await tournamentModel.findOneAndUpdate(
+      const tournament = await tournamentModel.findOneAndUpdate(
         { _id: tournamentId },
-        { $inc: { havePlayers: 1, totalJoinPlayer: 1,prizePool:checkTournament?.tournamentFee } },
+        {
+          $inc: {
+            havePlayers: 1,
+            totalJoinPlayer: 1,
+            prizePool: checkTournament?.tournamentFee,
+          },
+        },
 
         { new: true }
       );
-      if(tournament?.tournamentType==='sit&go'&&tournament?.totalJoinPlayer ===playerLimit && rooms.find((room) => room.players.length === playerLimit)){
+      if (
+        tournament?.tournamentType === "sit&go" &&
+        tournament?.totalJoinPlayer === playerLimit &&
+        rooms.find((room) => room.players.length === playerLimit)
+      ) {
         await tournamentModel.updateOne(
           { _id: tournamentId },
           { isStart: true }
         );
         console.log("Tournament started");
         blindTimer(checkTournament, io);
-        setTimeout(()=>{
-          preflopround(rooms.find((room) => room.players.length === playerLimit), io);
-        },5000) 
-        return 
+        setTimeout(() => {
+          preflopround(
+            rooms.find((room) => room.players.length === playerLimit),
+            io
+          );
+        }, 5000);
+        return;
       }
     } else {
       let smallBlind = checkTournament?.levels?.smallBlind?.amount;
@@ -7815,7 +7835,11 @@ const pushPlayerInRoom = async (
       await tournamentModel.findOneAndUpdate(
         { _id: tournamentId },
         {
-          $inc: { havePlayers: 1, totalJoinPlayer: 1 ,prizePool:checkTournament?.tournamentFee},
+          $inc: {
+            havePlayers: 1,
+            totalJoinPlayer: 1,
+            prizePool: checkTournament?.tournamentFee,
+          },
           $push: { rooms: roomId },
         },
         { upsert: true, new: true }
@@ -7841,8 +7865,8 @@ export const activateTournament = async (io) => {
       .lean();
     if (checkTournament) {
       //preflopround()
-      if(checkTournament?.isStart){
-       return
+      if (checkTournament?.isStart) {
+        return;
       }
       if (checkTournament?.rooms?.length > 0 && !checkTournament?.isStart) {
         await tournamentModel.updateOne(
