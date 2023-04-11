@@ -819,7 +819,7 @@ export const preflopround = async (room, io) => {
           };
           await deductBigBlind();
 
-          await prefloptimer(room._id, io);
+          prefloptimer(room._id, io);
           let updatedRoom = await roomModel.findOne({
             _id: room._id,
           });
@@ -879,20 +879,16 @@ export const prefloptimer = async (roomid, io) => {
         }
         console.log("timerplayer preflop =>", cp);
         // let playerinterval = udata.players[i].userid;
-        const tempRoomData = await roomModel.findOneAndUpdate(
-          { _id: roomid },
-          { timerPlayer: cp },
-          { new: true }
-        );
 
         if (cPlayer.length) {
-          if (tempRoomData?.runninground === 1) {
-            await roomModel.findOneAndUpdate(
+          if (udata?.runninground === 1) {
+            await roomModel.updateOne(
               {
                 _id: roomid,
                 "preflopround.position": i,
               },
               {
+                timerPlayer: cp,
                 "preflopround.$.action": false,
               }
             );
@@ -901,19 +897,6 @@ export const prefloptimer = async (roomid, io) => {
               let preflopData = data?.preflopround;
               let intervalPlayer = preflopData?.filter((e) => e.position === i);
               if (j <= 0) {
-                if (intervalPlayer[0].timebank > 1) {
-                  j = intervalPlayer[0].timebank;
-                  t = "time_bank";
-                  tx = intervalPlayer[0].timebank;
-                  io.in(data?._id?.toString()).emit("timer", {
-                    id: intervalPlayer[0].id,
-                    playerchance: j,
-                    timerPlayer: i,
-                    runninground: 1,
-                    maxtimer: tx,
-                  });
-                  // timer(i,maxPosition,intervalPlayer[0].timebank);
-                } else {
                   clearInterval(playerinterval);
                   if (
                     (data.raiseAmount === intervalPlayer[0].pot ||
@@ -923,7 +906,6 @@ export const prefloptimer = async (roomid, io) => {
                     await doCheck(roomid, intervalPlayer[0].id, io);
                     timer(++i, maxPosition);
                   } else {
-                    setTimeout(async () => {
                       const isContinue = await doFold(
                         data,
                         intervalPlayer[0].id,
@@ -938,9 +920,8 @@ export const prefloptimer = async (roomid, io) => {
                       if (isContinue) {
                         timer(++i, maxPosition);
                       }
-                    }, 1000);
                   }
-                }
+                
               } else if (
                 intervalPlayer &&
                 (intervalPlayer[0]?.fold ||
@@ -955,50 +936,13 @@ export const prefloptimer = async (roomid, io) => {
                 timer(++i, maxPosition);
               } else {
                 j--;
-
-                if (t === "timer") {
-                  const updatedRoom = await roomModel.findOneAndUpdate(
-                    {
-                      _id: roomid,
-                      "preflopround.id": intervalPlayer[0].id,
-                    },
-                    {
-                      "preflopround.$.playerchance": j,
-                    },
-                    {
-                      new: true,
-                    }
-                  );
-                  if (updatedRoom) {
-                    io.in(updatedRoom?._id?.toString()).emit("timer", {
-                      id: intervalPlayer[0].id,
-                      playerchance: j,
-                      timerPlayer: i,
-                      runninground: 1,
-                      maxtimer: tx,
-                    });
-                  }
-                } else {
-                  const updatedRoom = await roomModel.findOneAndUpdate(
-                    {
-                      _id: roomid,
-                      "preflopround.id": intervalPlayer[0].id,
-                    },
-                    {
-                      "preflopround.$.timebank": j,
-                    },
-                    {
-                      new: true,
-                    }
-                  );
-                  io.in(updatedRoom?._id?.toString()).emit("timer", {
-                    id: intervalPlayer[0].id,
-                    playerchance: j,
-                    timerPlayer: i,
-                    runninground: 1,
-                    maxtimer: tx,
-                  });
-                }
+                io.in(udata?._id?.toString()).emit("timer", {
+                  id: intervalPlayer[0].id,
+                  playerchance: j,
+                  timerPlayer: i,
+                  runninground: 1,
+                  maxtimer: tx,
+                });
               }
             }, 1000);
           }
@@ -1013,15 +957,12 @@ export const prefloptimer = async (roomid, io) => {
           udata?.isCircleCompleted === false
         ) {
           newPosition = 0;
-          const x = await roomModel.findOneAndUpdate(
+           await roomModel.updateOne(
             {
               _id: roomid,
             },
             {
               isCircleCompleted: true,
-            },
-            {
-              new: true,
             }
           );
         } else {
@@ -1032,7 +973,7 @@ export const prefloptimer = async (roomid, io) => {
             newPosition = udata?.raisePlayerPosition;
           } else {
             newPosition = udata?.bigBlindPosition + 1;
-            await roomModel.findOneAndUpdate(
+            await roomModel.updateOne(
               {
                 _id: roomid,
               },
@@ -1050,7 +991,7 @@ export const prefloptimer = async (roomid, io) => {
         ) {
           setTimeout(() => {
             flopround(roomid, io);
-          }, 500);
+          }, 50);
         } else {
           if (udata?.isCircleCompleted) {
             if (udata?.raisePlayerPosition < i) {
@@ -1148,7 +1089,7 @@ export const flopround = async (roomid, io) => {
       // console.log("floproundPlayersData ===>", floproundPlayersData);
       let communityCards = verifycards(distributedCards, 3);
       communityCards = communityCards.map((card) => EncryptCard(card));
-      await roomModel.findOneAndUpdate(
+      await roomModel.updateOne(
         {
           _id: roomid,
         },
@@ -1159,7 +1100,7 @@ export const flopround = async (roomid, io) => {
           timerPlayer: null,
           pot: totalPot,
           raisePlayerPosition: roomData.smallBlindPosition,
-          raiseAmount: roomData.bigBlind,
+          raiseAmount: roomData.smallBlind,
           lastAction: "check",
           isCircleCompleted: false,
         }
@@ -1172,12 +1113,12 @@ export const flopround = async (roomid, io) => {
         setTimeout(() => {
           console.log("flop-timer called for room =>", roomid);
           flopTimer(roomid, io);
-        }, 200);
+        }, 50);
       } else {
         setTimeout(() => {
           console.log("turn-round called for room =>", roomid);
           turnround(roomid, io);
-        }, 500);
+        }, 100);
       }
     }
   } catch (error) {
@@ -1222,23 +1163,16 @@ export const flopTimer = async (roomid, io) => {
 
         console.log("timerplayer flop =>", cp);
 
-        const tempRoomData = await roomModel.findOneAndUpdate(
-          { _id: roomid },
-          { timerPlayer: cp },
-          {
-            new: true,
-          }
-        );
-
         if (cPlayer?.length) {
-          if (tempRoomData?.runninground === 2) {
-            await roomModel.findOneAndUpdate(
+          if (udata?.runninground === 2) {
+            await roomModel.updateOne(
               {
                 _id: roomid,
                 "flopround.position": i,
               },
               {
                 "flopround.$.action": false,
+                timerPlayer: cp
               }
             );
             let playerinterval = setInterval(async () => {
@@ -1247,18 +1181,6 @@ export const flopTimer = async (roomid, io) => {
 
               let intervalPlayer = flopData?.filter((e) => e.position === i);
               if (j <= 0) {
-                if (intervalPlayer[0]?.timebank > 1) {
-                  j = intervalPlayer[0]?.timebank;
-                  t = "time_bank";
-                  tx = intervalPlayer[0]?.timebank;
-                  io.in(data._id.toString()).emit("timer", {
-                    id: intervalPlayer[0]?.id,
-                    playerchance: j,
-                    timerPlayer: i,
-                    runninground: 4,
-                    maxtimer: tx,
-                  });
-                } else {
                   clearInterval(playerinterval);
                   if (
                     (data?.raiseAmount === intervalPlayer[0]?.pot ||
@@ -1281,7 +1203,6 @@ export const flopTimer = async (roomid, io) => {
                       timer(++i, maxPosition);
                     }
                   }
-                }
                 // timer(++i,maxPosition);
               } else if (
                 intervalPlayer &&
@@ -1297,38 +1218,6 @@ export const flopTimer = async (roomid, io) => {
                 timer(++i, maxPosition);
               } else {
                 j--;
-
-                if (j === 120 && !data?.displayTimer) {
-                  io.in(data?._id?.toString()).emit("beingtimeout", {
-                    msg: `${intervalPlayer[0].name}, what do you want to do?`,
-                  });
-                } else if (j === 60 && !data?.displayTimer) {
-                  let tablemsg = "";
-                  if (
-                    data?.raiseAmount === intervalPlayer[0]?.pot ||
-                    data?.lastAction === "check"
-                  ) {
-                    tablemsg = `${intervalPlayer[0]?.name}, please make your action, else you will automatically check in 1 minute.`;
-                  } else {
-                    tablemsg = `${intervalPlayer[0]?.name}, please make your action, else you will automatically fold in 1 minute.`;
-                  }
-                  io.in(data?._id?.toString()).emit("beingtimeout", {
-                    msg: tablemsg,
-                  });
-                }
-                if (t === "timer") {
-                  const updatedRoom = await roomModel.findOneAndUpdate(
-                    {
-                      _id: roomid,
-                      "flopround.id": intervalPlayer[0].id,
-                    },
-                    {
-                      "flopround.$.playerchance": j,
-                    },
-                    {
-                      new: true,
-                    }
-                  );
                   io.in(data?._id?.toString()).emit("timer", {
                     id: intervalPlayer[0].id,
                     playerchance: j,
@@ -1336,27 +1225,6 @@ export const flopTimer = async (roomid, io) => {
                     runninground: 2,
                     maxtimer: tx,
                   });
-                } else {
-                  const updatedRoom = await roomModel.findOneAndUpdate(
-                    {
-                      _id: roomid,
-                      "flopround.id": intervalPlayer[0].id,
-                    },
-                    {
-                      "flopround.$.timebank": j,
-                    },
-                    {
-                      new: true,
-                    }
-                  );
-                  io.in(data?._id?.toString()).emit("timer", {
-                    id: intervalPlayer[0]?.id,
-                    playerchance: j,
-                    timerPlayer: i,
-                    runninground: 2,
-                    maxtimer: tx,
-                  });
-                }
               }
             }, 1000);
           }
@@ -1371,15 +1239,12 @@ export const flopTimer = async (roomid, io) => {
           udata?.isCircleCompleted === false
         ) {
           newPosition = 0;
-          const x = await roomModel.findOneAndUpdate(
+           await roomModel.updateOne(
             {
               _id: roomid,
             },
             {
               isCircleCompleted: true,
-            },
-            {
-              new: true,
             }
           );
         } else {
@@ -1390,7 +1255,7 @@ export const flopTimer = async (roomid, io) => {
             newPosition = udata?.raisePlayerPosition;
           } else {
             newPosition = udata?.smallBlindPosition;
-            await roomModel.findOneAndUpdate(
+            await roomModel.updateOne(
               {
                 _id: roomid,
               },
@@ -1409,15 +1274,10 @@ export const flopTimer = async (roomid, io) => {
         ) {
           setTimeout(() => {
             turnround(roomid, io);
-          }, 500);
+          }, 50);
         } else {
           if (udata?.isCircleCompleted) {
-            // timer(i,udata.raisePlayerPosition);
-            // if (udata.raisePlayerPosition === totalPlayer-1) {
-            //     timer(i,udata.raisePlayerPosition);
-            // } else {
-            //     timer(i,totalPlayer);
-            // }
+           
             if (udata?.raisePlayerPosition < i) {
               timer(i, totalPlayer);
             } else {
@@ -1521,7 +1381,7 @@ export const turnround = async (roomid, io) => {
           timerPlayer: null,
           pot: totalPot,
           raisePlayerPosition: roomData.smallBlindPosition,
-          raiseAmount: roomData.bigBlind,
+          raiseAmount: roomData.bigBlind/2,
           lastAction: "check",
           isCircleCompleted: false,
         }
@@ -1533,12 +1393,12 @@ export const turnround = async (roomid, io) => {
         setTimeout(() => {
           console.log("turn-timer called for room =>", roomid);
           turnTimer(roomid, io);
-        }, 200);
+        }, 50);
       } else {
         setTimeout(() => {
           console.log("river-round called for room =>", roomid);
           riverround(roomid, io);
-        }, 500);
+        }, 300);
       }
     }
   } catch (error) {
@@ -1579,21 +1439,16 @@ export const turnTimer = async (roomid, io) => {
           return timer(i, maxPosition);
         }
         console.log("timerplayer turn =>", cp);
-        const tempRoomData = await roomModel.findOneAndUpdate(
-          { _id: roomid },
-          { timerPlayer: cp },
-          {
-            new: true,
-          }
-        );
+        
         if (cPlayer?.length) {
-          if (tempRoomData?.runninground === 3) {
-            await roomModel.findOneAndUpdate(
+          if (udata?.runninground === 3) {
+            await roomModel.updateOne(
               {
                 _id: roomid,
                 "turnround.position": i,
               },
               {
+                timerPlayer: cp,
                 "turnround.$.action": false,
               }
             );
@@ -1602,18 +1457,6 @@ export const turnTimer = async (roomid, io) => {
               let turnData = data?.turnround;
               let intervalPlayer = turnData?.filter((e) => e.position === i);
               if (j <= 0) {
-                if (intervalPlayer[0]?.timebank > 1) {
-                  j = intervalPlayer[0]?.timebank;
-                  t = "time_bank";
-                  tx = intervalPlayer[0]?.timebank;
-                  io.in(data?._id?.toString()).emit("timer", {
-                    id: intervalPlayer[0]?.id,
-                    playerchance: j,
-                    timerPlayer: i,
-                    runninground: 4,
-                    maxtimer: tx,
-                  });
-                } else {
                   clearInterval(playerinterval);
                   if (
                     (data?.raiseAmount === intervalPlayer[0]?.pot ||
@@ -1636,7 +1479,7 @@ export const turnTimer = async (roomid, io) => {
                       timer(++i, maxPosition);
                     }
                   }
-                }
+                
                 // timer(++i,maxPosition);
               } else if (
                 intervalPlayer &&
@@ -1652,38 +1495,6 @@ export const turnTimer = async (roomid, io) => {
                 timer(++i, maxPosition);
               } else {
                 j--;
-
-                if (j === 120 && !data?.displayTimer) {
-                  io.in(data?._id?.toString()).emit("beingtimeout", {
-                    msg: `${intervalPlayer[0].name}, what do you want to do?`,
-                  });
-                } else if (j === 60 && !data.displayTimer) {
-                  let tablemsg = "";
-                  if (
-                    data?.raiseAmount === intervalPlayer[0].pot ||
-                    data?.lastAction === "check"
-                  ) {
-                    tablemsg = `${intervalPlayer[0].name}, please make your action, else you will automatically check in 1 minute.`;
-                  } else {
-                    tablemsg = `${intervalPlayer[0].name}, please make your action, else you will automatically fold in 1 minute.`;
-                  }
-                  io.in(data?._id.toString()).emit("beingtimeout", {
-                    msg: tablemsg,
-                  });
-                }
-                if (t === "timer") {
-                  const updatedRoom = await roomModel.findOneAndUpdate(
-                    {
-                      _id: roomid,
-                      "turnround.id": intervalPlayer[0].id,
-                    },
-                    {
-                      "turnround.$.playerchance": j,
-                    },
-                    {
-                      new: true,
-                    }
-                  );
                   io.in(data?._id?.toString()).emit("timer", {
                     id: intervalPlayer[0].id,
                     playerchance: j,
@@ -1691,27 +1502,6 @@ export const turnTimer = async (roomid, io) => {
                     runninground: 3,
                     maxtimer: tx,
                   });
-                } else {
-                  const updatedRoom = await roomModel.findOneAndUpdate(
-                    {
-                      _id: roomid,
-                      "turnround.id": intervalPlayer[0].id,
-                    },
-                    {
-                      "turnround.$.timebank": j,
-                    },
-                    {
-                      new: true,
-                    }
-                  );
-                  io.in(data?._id?.toString()).emit("timer", {
-                    id: intervalPlayer[0].id,
-                    playerchance: j,
-                    timerPlayer: i,
-                    runninground: 3,
-                    maxtimer: tx,
-                  });
-                }
               }
             }, 1000);
           }
@@ -1725,15 +1515,12 @@ export const turnTimer = async (roomid, io) => {
           udata?.isCircleCompleted === false
         ) {
           newPosition = 0;
-          const x = await roomModel.findOneAndUpdate(
+          await roomModel.updateOne(
             {
               _id: roomid,
             },
             {
               isCircleCompleted: true,
-            },
-            {
-              new: true,
             }
           );
         } else {
@@ -1744,7 +1531,7 @@ export const turnTimer = async (roomid, io) => {
             newPosition = udata?.raisePlayerPosition;
           } else {
             newPosition = udata?.smallBlindPosition;
-            await roomModel.findOneAndUpdate(
+            await roomModel.updateOne(
               {
                 _id: roomid,
               },
@@ -1763,15 +1550,9 @@ export const turnTimer = async (roomid, io) => {
         ) {
           setTimeout(() => {
             riverround(roomid, io);
-          }, 500);
+          }, 50);
         } else {
           if (udata?.isCircleCompleted) {
-            // timer(i,udata.raisePlayerPosition);
-            // if (udata.raisePlayerPosition === totalPlayer-1) {
-            //     timer(i,udata.raisePlayerPosition);
-            // } else {
-            //     timer(i,totalPlayer);
-            // }
             if (udata?.raisePlayerPosition < i) {
               timer(i, totalPlayer);
             } else {
@@ -1874,7 +1655,7 @@ export const riverround = async (roomid, io) => {
           timerPlayer: null,
           pot: totalPot,
           raisePlayerPosition: roomData.smallBlindPosition,
-          raiseAmount: roomData.bigBlind,
+          raiseAmount: roomData.bigBlind/2,
           lastAction: "check",
           isCircleCompleted: false,
         },
@@ -1891,13 +1672,13 @@ export const riverround = async (roomid, io) => {
         setTimeout(() => {
           console.log("river-timer called for room =>", roomid);
           riverTimer(roomid, io);
-        }, 200);
+        }, 50);
       } else {
         console.log("<<<-----show down first----->>>");
         setTimeout(() => {
           console.log("showdown called for room =>", roomid);
           showdown(roomid, io);
-        }, 500);
+        }, 300);
       }
     }
   } catch (error) {
@@ -1939,21 +1720,16 @@ export const riverTimer = async (roomid, io) => {
           return timer(i, maxPosition);
         }
         console.log("timerplayer river =>", cp);
-        const tempRoomData = await roomModel.findOneAndUpdate(
-          { _id: roomid },
-          { timerPlayer: cp },
-          {
-            new: true,
-          }
-        );
+       
         if (cPlayer?.length) {
-          if (tempRoomData?.runninground === 4) {
-            await roomModel.findOneAndUpdate(
+          if (udata?.runninground === 4) {
+            await roomModel.updateOne(
               {
                 _id: roomid,
                 "riverround.position": i,
               },
               {
+                timerPlayer: cp,
                 "riverround.$.action": false,
               }
             );
@@ -1963,18 +1739,6 @@ export const riverTimer = async (roomid, io) => {
 
               let intervalPlayer = riverData?.filter((e) => e.position === i);
               if (j <= 0) {
-                if (intervalPlayer[0]?.timebank > 1) {
-                  j = intervalPlayer[0]?.timebank;
-                  t = "time_bank";
-                  tx = intervalPlayer[0]?.timebank;
-                  io.in(data._id.toString()).emit("timer", {
-                    id: intervalPlayer[0]?.id,
-                    playerchance: j,
-                    timerPlayer: i,
-                    runninground: 4,
-                    maxtimer: tx,
-                  });
-                } else {
                   clearInterval(playerinterval);
                   if (
                     (data?.raiseAmount === intervalPlayer[0]?.pot ||
@@ -1997,8 +1761,6 @@ export const riverTimer = async (roomid, io) => {
                       timer(++i, maxPosition);
                     }
                   }
-                }
-                // timer(++i,maxPosition);
               } else if (
                 intervalPlayer &&
                 (intervalPlayer[0]?.fold ||
@@ -2013,58 +1775,6 @@ export const riverTimer = async (roomid, io) => {
                 timer(++i, maxPosition);
               } else {
                 j--;
-
-                if (j === 120 && !data?.displayTimer) {
-                  io.in(data._id.toString()).emit("beingtimeout", {
-                    msg: `${intervalPlayer[0]?.name}, what do you want to do?`,
-                  });
-                } else if (j === 60 && !data?.displayTimer) {
-                  let tablemsg = "";
-                  if (
-                    data?.raiseAmount === intervalPlayer[0]?.pot ||
-                    data?.lastAction === "check"
-                  ) {
-                    tablemsg = `${intervalPlayer[0]?.name}, please make your action, else you will automatically check in 1 minute.`;
-                  } else {
-                    tablemsg = `${intervalPlayer[0]?.name}, please make your action, else you will automatically fold in 1 minute.`;
-                  }
-                  io.in(data?._id?.toString()).emit("beingtimeout", {
-                    msg: tablemsg,
-                  });
-                }
-                if (t === "timer") {
-                  const updatedRoom = await roomModel.findOneAndUpdate(
-                    {
-                      _id: roomid,
-                      "riverround.id": intervalPlayer[0].id,
-                    },
-                    {
-                      "riverround.$.playerchance": j,
-                    },
-                    {
-                      new: true,
-                    }
-                  );
-                  io.in(data?._id?.toString()).emit("timer", {
-                    id: intervalPlayer[0].id,
-                    playerchance: j,
-                    timerPlayer: i,
-                    runninground: 4,
-                    maxtimer: tx,
-                  });
-                } else {
-                  const updatedRoom = await roomModel.findOneAndUpdate(
-                    {
-                      _id: roomid,
-                      "riverround.id": intervalPlayer[0].id,
-                    },
-                    {
-                      "riverround.$.timebank": j,
-                    },
-                    {
-                      new: true,
-                    }
-                  );
                   io.in(data?._id?.toString()).emit("timer", {
                     id: intervalPlayer[0].id,
                     playerchance: j,
@@ -2073,7 +1783,6 @@ export const riverTimer = async (roomid, io) => {
                     maxtimer: tx,
                   });
                 }
-              }
             }, 1000);
           }
         } else {
@@ -2086,15 +1795,12 @@ export const riverTimer = async (roomid, io) => {
           udata?.isCircleCompleted === false
         ) {
           newPosition = 0;
-          const x = await roomModel.findOneAndUpdate(
+          await roomModel.updateOne(
             {
               _id: roomid,
             },
             {
               isCircleCompleted: true,
-            },
-            {
-              new: true,
             }
           );
         } else {
@@ -2105,7 +1811,7 @@ export const riverTimer = async (roomid, io) => {
             newPosition = udata?.raisePlayerPosition;
           } else {
             newPosition = udata?.smallBlindPosition;
-            await roomModel.findOneAndUpdate(
+            await roomModel.updateOne(
               {
                 _id: roomid,
               },
@@ -2124,7 +1830,7 @@ export const riverTimer = async (roomid, io) => {
         ) {
           setTimeout(() => {
             showdown(roomid, io);
-          }, 200);
+          }, 50);
         } else {
           if (udata?.isCircleCompleted) {
             if (udata?.raisePlayerPosition < i) {
@@ -2338,11 +2044,11 @@ export const showdown = async (roomid, io) => {
     const handWinner = updatedRoom.handWinner;
     handWinner.push(winnerPlayers);
     const upRoomData = await roomModel.findOne({ _id: updatedRoom._id });
-    let userData = [];
-    for await (let el of upRoomData.showdown) {
-      const user = await userModel.findOne({ _id: el.id });
-      userData.push(user);
-    }
+    // let userData = [];
+    // for await (let el of upRoomData.showdown) {
+    //   const user = await userModel.findOne({ _id: el.id });
+    //   userData.push(user);
+    // }
 
     upRoomData.showdown.forEach((player, i) => {
       let action, amt;
@@ -4186,9 +3892,7 @@ export const socketDoCall = async (dta, io, socket) => {
         .findOne(
           {
             _id: roomid,
-            "players.userid": playerid,
           }
-          // { _id: 1, raiseAmount: 1 }
         )
         .lean();
       if (data !== null) {
@@ -4501,9 +4205,7 @@ export const socketDoBet = async (dta, io, socket) => {
         .findOne(
           {
             _id: roomid,
-            "players.userid": playerid,
           }
-          // { _id: 1, raiseAmount: 1, bigBlind: 1 }
         )
         .lean();
 
@@ -4907,9 +4609,7 @@ export const socketDoRaise = async (dta, io, socket) => {
         .findOne(
           {
             _id: roomid,
-            "players.userid": playerid,
           }
-          // { _id: 1, raiseAmount: 1 }
         )
         .lean();
 
@@ -4945,15 +4645,9 @@ export const socketDoRaise = async (dta, io, socket) => {
 
 export const doCheck = async (roomData, playerid, io) => {
   try {
-    // const roomData = await roomModel.findOne({ _id: roomid });
     const roomid = roomData._id;
-    let updatedRoom = null;
     let res = true;
-    let filterData = null;
 
-    // const filterDta = roomData.players.filter(
-    //   (el) => el?.userid.toString() === roomData?.timerPlayer?.toString()
-    // );
 
     if (roomData?.timerPlayer?.toString() === playerid?.toString()) {
       switch (roomData.runninground) {
@@ -4982,7 +4676,7 @@ export const doCheck = async (roomData, playerid, io) => {
             updatedRoom: roomData,
           });
 
-          updatedRoom = await roomModel.findOneAndUpdate(
+           await roomModel.updateOne(
             {
               _id: roomid,
               "preflopround.id": convertMongoId(playerid),
@@ -4992,9 +4686,6 @@ export const doCheck = async (roomData, playerid, io) => {
               "preflopround.$.tentativeAction": null,
               "preflopround.$.actionType": "check",
               lastAction: "check",
-            },
-            {
-              new: true,
             }
           );
 
@@ -5027,7 +4718,7 @@ export const doCheck = async (roomData, playerid, io) => {
             updatedRoom: roomData,
           });
 
-          updatedRoom = await roomModel.findOneAndUpdate(
+          await roomModel.updateOne(
             {
               _id: roomid,
               "flopround.id": convertMongoId(playerid),
@@ -5037,9 +4728,6 @@ export const doCheck = async (roomData, playerid, io) => {
               "flopround.$.actionType": "check",
               lastAction: "check",
               "flopround.$.tentativeAction": null,
-            },
-            {
-              new: true,
             }
           );
 
@@ -5072,7 +4760,7 @@ export const doCheck = async (roomData, playerid, io) => {
             updatedRoom: roomData,
           });
 
-          updatedRoom = await roomModel.findOneAndUpdate(
+          await roomModel.updateOne(
             {
               _id: roomid,
               "turnround.id": convertMongoId(playerid),
@@ -5082,9 +4770,6 @@ export const doCheck = async (roomData, playerid, io) => {
               "turnround.$.actionType": "check",
               lastAction: "check",
               "turnround.$.tentativeAction": null,
-            },
-            {
-              new: true,
             }
           );
 
@@ -5118,7 +4803,7 @@ export const doCheck = async (roomData, playerid, io) => {
               updatedRoom: roomData,
             });
 
-            updatedRoom = await roomModel.findOneAndUpdate(
+            await roomModel.updateOne(
               {
                 _id: roomid,
                 "riverround.id": convertMongoId(playerid),
@@ -5128,9 +4813,6 @@ export const doCheck = async (roomData, playerid, io) => {
                 "riverround.$.actionType": "check",
                 lastAction: "check",
                 "riverround.$.tentativeAction": null,
-              },
-              {
-                new: true,
               }
             );
           }
@@ -5157,9 +4839,7 @@ export const socketDoCheck = async (dta, io, socket) => {
         .findOne(
           {
             _id: roomid,
-            "players.userid": convertMongoId(playerid),
           }
-          // { _id: 1, raiseAmount: 1, lastAction: 1 }
         )
         .lean();
       if (data !== null) {
@@ -5596,9 +5276,7 @@ export const socketDoAllin = async (dta, io, socket) => {
         .findOne(
           {
             _id: roomid,
-            "players.userid": playerid,
           }
-          // { _id: 1, raiseAmount: 1 }
         )
         .lean();
       if (data !== null) {
