@@ -6842,8 +6842,6 @@ export const checkForGameTable = async (data, socket, io) => {
         message: "You are not authorized",
       });
     }
-
-    console.log("game players =====>", game.players);
     if (game.players.length === 0) {
       game = await roomModel.findOneAndUpdate(
         {
