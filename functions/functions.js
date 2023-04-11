@@ -1958,7 +1958,7 @@ export const showdown = async (roomid, io) => {
     };
 
     clcHand(updatedRoom.sidePots);
-    console.log({ hands });
+    console.log("hand", hands, updatedRoom.sidePots);
     let showdownData = updatedRoom.showdown;
     let winnerPlayers = [];
     let sidePots = [...updatedRoom.sidePots];
@@ -2044,11 +2044,6 @@ export const showdown = async (roomid, io) => {
     const handWinner = updatedRoom.handWinner;
     handWinner.push(winnerPlayers);
     const upRoomData = await roomModel.findOne({ _id: updatedRoom._id });
-    // let userData = [];
-    // for await (let el of upRoomData.showdown) {
-    //   const user = await userModel.findOne({ _id: el.id });
-    //   userData.push(user);
-    // }
 
     upRoomData.showdown.forEach((player, i) => {
       let action, amt;
@@ -2104,6 +2099,7 @@ export const showdown = async (roomid, io) => {
     upRoomData.handWinner = handWinner;
     upRoomData.isShowdown = true;
     upRoomData.sidePots = sidePots;
+    console.log("showdwon", upRoomData.showdown);
 
     io.in(upRoomData._id.toString()).emit("winner", {
       updatedRoom: upRoomData,
@@ -2124,24 +2120,10 @@ export const showdown = async (roomid, io) => {
         new: true,
       }
     );
-    // await finishHandApiCall(upRoom);
-    // handleWatcherWinner(upRoom, io);
-    // findLoserAndWinner(upRoom);
+
     setTimeout(async () => {
-      //let firstGameTime = new Date(upRoom.firstGameTime);
-      //let now = new Date();
-      //// for min games
-      //if ((now - firstGameTime) / (1000 * 60) > 15) {
-      //  const roomUpdate = await roomModel.findOne({ _id: upRoom._id });
-      //  io.in(roomUpdate._id.toString()).emit("roomFinished", {
-      //    msg: "Game finished",
-      //    finish: roomUpdate.finish,
-      //    roomdata: roomUpdate,
-      //  });
-      //  finishedTableGame(roomUpdate);
-      //} else {
+   
       if (upRoom.tournament) {
-        // await calculateTournamentPrize(upRoom?.tournament)
         await elemination(upRoom, io);
         await reArrangeTables(upRoom.tournament, io, upRoom._id);
       } else {
@@ -4739,8 +4721,8 @@ export const doAllin = async (roomData, playerid, io) => {
               e.tentativeAction = 'allin';
             }
             if (e.id.toString() === playerid.toString()) {
-              e.wallet = 0;
               e.pot += e.wallet;
+              e.wallet = 0;
               e.action = true;
               e.actionType = 'all-in';
               e.tentativeAction = null;
@@ -4808,8 +4790,8 @@ export const doAllin = async (roomData, playerid, io) => {
               e.tentativeAction = 'allin';
             }
             if (e.id.toString() === playerid.toString()) {
-              e.wallet = 0;
               e.pot += e.wallet;
+              e.wallet = 0;
               e.action = true;
               e.actionType = 'all-in';
               e.tentativeAction = null;
@@ -4879,8 +4861,8 @@ export const doAllin = async (roomData, playerid, io) => {
               e.tentativeAction = 'allin';
             }
             if (e.id.toString() === playerid.toString()) {
-              e.wallet = 0;
               e.pot += e.wallet;
+              e.wallet = 0;
               e.action = true;
               e.actionType = 'all-in';
               e.tentativeAction = null;
@@ -4949,8 +4931,8 @@ export const doAllin = async (roomData, playerid, io) => {
               e.tentativeAction = 'allin';
             }
             if (e.id.toString() === playerid.toString()) {
-              e.wallet = 0;
               e.pot += e.wallet;
+              e.wallet = 0;
               e.action = true;
               e.actionType = 'all-in';
               e.tentativeAction = null;
