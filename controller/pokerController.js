@@ -96,7 +96,7 @@ export const createTable = async (req, res, io) => {
       ],
     });
     const getAllRunningRoom = await roomModel
-      .find({ public: true })
+      .find({ public: true, finish: false, })
       .populate("players.userid");
     io.emit("AllTables", { tables: getAllRunningRoom });
     await User.updateOne({ _id }, { wallet: wallet - sitInAmount });
