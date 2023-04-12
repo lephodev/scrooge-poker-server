@@ -18,7 +18,7 @@ const transactionSchema = new Schema({
   },
   prevTicket: { type: Number },
   updatedTicket: { type: Number },
-});
+},{ timestamps: true });
 
 const transactionModel = mongoose.model("transactions", transactionSchema);
 
