@@ -23,6 +23,7 @@ const userSchema = mongoose.Schema(
     username: {
       type: String,
       trim: true,
+      index:true 
       // required: true,
     },
     phone: {
@@ -44,6 +45,7 @@ const userSchema = mongoose.Schema(
       unique: true,
       trim: true,
       lowercase: true,
+      index:true ,
       validate(value) {
         if (!validator.isEmail(value)) {
           throw new Error("Invalid email");
@@ -77,6 +79,7 @@ const userSchema = mongoose.Schema(
       type: String,
       enum: roles,
       default: "user",
+      index:true 
     },
     isEmailVerified: {
       type: Boolean,

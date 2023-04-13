@@ -76,7 +76,7 @@ const roomSchema = new Schema({
   sitOut: [],
   isGameRunning: { type: Boolean, default: false },
   eliminationCount: { type: Number },
-});
+},{ timestamps: true });
 
 const roomModel = mongoose.model("rooms", roomSchema);
 

@@ -5,8 +5,8 @@ const Schema = mongoose.Schema;
 
 //creating mongo database schema
 const transactionSchema = new Schema({
-  userId: { type: Schema.Types.ObjectId, ref: "users" },
-  roomId: { type: Schema.Types.ObjectId, ref: "room", default: null },
+  userId: { type: Schema.Types.ObjectId, ref: "users",index:true },
+  roomId: { type: Schema.Types.ObjectId, ref: "room", default: null  },
   amount: { type: Number },
   prevWallet: { type: Number },
   updatedWallet: { type: Number },
@@ -18,7 +18,7 @@ const transactionSchema = new Schema({
   },
   prevTicket: { type: Number },
   updatedTicket: { type: Number },
-});
+},{ timestamps: true });
 
 const transactionModel = mongoose.model("transactions", transactionSchema);
 
