@@ -96,7 +96,7 @@ export const createTable = async (req, res, io) => {
       ],
     });
     const getAllRunningRoom = await roomModel
-      .find({ public: true, finish: false, })
+      .find({ public: true, finish: false, gameType: "poker" })
       .populate("players.userid");
     io.emit("AllTables", { tables: getAllRunningRoom });
     await User.updateOne({ _id }, { wallet: wallet - sitInAmount });
@@ -137,7 +137,7 @@ export const createTable = async (req, res, io) => {
 export const getAllGame = async (req, res) => {
   try {
     const getAllRunningRoom = await roomModel
-      .find({finish: false})
+      .find({ finish: false, public: true, gameType: "poker" })
       .populate("players.userid");
     return res.status(200).send({ rooms: getAllRunningRoom || [] });
   } catch (error) {
