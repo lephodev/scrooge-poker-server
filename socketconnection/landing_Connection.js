@@ -19,9 +19,6 @@ const connetToLanding = (pokerSocket) => {
     pokerSocket.emit("tournamentCreated", { tournaments: getAllTournament });
   });
   socket.on("tableCreate", async (data) => {
-    let reqTables = data?.tables?.filter((el) => {
-      return el.public === true && el.finish === false && gameType === "poker";
-    });
     pokerSocket.emit("AllTables", { tables: reqTables });
   });
 
@@ -34,7 +31,6 @@ const connetToLanding = (pokerSocket) => {
       });
     }, 2000);
   };
-
   socket.io.on("close", tryReconnect);
   return socket;
 };
