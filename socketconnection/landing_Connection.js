@@ -19,6 +19,7 @@ const connetToLanding = (pokerSocket) => {
          pokerSocket.emit('tournamentCreated', { tournaments: getAllTournament }); 
     })
     socket.on('tableCreate', async(data) => {
+        console.log("dddd")
         pokerSocket.emit("AllTables",{tables:data?.tables}) 
    })
     
