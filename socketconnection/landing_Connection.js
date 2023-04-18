@@ -13,13 +13,27 @@ const connetToLanding = (pokerSocket) => {
     console.log("conected to landing server server");
   });
 
+  // socket.on("tournamentAction", async (data) => {
+  //   const getAllTournament = await tournamentModel.find({}).populate("rooms");
+  //   console.log("tournament created at landing");
+  //   pokerSocket.emit("tournamentCreated", { tournaments: getAllTournament });
+  // });
+  // socket.on("tableCreate", async (data) => {
+  //   let reqTables = data?.tables?.filter((el) => {
+  //     return el.public === true && el.finish === false && gameType === "poker";
+  //   });
+  //   pokerSocket.emit("AllTables", { tables: reqTables });
+  // });
   socket.on("tournamentAction", async (data) => {
     const getAllTournament = await tournamentModel.find({}).populate("rooms");
     console.log("tournament created at landing");
     pokerSocket.emit("tournamentCreated", { tournaments: getAllTournament });
   });
+
   socket.on("tableCreate", async (data) => {
-    pokerSocket.emit("AllTables", { tables: reqTables });
+    console.log("dddd");
+    pokerSocket.emit("AllTables", { tables: data?.tables });
+
   });
 
   const tryReconnect = () => {
