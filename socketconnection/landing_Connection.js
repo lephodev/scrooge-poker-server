@@ -33,6 +33,7 @@ const connetToLanding = (pokerSocket) => {
   socket.on("tableCreate", async (data) => {
     console.log("dddd");
     pokerSocket.emit("AllTables", { tables: data?.tables });
+
   });
 
   const tryReconnect = () => {
@@ -44,7 +45,6 @@ const connetToLanding = (pokerSocket) => {
       });
     }, 2000);
   };
-
   socket.io.on("close", tryReconnect);
   return socket;
 };
