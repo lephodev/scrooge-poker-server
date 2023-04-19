@@ -36,6 +36,7 @@ export const createTable = async (req, res, io) => {
       autohand,
       invitedUsers,
       sitInAmount,
+      gameMode
     } = req.body;
     const userData = req.user;
     const { username, wallet, email, _id, avatar, profile } = userData;
@@ -70,6 +71,7 @@ export const createTable = async (req, res, io) => {
     const roomData = await roomModel.create({
       gameName,
       gameType: "poker",
+      gameMode:gameMode,
       autoNextHand: autohand,
       invPlayers: invitetedPlayerUserId,
       public: isPublic,
