@@ -4,6 +4,7 @@ import Message from "../models/messageModal.js";
 import Notification from "../models/notificationModal.js";
 import gameService from "../service/game.service.js";
 import roomModel from "./../models/room.js";
+import userService from "../service/user.service.js";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
@@ -39,7 +40,7 @@ export const createTable = async (req, res, io) => {
       gameMode
     } = req.body;
     const userData = req.user;
-    const { username, wallet, email, _id, avatar, profile } = userData;
+    const { username, wallet,goldCoin, email, _id, avatar, profile } = userData;
     const timer = 20;
 
     const checkInGame = await gameService.checkIfUserInGame(userData._id);
@@ -58,8 +59,11 @@ export const createTable = async (req, res, io) => {
         .send({ message: "Minimum 100 coins need for sit in amount" });
     }
 
-    if (sitInAmount > wallet) {
-      return res.status(403).send({ message: "You don't have enough balance" });
+    if (sitInAmount > wallet && gameMode ==='token') {
+      return res.status(403).send({ message: "You don't have enough token" });
+    }
+    if (sitInAmount > goldCoin && gameMode ==='goldCoin') {
+      return res.status(403).send({ message: "You don't have enough gold coin" });
     }
 
     // if (checkInGame) {
@@ -101,7 +105,17 @@ export const createTable = async (req, res, io) => {
       .find({ public: true, finish: false, gameType: "poker" })
       .populate("players.userid");
     io.emit("AllTables", { tables: getAllRunningRoom });
-    await User.updateOne({ _id }, { wallet: wallet - sitInAmount });
+    let walletAmount
+    let query
+    if(gameMode==='goldCoin'){
+      walletAmount=goldCoin-sitInAmount
+      query={goldCoin:walletAmount}
+    }else{
+      walletAmount= wallet - sitInAmount
+      query={wallet:walletAmount}
+    }
+    await userService.updateUserWallet(_id,query );
+    // await User.updateOne({ _id }, { wallet: wallet - sitInAmount });
 
     if (Array.isArray(invitetedPlayerUserId) && invitetedPlayerUserId.length) {
       const sendMessageToInvitedUsers = [
@@ -307,9 +321,15 @@ export const refillWallet = async (data, io, socket) => {
               },
             ],
           });
+          let query
+          if(room.gameMode==='goldCoin'){
+            query= { goldCoin: -amount } 
+          }else{
+           query= { wallet: -amount } 
+          }
           await User.updateOne(
             { _id: mongoose.Types.ObjectId(userid) },
-            { $inc: { wallet: -amount } }
+            { $inc: query}
           );
           if (roomData) {
             socket.emit("updateRoom", roomData);
@@ -328,10 +348,15 @@ export const refillWallet = async (data, io, socket) => {
           await roomModel.findByIdAndUpdate(room._id, {
             buyin: buyinrequest,
           });
-
+          let query
+          if(room.gameMode==='goldCoin'){
+            query= { goldCoin: -amount } 
+          }else{
+           query= { wallet: -amount } 
+          }
           await User.updateOne(
             { _id: mongoose.Types.ObjectId(userid) },
-            { $inc: { wallet: -amount } }
+            { $inc: query }
           );
           socket.emit("InrunningGame");
         }

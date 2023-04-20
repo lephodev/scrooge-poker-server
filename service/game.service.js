@@ -111,7 +111,7 @@ const joinRoomByUserId = async (game, userId, sitInAmount, playerLimit) => {
       userId,
       availblePosition.i,
       sitInAmount,
-      Type
+      Type,
     );
     return room;
     // else check invite array for private tables
@@ -130,7 +130,7 @@ const joinRoomByUserId = async (game, userId, sitInAmount, playerLimit) => {
       userId,
       availblePosition.i,
       sitInAmount,
-      Type
+      Type,
     );
     return room;
   } else if (game.public && game.players.length >= playerLimit) {
@@ -142,9 +142,9 @@ const joinRoomByUserId = async (game, userId, sitInAmount, playerLimit) => {
 
 // leave roomId empty if you want exclude any room to come in search
 // Because in check game function we want to exclude it from there
-const checkIfUserInGame = async (userId, roomId = "") => {
+const checkIfUserInGame = async (userId, roomId = "",gameMode) => {
   try {
-    let query = { gameType: "poker", "players.userid": converMongoId(userId) };
+    let query = { gameType: "poker",gameMode:gameMode, "players.userid": converMongoId(userId) };
     if (roomId) {
       query["_id"] = { $ne: converMongoId(roomId) };
     }
