@@ -9,13 +9,17 @@ export const validateCreateTable = (req, res, next) => {
 
   let valid = true;
   let err = {};
+  console.log("gameState-->",gameState)
   const mimimumBet = 0;
   if (!gameState.gameName) {
     err.gameName = "Game name is required.";
     valid = false;
   }
-  if (!userData?.wallet || gameState.minchips > userData?.wallet) {
-    err.minchips = "You don't have enough balance in your wallet.";
+  if ((!userData?.wallet && gameState?.gameMode === 'token')|| (gameState.minchips > userData?.wallet && gameState.gameMode === 'token')) {
+    err.minchips = "You don't have enough token in your account.";
+    valid = false;
+  }else if ((!userData?.goldCoin && gameState?.gameMode === 'goldCoin')|| (gameState.minchips > userData?.goldCoin && gameState?.gameMode === 'goldCoin')) {
+    err.minchips = "You don't have enough gold coin in your account.";
     valid = false;
   } else if (gameState.minchips <= mimimumBet) {
     err.minchips =
