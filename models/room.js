@@ -35,7 +35,11 @@ const roomSchema = new Schema({
   allinPlayers: [],
   tournament: { type: Schema.Types.ObjectId, ref: "tournament" },
   gameType: { type: String },
-
+  gameMode:{
+    type: String,
+    enum: [ "token", "goldCoin"],
+    index:true
+  },
   joinRequests: [],
   eleminated: [],
   timer: { type: Number, default: 20 },
