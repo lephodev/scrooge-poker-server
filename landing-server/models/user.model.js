@@ -71,6 +71,10 @@ const userSchema = mongoose.Schema(
       type: Number,
       default: 0,
     },
+    goldCoin: {
+      type: Number,
+      default: 0,
+    },
     ticket: {
       type: Number,
       default: 0,

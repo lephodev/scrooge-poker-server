@@ -8,11 +8,11 @@ const getUserById = async (userId) => {
   return userData;
 };
 
-const updateUserWallet = async (userId, walletAmount = 0) => {
+const updateUserWallet = async (userId, query) => {
   try {
     await User.updateOne(
       { _id: convertMongoId(userId) },
-      { wallet: walletAmount }
+      query
     );
     return true;
   } catch (error) {
