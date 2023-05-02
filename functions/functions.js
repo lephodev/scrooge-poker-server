@@ -2145,7 +2145,7 @@ export const showdown = async (roomid, io) => {
                 roomdata: updatedRoomPlayers,
               })
               if (updatedRoomPlayers?.finish) {
-                await finishedTableGame(updatedRoomPlayers)
+                await finishedTableGame(io,updatedRoomPlayers)
 
                 io.in(updatedRoomPlayers._id.toString()).emit('roomFinished', {
                   msg: 'Room finished',
@@ -2155,7 +2155,7 @@ export const showdown = async (roomid, io) => {
               }
               if (updatedRoomPlayers.gameType === 'pokerTournament_Tables') {
                 console.log('Line 2275 Game finished ')
-                await finishedTableGame(updatedRoomPlayers)
+                await finishedTableGame(io,updatedRoomPlayers)
                 io.in(updatedRoomPlayers._id.toString()).emit('roomFinished', {
                   msg: 'Game finished',
                   finish: updatedRoomPlayers.finish,
@@ -2177,7 +2177,7 @@ export const showdown = async (roomid, io) => {
         }
         const roomUpdate = await roomModel.findOne({ _id: upRoom._id })
         if (roomUpdate?.finish) {
-          await finishedTableGame(roomUpdate)
+          await finishedTableGame(io,roomUpdate)
           io.in(roomUpdate._id.toString()).emit('roomFinished', {
             msg: 'Game finished',
             finish: roomUpdate?.finish,
@@ -2845,7 +2845,7 @@ export const doFinishGame = async (data, io, socket) => {
       if (!roomData.finish) {
         const updatedData = await roomModel.findOneAndUpdate(
           { _id: roomid },
-          { finish: true },
+          { finish: false,autoNextHand:true },//i have update finish true with finish false and also I have add this for 
           { new: true },
         )
         let msg = ''
@@ -2857,7 +2857,7 @@ export const doFinishGame = async (data, io, socket) => {
         }
 
         if (updatedData.runninground === 0) {
-          await finishedTableGame(updatedData, userid)
+          await finishedTableGame(io,updatedData, userid)
         }
         io.in(updatedData._id.toString()).emit('roomFinished', {
           msg: msg,
@@ -2866,7 +2866,7 @@ export const doFinishGame = async (data, io, socket) => {
         })
       } else {
         console.log('userId =====;...>', userid)
-        await finishedTableGame(roomData, userid)
+        await finishedTableGame(io,roomData, userid)
         console.log('action error executed')
         if (socket)
           socket.emit('actionError', { code: 400, msg: 'Bad request' })
@@ -5212,7 +5212,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
                 roomdata: updatedRoomPlayers,
               })
               if (updatedRoomPlayers.gameType === 'pokerTournament_Tables') {
-                await finishedTableGame(updatedRoomPlayers, playerid)
+                await finishedTableGame(io,updatedRoomPlayers, playerid)
                 io.in(updatedRoomPlayers._id.toString()).emit('roomFinished', {
                   msg: 'Game finished',
                   finish: updatedRoomPlayers.finish,
@@ -5234,7 +5234,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         }
         const roomUpdate = await roomModel.findOne({ _id: updatedRoom._id })
         if (roomUpdate?.finish) {
-          await finishedTableGame(roomUpdate, playerid)
+          await finishedTableGame(io,roomUpdate, playerid)
           io.in(roomUpdate._id.toString()).emit('roomFinished', {
             msg: 'Room Finished',
             finish: roomUpdate?.finish,
@@ -6272,11 +6272,19 @@ export const findLoserAndWinner = async (room) => {
   }
 }
 
-export const finishedTableGame = async (room, userid) => {
+export const finishedTableGame = async (io,room, userid) => {
   try {
     console.log('LEAVE API CALL 6885')
     const dd = await leaveApiCall(room, userid)
-    // if (dd || room.finish) await roomModel.deleteOne({ _id: room._id });
+    const checkRoom=await roomModel.find({finish:false,public:true})
+    if(checkRoom && checkRoom.length >2){  
+      // if (dd || room.finish) await roomModel.deleteOne({ _id: room._id });
+      if (dd || room.finish) await roomModel.updateOne({_id:room._id},{finish:true})
+    //   const getAllRunningRoom = await roomModel
+    //   .find({finish:false, public: true, gameType: "poker" })
+    //   .populate("players.userid");
+    // io.emit("AllTables", { tables: getAllRunningRoom });
+    }
   } catch (err) {
     console.log('Error in finished game function =>', err.message)
   }
@@ -6940,6 +6948,14 @@ export const checkForGameTable = async (data, socket, io) => {
       }
       await userService.updateUserWallet(userId, query)
       io.in(gameId).emit('updateGame', { game: updatedRoom })
+      if(updatedRoom?.players?.length ===2){
+        setTimeout(() => {
+          preflopround(
+            updatedRoom,
+            io,
+          )
+        }, 3000)
+      }
       return
     } else {
       socket.emit('tablefull', { message: 'This table is full.' })
