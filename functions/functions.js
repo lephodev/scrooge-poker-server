@@ -6532,7 +6532,6 @@ const createTransactionFromUsersArray = async (
             userGoldCoins[i] + (gameWinOrLoseamount > 0 ? elem.amount * 2 : 0)
           userGoldCoins[i] = crrGoldCoins
           // updatedAmount = updatedAmount + gameWinOrLoseamount;
-          console.log('updated amount ----->', updatedAmount)
           return {
             userId,
             roomId,
@@ -6544,15 +6543,15 @@ const createTransactionFromUsersArray = async (
             prevWallet: prvAmt,
             updatedWallet:
               room?.gameMode !== 'goldCoin'
-                ? updatedAmount + usersWalltAmt[i]
-                : prvAmt,
+                ? (updatedAmount + usersWalltAmt[i])>0?updatedAmount + usersWalltAmt[i]:0
+                : prvAmt>0? prvAmt:0,
             transactionType: 'poker',
             prevTicket: prevTickets,
             updatedTicket:
-              room?.gameMode !== 'goldCoin' ? crrTicket : prevTickets,
+              room?.gameMode !== 'goldCoin' ? crrTicket >0 ?crrTicket:0 : prevTickets >0?prevTickets:0,
             prevGoldCoin: prevGoldCoins,
             updatedGoldCoin:
-              room?.gameMode !== 'goldCoin' ? prevGoldCoins : crrGoldCoins,
+              room?.gameMode !== 'goldCoin' ? prevGoldCoins >0 ?prevGoldCoins:0 : crrGoldCoins>0? crrGoldCoins:0,
           }
         })
       }
