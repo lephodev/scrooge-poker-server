@@ -2773,6 +2773,7 @@ const calculatePercentagePrizes = async (tournamentdata, elem) => {
     let allWinnersWithAmount = {}
     amount.forEach((el, i) => {
       if (i < 9) {
+        
         if (winners[i]) {
           allWinnersWithAmount[i] = {
             userId: winners[i]?.id || winners[i]?.userid,
@@ -2782,6 +2783,7 @@ const calculatePercentagePrizes = async (tournamentdata, elem) => {
           }
         }
       } else {
+       
         const key = Object.keys(el)[0]
         let splitdIndxs = key.split('-')
         let startIndx = parseInt(splitdIndxs[0]) - 1
@@ -6697,7 +6699,7 @@ export const leaveApiCall = async (room, userId) => {
           : 'duringHand',
       gameColl: room.gameType,
       _id: room._id,
-      buyIn: room.gameType === 'pokerTournament_Tables' ? room.maxchips : 0,
+      buyIn: room.gameType !== 'poker-tournament' ? room.maxchips : 0,
       playerCount: player.length,
       users: users,
       adminUid: room.hostId,
@@ -6726,7 +6728,7 @@ export const leaveApiCall = async (room, userId) => {
         query = { goldCoin: totalTicketWon * 2 }
       } else {
         query = {
-          wallet: newBalnce,
+          wallet:  room.gameType !== 'poker-tournament'?newBalnce:0,
           ticket: totalTicketWon * 2,
         }
       }
