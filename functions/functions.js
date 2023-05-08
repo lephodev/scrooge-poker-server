@@ -19,7 +19,7 @@ import User from '../landing-server/models/user.model'
 import { decryptCard, EncryptCard } from '../validation/poker.validation'
 import payouts from '../config/payout.json'
 
-const gameRestartSeconds = 8000
+const gameRestartSeconds = 3000
 const playerLimit = 9
 const convertMongoId = (id) => mongoose.Types.ObjectId(id)
 const img =
