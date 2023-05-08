@@ -77,11 +77,10 @@ const getRequiredPaytout = async (tournamentData, payouts) => {
   let values =
     (await payouts[prizeDistribution]) &&
     Object.values(payouts[prizeDistribution]);
-  console.log("values ===>", values);
+  
   let reqPayout = values?.find(
     (el) => el.min <= totalJoinPlayer && el.max >= totalJoinPlayer
   );
-  console.log("reqPayout ====>", reqPayout);
   if (reqPayout) {
     return reqPayout;
   } else {

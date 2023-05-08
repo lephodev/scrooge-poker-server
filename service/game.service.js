@@ -132,6 +132,7 @@ const joinRoomByUserId = async (game, userId, sitInAmount, playerLimit) => {
       sitInAmount,
       Type,
     );
+    
     return room;
   } else if (game.public && game.players.length >= playerLimit) {
     return null;
