@@ -7019,13 +7019,13 @@ export const playerTentativeAction = async (data, socket, io) => {
         userId,
         playerAction
       );
-      let updatedGame;
-      setTimeot(async () => {
+      let updatedGame = {};
+      await setTimeout(async () => {
         updatedGame = await gameService.getGameById(gameId);
-      }, 500);
+        io.in(gameId).emit("updateGame", { game: updatedGame });
+      }, 200);
       //  = await gameService.getGameById(gameId);
       // console.log("updatedGameupdatedGame", updatedGame);
-      io.in(gameId).emit("updateGame", { game: updatedGame });
     } else {
       socket.emit("actionError", { msg: "No game found" });
     }
