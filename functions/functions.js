@@ -24,7 +24,6 @@ const playerLimit = 9
 const convertMongoId = (id) => mongoose.Types.ObjectId(id)
 const img =
   'https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg'
-
 const addUserInSocket = (io, socket, gameId, userId) => {
   try {
     console.log('Socket room BEFORE ', io.room)
@@ -7391,4 +7390,22 @@ export const blindTimer = async (data, io) => {
   } catch (error) {
     console.log('error in blindTimer', error)
   }
+}
+export const doCalculateCardPair=async(data,io,socket)=>{
+ let p=[]
+ if(data?.roundData && data?.roundData?.length >0){
+  data.roundData.forEach((el) => {
+    if (!el.fold) {
+      let cards = data.communityCard
+      let allCards = cards.concat(el.cards)
+      allCards = allCards.map((card) => decryptCard(card))
+      let hand = Hand.solve(allCards)
+      p.push({ id: el.id, position: el.position, hand: hand })
+    }
+  })
+  io.in(data.roomId.toString()).emit('showPairCard', {
+    hands:p
+  })
+ }
+  
 }
