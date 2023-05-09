@@ -3308,13 +3308,11 @@ export const doLeaveTable = async (data, io, socket) => {
         )
         .lean();
       if (roomdata) {
-        console.log("IN ROOM DATA ====>");
         roomid = roomdata._id;
         if (roomdata?.hostId?.toString() === userid?.toString()) {
           let p = roomdata.players.filter(
             (ele) => ele?.userid?.toString() !== userid.toString()
           )[0];
-          console.log("p ====>", p);
           if (p) {
             console.log("In P");
             roomdata.players
