@@ -27,7 +27,6 @@ const img =
 
 const addUserInSocket = (io, socket, gameId, userId) => {
   try {
-    console.log("Socket room BEFORE ", io.room);
     let lastSocketData = io.room || [];
     // Add room
     lastSocketData.push({ gameId, pretimer: false, room: gameId.toString() });
@@ -7019,13 +7018,13 @@ export const playerTentativeAction = async (data, socket, io) => {
         userId,
         playerAction
       );
-      let updatedGame = {};
-      await setTimeout(async () => {
+      let updatedGame;
+      setTimeot(async () => {
         updatedGame = await gameService.getGameById(gameId);
-        io.in(gameId).emit("updateGame", { game: updatedGame });
-      }, 200);
+      }, 500);
       //  = await gameService.getGameById(gameId);
       // console.log("updatedGameupdatedGame", updatedGame);
+      io.in(gameId).emit("updateGame", { game: updatedGame });
     } else {
       socket.emit("actionError", { msg: "No game found" });
     }
@@ -7411,4 +7410,23 @@ export const blindTimer = async (data, io) => {
   } catch (error) {
     console.log("error in blindTimer", error);
   }
-};
+}
+export const doCalculateCardPair=async(data,io,socket)=>{
+ let p=[]
+ if(data?.roundData && data?.roundData?.length >0){
+  data.roundData.forEach((el) => {
+    if (!el.fold) {
+      let cards = data.communityCard
+      let allCards = cards.concat(el.cards)
+      allCards = allCards.map((card) => decryptCard(card))
+      let hand = Hand.solve(allCards)
+      p.push({ id: el.id, position: el.position, hand: hand })
+    }
+  })
+  io.in(data.roomId.toString()).emit('showPairCard', {
+    hands:p
+  })
+ }
+  
+}
+
