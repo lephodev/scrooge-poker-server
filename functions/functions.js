@@ -7019,7 +7019,11 @@ export const playerTentativeAction = async (data, socket, io) => {
         userId,
         playerAction
       );
-      const updatedGame = await gameService.getGameById(gameId);
+      let updatedGame;
+      setTimeot(async () => {
+        updatedGame = await gameService.getGameById(gameId);
+      }, 500);
+      //  = await gameService.getGameById(gameId);
       // console.log("updatedGameupdatedGame", updatedGame);
       io.in(gameId).emit("updateGame", { game: updatedGame });
     } else {
