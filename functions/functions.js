@@ -6286,7 +6286,7 @@ export const finishedTableGame = async (io, room, userid) => {
       public: true,
       gameMode: room?.gameMode,
     });
-    if (checkRoom && checkRoom.length > 3) {
+    if (checkRoom && checkRoom.length > 2) {
       // if (dd || room.finish) await roomModel.deleteOne({ _id: room._id });
       if (dd || room.finish)
         await roomModel.updateOne({ _id: room._id }, { finish: true });
