@@ -3308,11 +3308,13 @@ export const doLeaveTable = async (data, io, socket) => {
         )
         .lean();
       if (roomdata) {
+        console.log("IN ROOM DATA ====>");
         roomid = roomdata._id;
         if (roomdata?.hostId?.toString() === userid?.toString()) {
           let p = roomdata.players.filter(
             (ele) => ele?.userid?.toString() !== userid.toString()
           )[0];
+          console.log("p ====>", p);
           if (p) {
             console.log("In P");
             roomdata.players
@@ -6279,7 +6281,11 @@ export const finishedTableGame = async (io, room, userid) => {
   try {
     console.log("LEAVE API CALL 6885");
     const dd = await leaveApiCall(room, userid);
-    const checkRoom = await roomModel.find({ finish: false, public: true });
+    const checkRoom = await roomModel.find({
+      finish: false,
+      public: true,
+      gameMode: room?.gameMode,
+    });
     if (checkRoom && checkRoom.length > 3) {
       // if (dd || room.finish) await roomModel.deleteOne({ _id: room._id });
       if (dd || room.finish)
@@ -7016,13 +7022,13 @@ export const playerTentativeAction = async (data, socket, io) => {
         userId,
         playerAction
       );
-      let updatedGame = {};
-      await setTimeout(async () => {
+      let updatedGame;
+      setTimeot(async () => {
         updatedGame = await gameService.getGameById(gameId);
-        io.in(gameId).emit("updateGame", { game: updatedGame });
-      }, 200);
+      }, 500);
       //  = await gameService.getGameById(gameId);
       // console.log("updatedGameupdatedGame", updatedGame);
+      io.in(gameId).emit("updateGame", { game: updatedGame });
     } else {
       socket.emit("actionError", { msg: "No game found" });
     }
