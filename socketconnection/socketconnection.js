@@ -29,6 +29,7 @@ import {
   emitTyping,
   JoinTournament,
   checkAlreadyInGame,
+  doCalculateCardPair,
 } from "../functions/functions";
 import mongoose from "mongoose";
 import { refillWallet } from "../controller/pokerController";
@@ -167,6 +168,7 @@ let returnSocket = (io) => {
     socket.on("dositin", async (data) => {
       await doSitIn(data, io, socket);
     });
+
 
     socket.on("doleavetable", async (data) => {
       if (data.isWatcher) {
@@ -340,6 +342,9 @@ let returnSocket = (io) => {
 
     socket.on("joinTournament", async (data) => {
       await JoinTournament(data, io, socket);
+    });
+    socket.on("calCulateCardPair", async (data) => {
+      await doCalculateCardPair(data, io, socket);
     });
   });
 };
