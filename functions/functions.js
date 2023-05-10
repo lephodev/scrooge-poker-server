@@ -6492,6 +6492,9 @@ const createTransactionFromUsersArray = async (
     let userTickets = [];
     let userGoldCoins = [];
     const room = await roomModel.findOne({ _id: roomId });
+    tournament = room?.tournament;
+
+    console.log("tournament inside transaction history");
 
     for await (const user of users) {
       const crrUser = await userModel.findOne({ _id: user.uid });
@@ -7414,23 +7417,21 @@ export const blindTimer = async (data, io) => {
   } catch (error) {
     console.log("error in blindTimer", error);
   }
-}
-export const doCalculateCardPair=async(data,io,socket)=>{
- let p=[]
- if(data?.roundData && data?.roundData?.length >0){
-  data.roundData.forEach((el) => {
-    if (!el.fold) {
-      let cards = data.communityCard
-      let allCards = cards.concat(el.cards)
-      allCards = allCards.map((card) => decryptCard(card))
-      let hand = Hand.solve(allCards)
-      p.push({ id: el.id, position: el.position, hand: hand })
-    }
-  })
-  io.in(data.roomId.toString()).emit('showPairCard', {
-    hands:p
-  })
- }
-  
-}
-
+};
+export const doCalculateCardPair = async (data, io, socket) => {
+  let p = [];
+  if (data?.roundData && data?.roundData?.length > 0) {
+    data.roundData.forEach((el) => {
+      if (!el.fold) {
+        let cards = data.communityCard;
+        let allCards = cards.concat(el.cards);
+        allCards = allCards.map((card) => decryptCard(card));
+        let hand = Hand.solve(allCards);
+        p.push({ id: el.id, position: el.position, hand: hand });
+      }
+    });
+    io.in(data.roomId.toString()).emit("showPairCard", {
+      hands: p,
+    });
+  }
+};
