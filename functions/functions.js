@@ -6281,7 +6281,11 @@ export const finishedTableGame = async (io, room, userid) => {
   try {
     console.log("LEAVE API CALL 6885");
     const dd = await leaveApiCall(room, userid);
-    const checkRoom = await roomModel.find({ finish: false, public: true });
+    const checkRoom = await roomModel.find({
+      finish: false,
+      public: true,
+      gameMode: room?.gameMode,
+    });
     if (checkRoom && checkRoom.length > 3) {
       // if (dd || room.finish) await roomModel.deleteOne({ _id: room._id });
       if (dd || room.finish)
