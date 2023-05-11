@@ -2658,7 +2658,7 @@ export const distributeTournamentPrize = async (
     } else {
       winPlayer = await calculatePercentagePrizes(tournamentdata, elem);
     }
-    console.log("Win playere", winPlayer);
+    // console.log("Win playere", winPlayer);
     const tournament = await tournamentModel.findOneAndUpdate(
       { _id: tournamentId },
       {
@@ -2669,30 +2669,35 @@ export const distributeTournamentPrize = async (
       },
       { new: true }
     );
-    console.log(
-      "winner tournamet",
-      lastPlayer,
-      tournament.winPlayer,
-      winPlayer
-    );
+    // console.log(
+    //   "winner tournamet",
+    //   lastPlayer,
+    //   tournament.winPlayer,
+    //   winPlayer
+    // );
+
+    // console.log("tournament.winPlayer ===>", tournament.winPlayer);
+
     for await (let player of Object.values(tournament.winPlayer)) {
       if (player?.playerCount === 1) {
         //player.userId is the winner of amount player.amount
-        const user = await userModel.findOneAndUpdate(
-          { _id: player.userId },
-          { $inc: { ticket: player.amount } },
-          { new: true }
-        );
-        console.log("user =>", user);
-        await transactionModel.create({
-          userId: player.userId,
-          amount: player.amount,
-          transactionDetails: {},
-          prevToken: parseFloat(user?.ticket),
-          updatedToken: parseFloat(user?.ticket),
-          transactionType: "poker tournament",
-        });
-        console.log("winner =>", player);
+        if (player.userId) {
+          console.log("entered in first--");
+          const user = await userModel.findOneAndUpdate(
+            { _id: player.userId },
+            { $inc: { ticket: player.amount } },
+            { new: true }
+          );
+          await transactionModel.create({
+            userId: player.userId,
+            amount: player.amount,
+            transactionDetails: {},
+            prevToken: parseFloat(user?.ticket),
+            updatedToken: parseFloat(user?.ticket),
+            transactionType: "poker tournament",
+          });
+        }
+        // console.log("winner =>", player);
       } else {
         // player.userIds are winner of amount player.amount
         if (player.playerCount === 7) {
@@ -2705,7 +2710,7 @@ export const distributeTournamentPrize = async (
                 { $inc: { ticket: player.amount } },
                 { new: true }
               );
-              console.log("user =>", user);
+              // console.log("user =>", user);
               await transactionModel.create({
                 userId,
                 amount: player.amount,
@@ -2727,7 +2732,7 @@ export const distributeTournamentPrize = async (
                 { $inc: { ticket: player.amount } },
                 { new: true }
               );
-              console.log("user =>", user);
+              // console.log("user =>", user);
               await transactionModel.create({
                 userId,
                 amount: player.amount,
@@ -2862,6 +2867,7 @@ export const doFinishGame = async (data, io, socket) => {
         }
 
         if (updatedData.runninground === 0) {
+          console.log("enterd in If condition for leaving tounament");
           await finishedTableGame(io, updatedData, userid);
         }
         io.in(updatedData._id.toString()).emit("roomFinished", {
@@ -6494,8 +6500,6 @@ const createTransactionFromUsersArray = async (
     const room = await roomModel.findOne({ _id: roomId });
     tournament = room?.tournament;
 
-    console.log("tournament inside transaction history");
-
     for await (const user of users) {
       const crrUser = await userModel.findOne({ _id: user.uid });
       usersWalltAmt.push(crrUser.wallet);
@@ -6732,39 +6736,82 @@ export const leaveApiCall = async (room, userId) => {
       adminUid: room.hostId,
     };
 
-    // console.log("users1====>", users);
+    console.log("Tournament rooom", room.tournament);
+    let updateTournament = [];
+    // let returnUser
+    if (room.tournament) {
+      updateTournament.push(
+        tournamentModel.updateOne(
+          {
+            _id: room.tournament,
+          },
+          {
+            $inc: {
+              havePlayers: -1,
+            },
+          }
+        )
+      );
+    }
 
     const [transactions, rankModelUpdate] =
       await createTransactionFromUsersArray(room._id, users, room.tournament);
 
     // console.log("users2====>", users);
+
+    let tournament = null;
+    if (room.tournament) {
+      tournament = await tournamentModel
+        .findOne({
+          _id: room.tournament,
+        })
+        .populate("rooms");
+
+      console.log("tournament data =====>", tournament);
+    }
+
     const userBalancePromise = users.map((el) => {
-      let totalTicketWon = 0;
-      // console.log("user hand ===>", el.hands);
-      el.hands.forEach((hand) => {
-        if (hand.action === "game-win") {
-          totalTicketWon += hand.amount;
+      if (!room.tournament) {
+        let totalTicketWon = 0;
+        // console.log("user hand ===>", el.hands);
+        el.hands.forEach((hand) => {
+          if (hand.action === "game-win") {
+            totalTicketWon += hand.amount;
+          }
+        });
+        // console.log("total tickets token", totalTicketWon);
+        const newBalnce = el.newBalance > 0 ? el.newBalance : 0;
+        let query;
+        if (room.gameMode === "goldCoin") {
+          query = { goldCoin: totalTicketWon * 2 };
+        } else {
+          query = {
+            wallet: room.gameType !== "poker-tournament" ? newBalnce : 0,
+            ticket: totalTicketWon * 2,
+          };
         }
-      });
-      // console.log("total tickets token", totalTicketWon);
-      const newBalnce = el.newBalance > 0 ? el.newBalance : 0;
-      let query;
-      if (room.gameMode === "goldCoin") {
-        query = { goldCoin: totalTicketWon * 2 };
+        return userModel.updateOne(
+          {
+            _id: convertMongoId(el.uid),
+          },
+          {
+            $inc: query,
+          }
+        );
       } else {
-        query = {
-          wallet: room.gameType !== "poker-tournament" ? newBalnce : 0,
-          ticket: totalTicketWon * 2,
-        };
-      }
-      return userModel.updateOne(
-        {
-          _id: convertMongoId(el.uid),
-        },
-        {
-          $inc: query,
+        if (!tournament.isStart) {
+          return userModel.updateOne(
+            {
+              _id: convertMongoId(el.uid),
+            },
+            {
+              $inc: {
+                wallet: tournament.tournamentFee,
+              },
+            }
+          );
         }
-      );
+      }
     });
 
     // console.log("transactions ====>", transactions);
@@ -6790,6 +6837,7 @@ export const leaveApiCall = async (room, userId) => {
         // Create transaction
         transactionModel.insertMany(transactions),
         // Update user wallet
+        ...updateTournament,
         ...userBalancePromise,
         ...rankModelUpdate,
       ]);
@@ -6802,6 +6850,7 @@ export const leaveApiCall = async (room, userId) => {
         // Create transaction
         transactionModel.insertMany(transactions),
         // Update user wallet
+        ...updateTournament,
         ...userBalancePromise,
         ...rankModelUpdate,
       ]);
