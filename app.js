@@ -35,7 +35,6 @@ const io = socket(server, {
 const whitelist = [
   "http://localhost:3000",
   "http://localhost:3001",
-  "http://localhost:3003",
   "https://poker.scrooge.casino",
   "https://devpoker.scrooge.casino",
   "https://betapoker.scrooge.casino",
