@@ -7273,6 +7273,10 @@ const pushPlayerInRoom = async (
     if (room) {
       roomId = room._id;
       let players = room.players;
+      let leaveReq = room.leavereq;
+
+      leaveReq = leaveReq.filter((uid) => _id.toString() !== uid.toString());
+      console.log("leaveReq ==>", leaveReq);
       let position = await findAvailablePosition(players);
       players.push({
         name: username,
@@ -7294,6 +7298,7 @@ const pushPlayerInRoom = async (
       const payload = {
         players: players,
         tournament: tournamentId,
+        leavereq: leaveReq,
       };
 
       await roomModel.updateOne({ _id: roomId }, payload);
