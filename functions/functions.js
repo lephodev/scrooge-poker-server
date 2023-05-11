@@ -474,6 +474,7 @@ export const preflopround = async (room, io) => {
 
     // console.log("io", io);
     room = await roomModel.findOne(room._id).lean();
+    console.log("room players ==>", room);
     if (!room) {
       return;
     }
@@ -481,6 +482,7 @@ export const preflopround = async (room, io) => {
     let playingPlayer = room?.players?.filter(
       (el) => el.playing && el.wallet > 0
     );
+    console.log("Playing playerssss ==>", playingPlayer);
     let positions = room?.players?.map((pos) => pos.position);
     let isNewLeave = false;
     let i = 0;
@@ -503,6 +505,7 @@ export const preflopround = async (room, io) => {
         i++;
       }
       playingPlayer = [...newPos];
+      console.log("playingPlayer =====>", playingPlayer);
       room = await roomModel.findOneAndUpdate(
         { _id: room._id },
         {
@@ -514,6 +517,7 @@ export const preflopround = async (room, io) => {
         { new: true }
       );
     }
+    console.log("playingPlayer =====> 2", playingPlayer);
     if (!room.finish) {
       if (room.runninground === 0) {
         if (playingPlayer.length > 1) {

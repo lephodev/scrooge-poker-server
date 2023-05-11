@@ -30,7 +30,7 @@ const io = socket(server, {
   pingTimeout: 5000,
 });
 
-returnCron(io);
+// returnCron(io);
 
 const whitelist = [
   "http://localhost:3000",
