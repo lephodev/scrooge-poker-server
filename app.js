@@ -30,12 +30,11 @@ const io = socket(server, {
   pingTimeout: 5000,
 });
 
-returnCron(io);
+// returnCron(io);
 
 const whitelist = [
   "http://localhost:3000",
   "http://localhost:3001",
-  "http://localhost:3003",
   "https://poker.scrooge.casino",
   "https://devpoker.scrooge.casino",
   "https://betapoker.scrooge.casino",
