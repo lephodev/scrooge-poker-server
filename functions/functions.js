@@ -2114,7 +2114,7 @@ export const showdown = async (roomid, io) => {
     if(noOfPLayrsWinn.length === 1){
       gameRestartSeconds = 3000
     }else{
-      gameRestartSeconds = noOfPLayrsWinn.length * 1500;
+      gameRestartSeconds = noOfPLayrsWinn.length * 2000;
     }
 
     
