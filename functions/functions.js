@@ -19,7 +19,7 @@ import User from "../landing-server/models/user.model";
 import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
 
-const gameRestartSeconds = 3000;
+let gameRestartSeconds = 3000;
 const playerLimit = 9;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
@@ -2101,6 +2101,23 @@ export const showdown = async (roomid, io) => {
     upRoomData.isShowdown = true;
     upRoomData.sidePots = sidePots;
     console.log("showdwon", upRoomData.showdown);
+
+    console.log("winner players ===>", winnerPlayers);
+
+    let noOfPLayrsWinn = [];
+    winnerPlayers.forEach(el=>{
+      if(noOfPLayrsWinn.indexOf(el?.name) < 0){
+        noOfPLayrsWinn.push(el?.name)
+      }
+    })
+
+    if(noOfPLayrsWinn.length === 1){
+      gameRestartSeconds = 3000
+    }else{
+      gameRestartSeconds = noOfPLayrsWinn.length * 2000;
+    }
+
+    
 
     io.in(upRoomData._id.toString()).emit("winner", {
       updatedRoom: upRoomData,
@@ -5173,6 +5190,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     );
 
     console.log("showwwwww---->", updatedRoom.showdown);
+    gameRestartSeconds = 3000;
 
     // await finishHandApiCall(updatedRoom);
     handleWatcherWinner(updatedRoom, io);
@@ -7223,7 +7241,7 @@ export const JoinTournament = async (data, io, socket) => {
     const userData = await User.findById(userId).lean();
     if (userData?.wallet < fees) {
       return socket.emit("notEnoughAmount", {
-        message: "You have not much amount to join.",
+        message: "You don't have much amount to join.",
         code: 400,
       });
     }
@@ -7270,9 +7288,14 @@ const pushPlayerInRoom = async (
     const { username, _id, avatar, profile } = userData;
     const { rooms = [] } = checkTournament;
     let roomId;
+    console.log("room ==>", room);
     if (room) {
       roomId = room._id;
       let players = room.players;
+      let leaveReq = room.leavereq;
+
+      leaveReq = leaveReq.filter((uid) => _id.toString() !== uid.toString());
+      console.log("leaveReq ==>", leaveReq);
       let position = await findAvailablePosition(players);
       players.push({
         name: username,
@@ -7294,6 +7317,7 @@ const pushPlayerInRoom = async (
       const payload = {
         players: players,
         tournament: tournamentId,
+        leavereq: leaveReq,
       };
 
       await roomModel.updateOne({ _id: roomId }, payload);
@@ -7309,6 +7333,7 @@ const pushPlayerInRoom = async (
 
         { new: true }
       );
+      console.log("rooms ==>", rooms);
       if (
         tournament?.tournamentType === "sit&go" &&
         tournament?.totalJoinPlayer === playerLimit &&
@@ -7320,12 +7345,21 @@ const pushPlayerInRoom = async (
         );
         console.log("Tournament started");
         blindTimer(checkTournament, io);
-        setTimeout(() => {
-          preflopround(
-            rooms.find((room) => room.players.length === playerLimit),
-            io
-          );
-        }, 5000);
+        let timer = 10;
+        const interval = setInterval(() => {
+          if(timer<0){
+            clearInterval(interval);
+            preflopround(
+              rooms.find((room) => room.players.length === playerLimit),
+              io
+            );
+          }else{
+
+            io.in(roomId.toString()).emit("tournamentStarted", { time: timer})
+         timer -= 1;
+          }
+        },1000)
+        
         return;
       }
     } else {
