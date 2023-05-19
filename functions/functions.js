@@ -7345,12 +7345,21 @@ const pushPlayerInRoom = async (
         );
         console.log("Tournament started");
         blindTimer(checkTournament, io);
-        setTimeout(() => {
-          preflopround(
-            rooms.find((room) => room.players.length === playerLimit),
-            io
-          );
-        }, 10000);
+        let timer = 10;
+        const interval = setInterval(() => {
+          if(timer<0){
+            clearInterval(interval);
+            preflopround(
+              rooms.find((room) => room.players.length === playerLimit),
+              io
+            );
+          }else{
+
+            io.in(roomId.toString()).emit("tournamentStarted", { time: timer})
+         timer -= 1;
+          }
+        },1000)
+        
         return;
       }
     } else {
