@@ -2713,8 +2713,12 @@ export const distributeTournamentPrize = async (
             userId: player.userId,
             amount: player.amount,
             transactionDetails: {},
-            prevToken: parseFloat(user?.ticket),
-            updatedToken: parseFloat(user?.ticket),
+            prevTicket: parseFloat(user?.ticket),
+            updatedTicket: parseFloat(user?.ticket),
+            prevWallet: parseFloat(user?.wallet),
+            updatedWallet: parseFloat(user?.wallet),
+            prevGoldCoin: parseFloat(user?.goldCoin),
+            updatedGoldCoin: parseFloat(user?.goldCoin),
             transactionType: "poker tournament",
           });
         }
@@ -2736,8 +2740,12 @@ export const distributeTournamentPrize = async (
                 userId,
                 amount: player.amount,
                 transactionDetails: {},
-                prevToken: parseFloat(user?.ticket),
-                updatedToken: parseFloat(user?.ticket),
+                prevTicket: parseFloat(user?.ticket),
+                updatedTicket: parseFloat(user?.ticket),
+                prevWallet: parseFloat(user?.wallet),
+                updatedWallet: parseFloat(user?.wallet),
+                prevGoldCoin: parseFloat(user?.goldCoin),
+                updatedGoldCoin: parseFloat(user?.goldCoin),
                 transactionType: "poker tournament",
               });
             }
@@ -2758,8 +2766,12 @@ export const distributeTournamentPrize = async (
                 userId,
                 amount: player.amount,
                 transactionDetails: {},
-                prevToken: parseFloat(user?.ticket),
-                updatedToken: parseFloat(user?.ticket),
+                prevTicket: parseFloat(user?.ticket),
+                updatedTicket: parseFloat(user?.ticket),
+                prevWallet: parseFloat(user?.wallet),
+                updatedWallet: parseFloat(user?.wallet),
+                prevGoldCoin: parseFloat(user?.goldCoin),
+                updatedGoldCoin: parseFloat(user?.goldCoin),
                 transactionType: "poker tournament",
               });
             }
@@ -7264,6 +7276,10 @@ export const JoinTournament = async (data, io, socket) => {
       transactionDetails: {},
       prevWallet: parseFloat(userData?.wallet),
       updatedWallet: updatedUser?.wallet,
+      prevTicket: parseFloat(userData?.ticket),
+      updatedTicket: parseFloat(userData?.ticket),
+      prevGoldCoin: parseFloat(userData?.goldCoin),
+      updatedGoldCoin: parseFloat(userData?.goldCoin),
       transactionType: "poker tournament",
     });
     return socket.emit("alreadyInTournament", {
@@ -7333,10 +7349,10 @@ const pushPlayerInRoom = async (
 
         { new: true }
       );
-      console.log("rooms ==>", rooms);
+      console.log("rooms ==>", tournament?.havePlayers, playerLimit);
       if (
         tournament?.tournamentType === "sit&go" &&
-        tournament?.totalJoinPlayer === playerLimit &&
+        tournament?.havePlayers === playerLimit &&
         rooms.find((room) => room.players.length === playerLimit)
       ) {
         await tournamentModel.updateOne(
@@ -7357,7 +7373,7 @@ const pushPlayerInRoom = async (
           }else{
 
             io.in(roomId.toString()).emit("tournamentStarted", { time: timer})
-         timer -= 1;
+            timer -= 1;
           }
         },1000)
         
