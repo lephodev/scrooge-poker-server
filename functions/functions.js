@@ -20,7 +20,7 @@ import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
 
 let gameRestartSeconds = 3000;
-const playerLimit = 9;
+const playerLimit = 4;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
@@ -7241,7 +7241,7 @@ export const JoinTournament = async (data, io, socket) => {
     const userData = await User.findById(userId).lean();
     if (userData?.wallet < fees) {
       return socket.emit("notEnoughAmount", {
-        message: "You have not much amount to join.",
+        message: "You don't have much amount to join.",
         code: 400,
       });
     }
@@ -7288,6 +7288,7 @@ const pushPlayerInRoom = async (
     const { username, _id, avatar, profile } = userData;
     const { rooms = [] } = checkTournament;
     let roomId;
+    console.log("room ==>", room);
     if (room) {
       roomId = room._id;
       let players = room.players;
@@ -7332,6 +7333,7 @@ const pushPlayerInRoom = async (
 
         { new: true }
       );
+      console.log("rooms ==>", rooms);
       if (
         tournament?.tournamentType === "sit&go" &&
         tournament?.totalJoinPlayer === playerLimit &&
@@ -7348,7 +7350,7 @@ const pushPlayerInRoom = async (
             rooms.find((room) => room.players.length === playerLimit),
             io
           );
-        }, 5000);
+        }, 10000);
         return;
       }
     } else {
