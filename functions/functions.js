@@ -7346,6 +7346,7 @@ const pushPlayerInRoom = async (
         console.log("Tournament started");
         blindTimer(checkTournament, io);
         let timer = 10;
+        io.emit('tournamentStart', {rooms});
         const interval = setInterval(() => {
           if(timer<0){
             clearInterval(interval);
