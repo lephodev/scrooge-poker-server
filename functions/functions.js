@@ -20,7 +20,7 @@ import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
 
 let gameRestartSeconds = 3000;
-const playerLimit = 9;
+const playerLimit = 2;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
@@ -2105,19 +2105,17 @@ export const showdown = async (roomid, io) => {
     console.log("winner players ===>", winnerPlayers);
 
     let noOfPLayrsWinn = [];
-    winnerPlayers.forEach(el=>{
-      if(noOfPLayrsWinn.indexOf(el?.name) < 0){
-        noOfPLayrsWinn.push(el?.name)
+    winnerPlayers.forEach((el) => {
+      if (noOfPLayrsWinn.indexOf(el?.name) < 0) {
+        noOfPLayrsWinn.push(el?.name);
       }
-    })
+    });
 
-    if(noOfPLayrsWinn.length === 1){
-      gameRestartSeconds = 3000
-    }else{
+    if (noOfPLayrsWinn.length === 1) {
+      gameRestartSeconds = 3000;
+    } else {
       gameRestartSeconds = noOfPLayrsWinn.length * 2000;
     }
-
-    
 
     io.in(upRoomData._id.toString()).emit("winner", {
       updatedRoom: upRoomData,
@@ -7362,21 +7360,20 @@ const pushPlayerInRoom = async (
         console.log("Tournament started");
         blindTimer(checkTournament, io);
         let timer = 10;
-        io.emit('tournamentStart', {rooms});
+        io.emit("tournamentStart", { rooms });
         const interval = setInterval(() => {
-          if(timer<0){
+          if (timer < 0) {
             clearInterval(interval);
             preflopround(
               rooms.find((room) => room.players.length === playerLimit),
               io
             );
-          }else{
-
-            io.in(roomId.toString()).emit("tournamentStarted", { time: timer})
+          } else {
+            io.in(roomId.toString()).emit("tournamentStarted", { time: timer });
             timer -= 1;
           }
-        },1000)
-        
+        }, 1000);
+
         return;
       }
     } else {
