@@ -2105,19 +2105,17 @@ export const showdown = async (roomid, io) => {
     console.log("winner players ===>", winnerPlayers);
 
     let noOfPLayrsWinn = [];
-    winnerPlayers.forEach(el=>{
-      if(noOfPLayrsWinn.indexOf(el?.name) < 0){
-        noOfPLayrsWinn.push(el?.name)
+    winnerPlayers.forEach((el) => {
+      if (noOfPLayrsWinn.indexOf(el?.name) < 0) {
+        noOfPLayrsWinn.push(el?.name);
       }
-    })
+    });
 
-    if(noOfPLayrsWinn.length === 1){
-      gameRestartSeconds = 3000
-    }else{
+    if (noOfPLayrsWinn.length === 1) {
+      gameRestartSeconds = 3000;
+    } else {
       gameRestartSeconds = noOfPLayrsWinn.length * 2000;
     }
-
-    
 
     io.in(upRoomData._id.toString()).emit("winner", {
       updatedRoom: upRoomData,
@@ -2613,12 +2611,17 @@ export const calculateTournamentPrize = async (tournamentId, eleminated) => {
 
 const fixedPrizeDistribution = (tournamentdata, elem) => {
   try {
-    let { winPlayer, winTotalPlayer } = tournamentdata;
+    let { winPlayer, winTotalPlayer, totalJoinPlayer } = tournamentdata;
     let winners = elem.slice(
       elem.length - tournamentdata.winTotalPlayer,
       elem.length
     );
     console.log("winners ====>", winners);
+
+    if (totalJoinPlayer === 2 && winners.length === 2) {
+      winners.shift();
+    }
+
     winners.forEach((ele) => {
       if (
         winTotalPlayer === 25 &&
@@ -2713,8 +2716,12 @@ export const distributeTournamentPrize = async (
             userId: player.userId,
             amount: player.amount,
             transactionDetails: {},
-            prevToken: parseFloat(user?.ticket),
-            updatedToken: parseFloat(user?.ticket),
+            prevTicket: parseFloat(user?.ticket),
+            updatedTicket: parseFloat(user?.ticket),
+            prevWallet: parseFloat(user?.wallet),
+            updatedWallet: parseFloat(user?.wallet),
+            prevGoldCoin: parseFloat(user?.goldCoin),
+            updatedGoldCoin: parseFloat(user?.goldCoin),
             transactionType: "poker tournament",
           });
         }
@@ -2736,8 +2743,12 @@ export const distributeTournamentPrize = async (
                 userId,
                 amount: player.amount,
                 transactionDetails: {},
-                prevToken: parseFloat(user?.ticket),
-                updatedToken: parseFloat(user?.ticket),
+                prevTicket: parseFloat(user?.ticket),
+                updatedTicket: parseFloat(user?.ticket),
+                prevWallet: parseFloat(user?.wallet),
+                updatedWallet: parseFloat(user?.wallet),
+                prevGoldCoin: parseFloat(user?.goldCoin),
+                updatedGoldCoin: parseFloat(user?.goldCoin),
                 transactionType: "poker tournament",
               });
             }
@@ -2758,8 +2769,12 @@ export const distributeTournamentPrize = async (
                 userId,
                 amount: player.amount,
                 transactionDetails: {},
-                prevToken: parseFloat(user?.ticket),
-                updatedToken: parseFloat(user?.ticket),
+                prevTicket: parseFloat(user?.ticket),
+                updatedTicket: parseFloat(user?.ticket),
+                prevWallet: parseFloat(user?.wallet),
+                updatedWallet: parseFloat(user?.wallet),
+                prevGoldCoin: parseFloat(user?.goldCoin),
+                updatedGoldCoin: parseFloat(user?.goldCoin),
                 transactionType: "poker tournament",
               });
             }
@@ -7264,6 +7279,10 @@ export const JoinTournament = async (data, io, socket) => {
       transactionDetails: {},
       prevWallet: parseFloat(userData?.wallet),
       updatedWallet: updatedUser?.wallet,
+      prevTicket: parseFloat(userData?.ticket),
+      updatedTicket: parseFloat(userData?.ticket),
+      prevGoldCoin: parseFloat(userData?.goldCoin),
+      updatedGoldCoin: parseFloat(userData?.goldCoin),
       transactionType: "poker tournament",
     });
     return socket.emit("alreadyInTournament", {
@@ -7333,10 +7352,10 @@ const pushPlayerInRoom = async (
 
         { new: true }
       );
-      console.log("rooms ==>", rooms);
+      console.log("rooms ==>", tournament?.havePlayers, playerLimit);
       if (
         tournament?.tournamentType === "sit&go" &&
-        tournament?.totalJoinPlayer === playerLimit &&
+        tournament?.havePlayers === playerLimit &&
         rooms.find((room) => room.players.length === playerLimit)
       ) {
         await tournamentModel.updateOne(
@@ -7346,20 +7365,20 @@ const pushPlayerInRoom = async (
         console.log("Tournament started");
         blindTimer(checkTournament, io);
         let timer = 10;
+        io.emit("tournamentStart", { rooms });
         const interval = setInterval(() => {
-          if(timer<0){
+          if (timer < 0) {
             clearInterval(interval);
             preflopround(
               rooms.find((room) => room.players.length === playerLimit),
               io
             );
-          }else{
-
-            io.in(roomId.toString()).emit("tournamentStarted", { time: timer})
-         timer -= 1;
+          } else {
+            io.in(roomId.toString()).emit("tournamentStarted", { time: timer });
+            timer -= 1;
           }
-        },1000)
-        
+        }, 1000);
+
         return;
       }
     } else {
