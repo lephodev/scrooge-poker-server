@@ -85,6 +85,30 @@ const userSchema = mongoose.Schema(
       default: false,
     },
     profile: { type: String },
+    dailyTokenSpendingLimit: {
+      type: Number,
+      default: 0,
+    },
+    weeklyTokenSpendingLimit: {
+      type: Number,
+      default: 0,
+    },
+    monthlyTokenSpendingLimit: {
+      type: Number,
+      default: 0,
+    },
+    dailyGoldCoinSpendingLimit: {
+      type: Number,
+      default: 0,
+    },
+    weeklyGoldCoinSpendingLimit: {
+      type: Number,
+      default: 0,
+    },
+    monthlyGoldCoinSpendingLimit: {
+      type: Number,
+      default: 0,
+    },
   },
 
   {
