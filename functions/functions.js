@@ -20,7 +20,7 @@ import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
 
 let gameRestartSeconds = 3000;
-const playerLimit = 2;
+const playerLimit = 9;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
@@ -6995,13 +6995,13 @@ export const checkForGameTable = async (data, socket, io) => {
       });
     }
 
-    const limit = await checkLimits(userId, gameMode, sitInAmount, user);
-    console.log("limit ===>", limit);
-    if (!limit?.success) {
-      return socket.emit("spendingLimitExceeds", {
-        message: limit?.message,
-      });
-    }
+    // const limit = await checkLimits(userId, gameMode, sitInAmount, user);
+    // console.log("limit ===>", limit);
+    // if (!limit?.success) {
+    //   return socket.emit("spendingLimitExceeds", {
+    //     message: limit?.message,
+    //   });
+    // }
 
     if (game.players.length === 0) {
       game = await roomModel.findOneAndUpdate(
