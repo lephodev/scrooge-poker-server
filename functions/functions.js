@@ -6995,13 +6995,13 @@ export const checkForGameTable = async (data, socket, io) => {
       });
     }
 
-    const limit = await checkLimits(userId, gameMode, sitInAmount, user);
-    console.log("limit ===>", limit);
-    if (!limit?.success) {
-      return socket.emit("spendingLimitExceeds", {
-        message: limit?.message,
-      });
-    }
+    // const limit = await checkLimits(userId, gameMode, sitInAmount, user);
+    // console.log("limit ===>", limit);
+    // if (!limit?.success) {
+    //   return socket.emit("spendingLimitExceeds", {
+    //     message: limit?.message,
+    //   });
+    // }
 
     if (game.players.length === 0) {
       game = await roomModel.findOneAndUpdate(
