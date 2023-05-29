@@ -7073,9 +7073,9 @@ export const checkForGameTable = async (data, socket, io) => {
       await userService.updateUserWallet(userId, query);
       io.in(gameId).emit("updateGame", { game: updatedRoom });
       if (updatedRoom?.players?.length === 2) {
-        setTimeout(() => {
-          preflopround(updatedRoom, io);
-        }, 3000);
+        // setTimeout(() => {
+        preflopround(updatedRoom, io);
+        // }, 3000);
       }
       return;
     } else {
