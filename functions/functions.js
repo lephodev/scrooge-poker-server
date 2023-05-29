@@ -2104,17 +2104,17 @@ export const showdown = async (roomid, io) => {
 
     console.log("winner players ===>", winnerPlayers);
 
-    let noOfPLayrsWinn = [];
-    winnerPlayers.forEach((el) => {
-      if (noOfPLayrsWinn.indexOf(el?.name) < 0) {
-        noOfPLayrsWinn.push(el?.name);
-      }
-    });
+    // let noOfPLayrsWinn = [];
+    // winnerPlayers.forEach((el) => {
+    //   if (noOfPLayrsWinn.indexOf(el?.name) < 0) {
+    //     noOfPLayrsWinn.push(el?.name);
+    //   }
+    // });
 
-    if (noOfPLayrsWinn.length === 1) {
+    if (winnerPlayers.length === 1) {
       gameRestartSeconds = 3000;
     } else {
-      gameRestartSeconds = noOfPLayrsWinn.length * 2000;
+      gameRestartSeconds = winnerPlayers.length * 2000;
     }
 
     io.in(upRoomData._id.toString()).emit("winner", {
