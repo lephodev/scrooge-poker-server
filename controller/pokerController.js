@@ -5,7 +5,7 @@ import Notification from "../models/notificationModal.js";
 import gameService from "../service/game.service.js";
 import roomModel from "./../models/room.js";
 import userService from "../service/user.service.js";
-import { checkLimits } from "../functions/functions.js";
+// import { checkLimits } from "../functions/functions.js";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
@@ -70,11 +70,11 @@ export const createTable = async (req, res, io) => {
         .send({ message: "You don't have enough gold coin" });
     }
 
-    const limit = await checkLimits(_id, gameMode, sitInAmount, userData);
-    console.log("limit ===>", limit);
-    if (!limit?.success) {
-      return res.status(403).send({ message: limit?.message });
-    }
+    // const limit = await checkLimits(_id, gameMode, sitInAmount, userData);
+    // console.log("limit ===>", limit);
+    // if (!limit?.success) {
+    //   return res.status(403).send({ message: limit?.message });
+    // }
 
     // if (checkInGame) {
     //   return res.status(403).send({ message: "You are already in a game." });
@@ -321,19 +321,19 @@ export const refillWallet = async (data, io, socket) => {
           amount + playerExist[0].wallet + totalHandsSpend
         );
 
-        const limit = await checkLimits(
-          userid.toString(),
-          room.gameMode,
-          amount + playerExist[0].wallet + totalHandsSpend,
-          user
-        );
-        console.log("limit ===>", limit);
-        if (!limit?.success) {
-          return socket.emit("spendingLimitExceeds", {
-            message: limit?.message,
-            from: "refillWallet",
-          });
-        }
+        // const limit = await checkLimits(
+        //   userid.toString(),
+        //   room.gameMode,
+        //   amount + playerExist[0].wallet + totalHandsSpend,
+        //   user
+        // );
+        // console.log("limit ===>", limit);
+        // if (!limit?.success) {
+        //   return socket.emit("spendingLimitExceeds", {
+        //     message: limit?.message,
+        //     from: "refillWallet",
+        //   });
+        // }
 
         if (!room.isGameRunning) {
           await roomModel.updateOne(

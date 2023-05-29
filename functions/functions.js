@@ -20,7 +20,7 @@ import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
 
 let gameRestartSeconds = 3000;
-const playerLimit = 2;
+const playerLimit = 9;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
@@ -6807,6 +6807,8 @@ export const leaveApiCall = async (room, userId) => {
       console.log("tournament data =====>", tournament);
     }
 
+    console.log("users ======>", users);
+
     const userBalancePromise = users.map((el) => {
       if (!room.tournament) {
         let totalTicketWon = 0;
@@ -6816,11 +6818,12 @@ export const leaveApiCall = async (room, userId) => {
             totalTicketWon += hand.amount;
           }
         });
+
         // console.log("total tickets token", totalTicketWon);
         const newBalnce = el.newBalance > 0 ? el.newBalance : 0;
         let query;
         if (room.gameMode === "goldCoin") {
-          query = { goldCoin: totalTicketWon * 2 };
+          query = { goldCoin: el.wallet };
         } else {
           query = {
             wallet: room.gameType !== "poker-tournament" ? newBalnce : 0,
@@ -6995,13 +6998,13 @@ export const checkForGameTable = async (data, socket, io) => {
       });
     }
 
-    const limit = await checkLimits(userId, gameMode, sitInAmount, user);
-    console.log("limit ===>", limit);
-    if (!limit?.success) {
-      return socket.emit("spendingLimitExceeds", {
-        message: limit?.message,
-      });
-    }
+    // const limit = await checkLimits(userId, gameMode, sitInAmount, user);
+    // console.log("limit ===>", limit);
+    // if (!limit?.success) {
+    //   return socket.emit("spendingLimitExceeds", {
+    //     message: limit?.message,
+    //   });
+    // }
 
     if (game.players.length === 0) {
       game = await roomModel.findOneAndUpdate(
@@ -7070,9 +7073,9 @@ export const checkForGameTable = async (data, socket, io) => {
       await userService.updateUserWallet(userId, query);
       io.in(gameId).emit("updateGame", { game: updatedRoom });
       if (updatedRoom?.players?.length === 2) {
-        setTimeout(() => {
-          preflopround(updatedRoom, io);
-        }, 3000);
+        // setTimeout(() => {
+        preflopround(updatedRoom, io);
+        // }, 3000);
       }
       return;
     } else {
@@ -7396,12 +7399,12 @@ export const playerTentativeAction = async (data, socket, io) => {
         playerAction
       );
       let updatedGame;
-      setTimeot(async () => {
+      setTimeout(async () => {
         updatedGame = await gameService.getGameById(gameId);
+        io.in(gameId).emit("updateGame", { game: updatedGame });
       }, 500);
       //  = await gameService.getGameById(gameId);
       // console.log("updatedGameupdatedGame", updatedGame);
-      io.in(gameId).emit("updateGame", { game: updatedGame });
     } else {
       socket.emit("actionError", { msg: "No game found" });
     }
