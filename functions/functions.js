@@ -2104,17 +2104,17 @@ export const showdown = async (roomid, io) => {
 
     console.log("winner players ===>", winnerPlayers);
 
-    let noOfPLayrsWinn = [];
-    winnerPlayers.forEach((el) => {
-      if (noOfPLayrsWinn.indexOf(el?.name) < 0) {
-        noOfPLayrsWinn.push(el?.name);
-      }
-    });
+    // let noOfPLayrsWinn = [];
+    // winnerPlayers.forEach((el) => {
+    //   if (noOfPLayrsWinn.indexOf(el?.name) < 0) {
+    //     noOfPLayrsWinn.push(el?.name);
+    //   }
+    // });
 
-    if (noOfPLayrsWinn.length === 1) {
+    if (winnerPlayers.length === 1) {
       gameRestartSeconds = 3000;
     } else {
-      gameRestartSeconds = noOfPLayrsWinn.length * 2000;
+      gameRestartSeconds = winnerPlayers.length * 2000;
     }
 
     io.in(upRoomData._id.toString()).emit("winner", {
@@ -2888,7 +2888,9 @@ export const doFinishGame = async (data, io, socket) => {
   try {
     if (isValid) {
       const roomData = await roomModel.findOne({ _id: roomid });
+      // console.log("roomData ===>", roomData);
       if (!roomData.finish) {
+        console.log("entered in first cond");
         const updatedData = await roomModel.findOneAndUpdate(
           { _id: roomid },
           { finish: false, autoNextHand: true }, //i have update finish true with finish false and also I have add this for
@@ -2905,6 +2907,37 @@ export const doFinishGame = async (data, io, socket) => {
         if (updatedData.runninground === 0) {
           console.log("enterd in If condition for leaving tounament");
           await finishedTableGame(io, updatedData, userid);
+        } else {
+          const checkRoom = await roomModel.find({
+            finish: false,
+            public: true,
+            gameMode: roomData?.gameMode,
+          });
+          console.log("checkRoom.length ===>", checkRoom.length);
+          if (checkRoom && checkRoom.length > 2) {
+            // if (dd || room.finish) await roomModel.deleteOne({ _id: room._id });
+            console.log("roomData.finish ======>", roomData.finish);
+            if (!roomData.finish) {
+              const data = await roomModel.findOneAndUpdate(
+                { _id: roomData._id },
+                { finish: true },
+                { new: true }
+              );
+              console.log("data qwdqwd", data);
+            }
+
+            //   const getAllRunningRoom = await roomModel
+            //   .find({finish:false, public: true, gameType: "poker" })
+            //   .populate("players.userid");
+            // io.emit("AllTables", { tables: getAllRunningRoom });
+          } else {
+            msg = "Game paused, due to ring game";
+            await roomModel.findOneAndUpdate(
+              { _id: roomData._id },
+              { pause: true },
+              { new: true }
+            );
+          }
         }
         io.in(updatedData._id.toString()).emit("roomFinished", {
           msg: msg,
@@ -6329,6 +6362,7 @@ export const finishedTableGame = async (io, room, userid) => {
       public: true,
       gameMode: room?.gameMode,
     });
+    console.log("checkRoom.length ===>", checkRoom.length);
     if (checkRoom && checkRoom.length > 2) {
       // if (dd || room.finish) await roomModel.deleteOne({ _id: room._id });
       if (dd || room.finish)
