@@ -6807,6 +6807,8 @@ export const leaveApiCall = async (room, userId) => {
       console.log("tournament data =====>", tournament);
     }
 
+    console.log("users ======>", users);
+
     const userBalancePromise = users.map((el) => {
       if (!room.tournament) {
         let totalTicketWon = 0;
@@ -6816,11 +6818,12 @@ export const leaveApiCall = async (room, userId) => {
             totalTicketWon += hand.amount;
           }
         });
+
         // console.log("total tickets token", totalTicketWon);
         const newBalnce = el.newBalance > 0 ? el.newBalance : 0;
         let query;
         if (room.gameMode === "goldCoin") {
-          query = { goldCoin: totalTicketWon * 2 };
+          query = { goldCoin: el.wallet };
         } else {
           query = {
             wallet: room.gameType !== "poker-tournament" ? newBalnce : 0,
@@ -6994,6 +6997,15 @@ export const checkForGameTable = async (data, socket, io) => {
         message: "You are not authorized",
       });
     }
+
+    // const limit = await checkLimits(userId, gameMode, sitInAmount, user);
+    // console.log("limit ===>", limit);
+    // if (!limit?.success) {
+    //   return socket.emit("spendingLimitExceeds", {
+    //     message: limit?.message,
+    //   });
+    // }
+
     if (game.players.length === 0) {
       game = await roomModel.findOneAndUpdate(
         {
@@ -7061,9 +7073,9 @@ export const checkForGameTable = async (data, socket, io) => {
       await userService.updateUserWallet(userId, query);
       io.in(gameId).emit("updateGame", { game: updatedRoom });
       if (updatedRoom?.players?.length === 2) {
-        setTimeout(() => {
-          preflopround(updatedRoom, io);
-        }, 3000);
+        // setTimeout(() => {
+        preflopround(updatedRoom, io);
+        // }, 3000);
       }
       return;
     } else {
@@ -7074,6 +7086,281 @@ export const checkForGameTable = async (data, socket, io) => {
     socket.emit("socketError", error.message);
   }
 };
+
+export const checkLimits = async (userId, gameMode, sitInAmount, user) => {
+  try {
+    let crrDate = new Date();
+    crrDate.setHours(0);
+    crrDate.setMinutes(0);
+    crrDate.setMilliseconds(0);
+    crrDate = crrDate.toDateString();
+
+    const todayTransactions = await transactionModel.find({
+      $and: [
+        { userId: userId },
+        { createdAt: { $gte: crrDate } },
+        { amount: { $lt: 0 } },
+      ],
+    });
+    console.log("todayTransactions =====>", gameMode, todayTransactions);
+    if (todayTransactions.length) {
+      let spndedToday = 0;
+      if (todayTransactions.length === 1) {
+        spndedToday =
+          gameMode === "goldCoin"
+            ? todayTransactions[0].prevGoldCoin -
+              todayTransactions[0].updatedGoldCoin
+            : todayTransactions[0].prevWallet -
+              todayTransactions[0].updatedWallet;
+      } else {
+        // spndedToday =
+        //   gameMode === "goldCoin"
+        //     ? todayTransactions[0].updatedGoldCoin -
+        //       todayTransactions[todayTransactions.length - 1].updatedGoldCoin
+        //     : todayTransactions[0].updatedWallet -
+        //       todayTransactions[todayTransactions.length - 1].updatedWallet;
+        if (gameMode === "goldCoin") {
+          todayTransactions
+            .filter((obj) => obj.updatedGoldCoin !== obj.prevGoldCoin)
+            .forEach((obj) => {
+              spndedToday +=
+                parseFloat(obj.prevGoldCoin) - parseFloat(obj.updatedGoldCoin);
+            });
+        } else {
+          todayTransactions
+            .filter((obj) => obj.prevWallet !== obj.updatedWallet)
+            .forEach((obj) => {
+              spndedToday +=
+                parseFloat(obj.prevWallet) - parseFloat(obj.updatedWallet);
+            });
+        }
+      }
+      // console.log(
+      //   "spndedToday =====>",
+      //   spndedToday + sitInAmount,
+      //   user.dailyGoldCoinSpendingLimit
+      // );
+      if (
+        gameMode === "goldCoin" &&
+        spndedToday + sitInAmount > user.dailyGoldCoinSpendingLimit
+      ) {
+        return {
+          success: false,
+          message: "Your daily spending limit for goldcoins has been exhausted",
+        };
+      } else if (
+        gameMode === "token" &&
+        spndedToday + sitInAmount > user.dailyTokenSpendingLimit
+      ) {
+        return {
+          success: false,
+          message: "Your daily spending limit for tokens has been exhausted",
+        };
+      }
+    } else {
+      console.log(
+        "spndedMonthly =====>",
+        sitInAmount,
+        user.monthlyGoldCoinSpendingLimit
+      );
+      if (
+        gameMode === "goldCoin" &&
+        sitInAmount > user.dailyGoldCoinSpendingLimit
+      ) {
+        return {
+          success: false,
+          message: "Your sitin amount is exceeding your daily spending limit",
+        };
+      } else if (
+        gameMode === "token" &&
+        sitInAmount > user.dailyTokenSpendingLimit
+      ) {
+        return {
+          success: false,
+          message: "Your sitin amount is exceeding your daily spending limit",
+        };
+      }
+    }
+
+    let weeklyStartDate = getLastSunday().toDateString();
+
+    const weeklyTransactions = await transactionModel.find({
+      $and: [
+        { userId: userId },
+        { createdAt: { $gte: weeklyStartDate } },
+        { amount: { $lt: 0 } },
+      ],
+    });
+
+    if (weeklyTransactions.length) {
+      let spndedWeekly = 0;
+      if (weeklyTransactions.length === 1) {
+        spndedWeekly =
+          gameMode === "goldCoin"
+            ? weeklyTransactions[0].prevGoldCoin -
+              weeklyTransactions[0].updatedGoldCoin
+            : weeklyTransactions[0].prevWallet -
+              weeklyTransactions[0].updatedWallet;
+      } else {
+        if (gameMode === "goldCoin") {
+          weeklyTransactions
+            .filter((obj) => obj.updatedGoldCoin !== obj.prevGoldCoin)
+            .forEach((obj) => {
+              spndedWeekly +=
+                parseFloat(obj.prevGoldCoin) - parseFloat(obj.updatedGoldCoin);
+            });
+        } else {
+          weeklyTransactions
+            .filter((obj) => obj.prevWallet !== obj.updatedWallet)
+            .forEach((obj) => {
+              spndedWeekly +=
+                parseFloat(obj.prevWallet) - parseFloat(obj.updatedWallet);
+            });
+        }
+      }
+      if (
+        gameMode === "goldCoin" &&
+        spndedWeekly + sitInAmount > user.weeklyGoldCoinSpendingLimit
+      ) {
+        return {
+          success: false,
+          message:
+            "Your weekly spending limit for goldcoins has been exhausted",
+        };
+      } else if (
+        gameMode === "token" &&
+        spndedWeekly + sitInAmount > user.weeklyTokenSpendingLimit
+      ) {
+        return {
+          success: false,
+          message: "Your weekly spending limit for tokens has been exhausted",
+        };
+      }
+    } else {
+      if (
+        gameMode === "goldCoin" &&
+        sitInAmount > user.weeklyGoldCoinSpendingLimit
+      ) {
+        return {
+          success: false,
+          message: "Your sitin amount is exceeding your weekly spending limit",
+        };
+      } else if (
+        gameMode === "token" &&
+        sitInAmount > user.weeklyTokenSpendingLimit
+      ) {
+        return {
+          success: false,
+          message: "Your sitin amount is exceeding your weekly spending limit",
+        };
+      }
+    }
+
+    crrDate = new Date();
+    crrDate.setDate(1);
+    crrDate.setHours(0);
+    crrDate.setMinutes(0);
+    crrDate.setMilliseconds(0);
+
+    let monthStartDate = crrDate.toDateString();
+
+    const monthlyTransactions = await transactionModel.find({
+      $and: [
+        { userId: userId },
+        { createdAt: { $gte: monthStartDate } },
+        { amount: { $lt: 0 } },
+      ],
+    });
+
+    if (monthlyTransactions.length) {
+      let spndedMonthly = 0;
+      if (monthlyTransactions.length === 1) {
+        spndedMonthly =
+          gameMode === "goldCoin"
+            ? monthlyTransactions[0].prevGoldCoin -
+              monthlyTransactions[0].updatedGoldCoin
+            : monthlyTransactions[0].prevWallet -
+              monthlyTransactions[0].updatedWallet;
+      } else {
+        if (gameMode === "goldCoin") {
+          monthlyTransactions
+            .filter((obj) => obj.updatedGoldCoin !== obj.prevGoldCoin)
+            .forEach((obj) => {
+              spndedMonthly +=
+                parseFloat(obj.prevGoldCoin) - parseFloat(obj.updatedGoldCoin);
+            });
+        } else {
+          spndedMonthly = monthlyTransactions
+            .filter((obj) => obj.prevWallet !== obj.updatedWallet)
+            .forEach((obj) => {
+              spndedMonthly +=
+                parseFloat(obj.prevWallet) - parseFloat(obj.updatedWallet);
+            });
+        }
+      }
+
+      console.log(
+        "spndedMonthly =====>",
+        spndedMonthly + sitInAmount,
+        user.monthlyGoldCoinSpendingLimit
+      );
+      if (
+        gameMode === "goldCoin" &&
+        spndedMonthly + sitInAmount >= user.monthlyGoldCoinSpendingLimit
+      ) {
+        return {
+          success: false,
+          message:
+            "Your monthly spending limit for goldcoins has been exhausted",
+        };
+      } else if (
+        gameMode === "token" &&
+        spndedMonthly + sitInAmount > user.monthlyTokenSpendingLimit
+      ) {
+        return {
+          success: false,
+          message: "Your weekly spending limit for tokens has been exhausted",
+        };
+      }
+    } else {
+      if (
+        gameMode === "goldCoin" &&
+        sitInAmount > user.monthlyGoldCoinSpendingLimit
+      ) {
+        return {
+          success: false,
+          message: "Your sitin amount is exceeding your weekly spending limit",
+        };
+      } else if (
+        gameMode === "token" &&
+        sitInAmount > user.monthlyTokenSpendingLimit
+      ) {
+        return {
+          success: false,
+          message: "Your sitin amount is exceeding your weekly spending limit",
+        };
+      }
+    }
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.log("error in checklimits ===>", error);
+    return {
+      success: true,
+    };
+  }
+};
+
+function getLastSunday() {
+  var dt = new Date();
+  dt.setDate(dt.getDate() - dt.getDay());
+  dt.setHours(0);
+  dt.setMinutes(0);
+  dt.setMilliseconds(0);
+  return dt;
+}
 
 export const checkAlreadyInGame = async (data, socket, io) => {
   try {
@@ -7112,12 +7399,12 @@ export const playerTentativeAction = async (data, socket, io) => {
         playerAction
       );
       let updatedGame;
-      setTimeot(async () => {
+      setTimeout(async () => {
         updatedGame = await gameService.getGameById(gameId);
+        io.in(gameId).emit("updateGame", { game: updatedGame });
       }, 500);
       //  = await gameService.getGameById(gameId);
       // console.log("updatedGameupdatedGame", updatedGame);
-      io.in(gameId).emit("updateGame", { game: updatedGame });
     } else {
       socket.emit("actionError", { msg: "No game found" });
     }

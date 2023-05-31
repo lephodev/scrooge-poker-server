@@ -5,6 +5,7 @@ import Notification from "../models/notificationModal.js";
 import gameService from "../service/game.service.js";
 import roomModel from "./../models/room.js";
 import userService from "../service/user.service.js";
+// import { checkLimits } from "../functions/functions.js";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
@@ -37,10 +38,11 @@ export const createTable = async (req, res, io) => {
       autohand,
       invitedUsers,
       sitInAmount,
-      gameMode
+      gameMode,
     } = req.body;
     const userData = req.user;
-    const { username, wallet,goldCoin, email, _id, avatar, profile } = userData;
+    const { username, wallet, goldCoin, email, _id, avatar, profile } =
+      userData;
     const timer = 20;
 
     const checkInGame = await gameService.checkIfUserInGame(userData._id);
@@ -59,12 +61,20 @@ export const createTable = async (req, res, io) => {
         .send({ message: "Minimum 100 coins need for sit in amount" });
     }
 
-    if (sitInAmount > wallet && gameMode ==='token') {
+    if (sitInAmount > wallet && gameMode === "token") {
       return res.status(403).send({ message: "You don't have enough token" });
     }
-    if (sitInAmount > goldCoin && gameMode ==='goldCoin') {
-      return res.status(403).send({ message: "You don't have enough gold coin" });
+    if (sitInAmount > goldCoin && gameMode === "goldCoin") {
+      return res
+        .status(403)
+        .send({ message: "You don't have enough gold coin" });
     }
+
+    // const limit = await checkLimits(_id, gameMode, sitInAmount, userData);
+    // console.log("limit ===>", limit);
+    // if (!limit?.success) {
+    //   return res.status(403).send({ message: limit?.message });
+    // }
 
     // if (checkInGame) {
     //   return res.status(403).send({ message: "You are already in a game." });
@@ -75,7 +85,7 @@ export const createTable = async (req, res, io) => {
     const roomData = await roomModel.create({
       gameName,
       gameType: "poker",
-      gameMode:gameMode,
+      gameMode: gameMode,
       autoNextHand: autohand,
       invPlayers: invitetedPlayerUserId,
       public: isPublic,
@@ -105,16 +115,16 @@ export const createTable = async (req, res, io) => {
       .find({ public: true, finish: false, gameType: "poker" })
       .populate("players.userid");
     io.emit("AllTables", { tables: getAllRunningRoom });
-    let walletAmount
-    let query
-    if(gameMode==='goldCoin'){
-      walletAmount=goldCoin-sitInAmount
-      query={goldCoin:walletAmount}
-    }else{
-      walletAmount= wallet - sitInAmount
-      query={wallet:walletAmount}
+    let walletAmount;
+    let query;
+    if (gameMode === "goldCoin") {
+      walletAmount = goldCoin - sitInAmount;
+      query = { goldCoin: walletAmount };
+    } else {
+      walletAmount = wallet - sitInAmount;
+      query = { wallet: walletAmount };
     }
-    await userService.updateUserWallet(_id,query );
+    await userService.updateUserWallet(_id, query);
     // await User.updateOne({ _id }, { wallet: wallet - sitInAmount });
 
     if (Array.isArray(invitetedPlayerUserId) && invitetedPlayerUserId.length) {
@@ -286,11 +296,45 @@ export const refillWallet = async (data, io, socket) => {
         _id: tableId,
       });
 
+      const user = await User.findOne({
+        _id: userid,
+      });
+
       if (room != null) {
         const playerExist = room.players.filter(
           (el) =>
             mongoose.Types.ObjectId(el.userid).toString() === userid.toString()
         );
+
+        let totalHandsSpend = 0;
+        playerExist[0].hands.forEach((el) => {
+          if (el.action === "game-lose") {
+            totalHandsSpend += el?.amount;
+          }
+        });
+
+        console.log(
+          "aount =====================>",
+          amount,
+          playerExist[0].wallet,
+          totalHandsSpend,
+          amount + playerExist[0].wallet + totalHandsSpend
+        );
+
+        // const limit = await checkLimits(
+        //   userid.toString(),
+        //   room.gameMode,
+        //   amount + playerExist[0].wallet + totalHandsSpend,
+        //   user
+        // );
+        // console.log("limit ===>", limit);
+        // if (!limit?.success) {
+        //   return socket.emit("spendingLimitExceeds", {
+        //     message: limit?.message,
+        //     from: "refillWallet",
+        //   });
+        // }
+
         if (!room.isGameRunning) {
           await roomModel.updateOne(
             {
@@ -321,15 +365,15 @@ export const refillWallet = async (data, io, socket) => {
               },
             ],
           });
-          let query
-          if(room.gameMode==='goldCoin'){
-            query= { goldCoin: -amount } 
-          }else{
-           query= { wallet: -amount } 
+          let query;
+          if (room.gameMode === "goldCoin") {
+            query = { goldCoin: -amount };
+          } else {
+            query = { wallet: -amount };
           }
           await User.updateOne(
             { _id: mongoose.Types.ObjectId(userid) },
-            { $inc: query}
+            { $inc: query }
           );
           if (roomData) {
             socket.emit("updateRoom", roomData);
@@ -348,11 +392,11 @@ export const refillWallet = async (data, io, socket) => {
           await roomModel.findByIdAndUpdate(room._id, {
             buyin: buyinrequest,
           });
-          let query
-          if(room.gameMode==='goldCoin'){
-            query= { goldCoin: -amount } 
-          }else{
-           query= { wallet: -amount } 
+          let query;
+          if (room.gameMode === "goldCoin") {
+            query = { goldCoin: -amount };
+          } else {
+            query = { wallet: -amount };
           }
           await User.updateOne(
             { _id: mongoose.Types.ObjectId(userid) },
