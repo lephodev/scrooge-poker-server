@@ -6356,7 +6356,7 @@ export const findLoserAndWinner = async (room) => {
 export const finishedTableGame = async (io, room, userid) => {
   try {
     console.log("LEAVE API CALL 6885");
-    const dd = await leaveApiCall(room, userid);
+    const dd = await leaveApiCall(room, userid,io);
     const checkRoom = await roomModel.find({
       finish: false,
       public: true,
@@ -6695,7 +6695,7 @@ const createTransactionFromUsersArray = async (
   }
 };
 
-export const leaveApiCall = async (room, userId) => {
+export const leaveApiCall = async (room, userId,io) => {
   try {
     let player;
     console.log("leave api call", room.players.length);
@@ -6843,7 +6843,7 @@ export const leaveApiCall = async (room, userId) => {
 
     console.log("users ======>", users);
 
-    const userBalancePromise = users.map((el) => {
+    const userBalancePromise = users.map(async(el) => {
       if (!room.tournament) {
         let totalTicketWon = 0;
         // console.log("user hand ===>", el.hands);
@@ -6874,7 +6874,7 @@ export const leaveApiCall = async (room, userId) => {
         );
       } else {
         if (!tournament.isStart) {
-          return userModel.updateOne(
+          let updateData= await userModel.findOneAndUpdate(
             {
               _id: convertMongoId(el.uid),
             },
@@ -6882,10 +6882,34 @@ export const leaveApiCall = async (room, userId) => {
               $inc: {
                 wallet: tournament.tournamentFee,
               },
-            }
-          );
-        }
-      }
+            },{new:true}
+          )
+          console.log();
+          transactionModel.create({
+            userId: userId,
+            amount: parseFloat(tournament.tournamentFee),
+            transactionDetails: {},
+            prevWallet: parseFloat(updateData?.wallet),
+            updatedWallet: updateData?.wallet,
+            prevTicket: parseFloat(updateData?.ticket),
+            updatedTicket: parseFloat(updateData?.ticket),
+            prevGoldCoin: parseFloat(updateData?.goldCoin),
+            updatedGoldCoin: parseFloat(updateData?.goldCoin),
+            transactionType: "poker tournament",
+          });
+          try {
+            
+          
+          return io.emit("leaveTournament", {
+            message: "You leave the game.",
+            code: 200,
+            user: updateData || {},
+          });   
+          
+      } catch (error) {
+          console.log("error",error);  
+      }       
+    }}
     });
 
     // console.log("transactions ====>", transactions);
@@ -7577,7 +7601,7 @@ export const JoinTournament = async (data, io, socket) => {
     const userData = await User.findById(userId).lean();
     if (userData?.wallet < fees) {
       return socket.emit("notEnoughAmount", {
-        message: "You don't have much amount to join.",
+        message: "You do not have enough ST to join",
         code: 400,
       });
     }
@@ -7596,7 +7620,7 @@ export const JoinTournament = async (data, io, socket) => {
     );
     await transactionModel.create({
       userId: userId,
-      amount: parseFloat(fees),
+      amount: -parseFloat(fees),
       transactionDetails: {},
       prevWallet: parseFloat(userData?.wallet),
       updatedWallet: updatedUser?.wallet,
