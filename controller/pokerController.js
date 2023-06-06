@@ -5,6 +5,7 @@ import Notification from "../models/notificationModal.js";
 import gameService from "../service/game.service.js";
 import roomModel from "./../models/room.js";
 import userService from "../service/user.service.js";
+import { verifyJwt } from "../functions/functions.js";
 // import { checkLimits } from "../functions/functions.js";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
@@ -290,14 +291,46 @@ export const getTablePlayers = async (req, res) => {
 export const refillWallet = async (data, io, socket) => {
   process.nextTick(async () => {
     try {
-      let { tableId, amount, userid, username } = data;
+      let { tableId, amount, token, username,gameMode } = data;
+      const verify=await verifyJwt(token)
+      const userid=verify.sub
       amount = parseInt(amount);
-      let room = await roomModel.findOne({
-        _id: tableId,
-      });
-
+      if(!gameMode){
+        return socket.emit("notEnoughAmount", {
+          message: "Please select game mode.",
+          code: 400,
+        });
+      }
       const user = await User.findOne({
         _id: userid,
+      });
+      if (parseInt(amount) < 100) {
+        return socket.emit("notEnoughAmount", {
+          message: "Minimum amount to enter is 100.",
+          code: 400,
+        });
+      }
+      if (
+        parseFloat(amount) > user?.wallet &&
+        gameMode === 'token'
+      ) {
+        return socket.emit("notEnoughAmount", {
+          message: "You don't have enough token.",
+          code: 400,
+        });
+      }
+      if (
+        parseFloat(amount) > user?.goldCoin &&
+        gameMode === 'goldCoin'
+      ) {
+        return socket.emit("notEnoughAmount", {
+          message: "You don't have enough gold coin.",
+          code: 400,
+        });
+      }
+      
+      let room = await roomModel.findOne({
+        _id: tableId,
       });
 
       if (room != null) {
