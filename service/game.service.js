@@ -6,6 +6,7 @@ import tournamentModel from "../models/tournament.js";
 import smsService from "./sms.service.js";
 import moment from "moment";
 import Notification from "../models/notificationModal.js";
+import { verifyJwt } from "../functions/functions.js";
 
 const converMongoId = (id) => mongoose.Types.ObjectId(id);
 const maxPlayer = 9;
@@ -259,12 +260,30 @@ const sendAcknowledgementForJoinTournament = async (io) => {
     console.log("Error in send acknowledge--->", err);
   }
 };
+const tokenVerificationForSocket=async(headerData)=>{
+  let token=''
+  let mode=''
+  const cookieData=headerData?.headers?.cookie
+  const cookieDetails=cookieData.split(';')
+  cookieDetails.forEach((el)=>{
+      if(el.includes('token=')){
+        token=el
+      }
+      if(el.includes('mode=')){
+        mode=el
+      }
+  })
+  const tokenForVerify=token.replace('token=','')
+  const verify=await verifyJwt(tokenForVerify)
+  return {userId:verify.sub,gameMode:mode.replace('mode=','')}
+}
 const gameService = {
   getGameById,
   joinRoomByUserId,
   checkIfUserInGame,
   playerTentativeActionSelection,
   sendAcknowledgementForJoinTournament,
+  tokenVerificationForSocket
 };
 
 export default gameService;
