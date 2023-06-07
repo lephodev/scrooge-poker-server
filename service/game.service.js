@@ -261,21 +261,27 @@ const sendAcknowledgementForJoinTournament = async (io) => {
   }
 };
 const tokenVerificationForSocket=async(headerData)=>{
-  let token=''
-  let mode=''
-  const cookieData=headerData?.headers?.cookie
-  const cookieDetails=cookieData.split(';')
-  cookieDetails.forEach((el)=>{
-      if(el.includes('token=')){
-        token=el
-      }
-      if(el.includes('mode=')){
-        mode=el
-      }
-  })
-  const tokenForVerify=token.split('token=')[1]
-  const verify=await verifyJwt(tokenForVerify)
-  return {userId:verify.sub,gameMode:mode.split('mode=')[1]}
+  try{
+    let token=''
+    let mode=''
+    const cookieData=headerData?.headers?.cookie
+    const cookieDetails=cookieData.split(';')
+    cookieDetails.forEach((el)=>{
+        if(el.includes('token=')){
+          token=el
+        }
+        if(el.includes('mode=')){
+          mode=el
+        }
+    })
+    const tokenForVerify=token?.split('token=')[1]
+    const verify=await verifyJwt(tokenForVerify)
+  console.log("Verify-->",verify)
+    return {userId:verify?.sub,gameMode:mode?.split('mode=')[1]}
+  }catch(err){
+    console.log("Error-->",err)
+  }
+  
 }
 const gameService = {
   getGameById,

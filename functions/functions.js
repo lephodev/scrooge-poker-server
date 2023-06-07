@@ -107,7 +107,7 @@ export const verifyJwt = (token) => {
         resolve(isTokenValid);
       }
     } catch (e) {
-      console.log("ererer------>", e);
+      console.log("ererer", e);
       reject(false);
     }
   });
@@ -2858,13 +2858,7 @@ const calculatePercentagePrizes = async (tournamentdata, elem) => {
 };
 
 export const doPauseGame = async (data, io, socket) => {
-  const verification = await gameService.tokenVerificationForSocket(
-    socket?.handshake,
-  )
-  const userid = verification.userId;
-  if(!userid){
-   return socket.emit("actionError", { code: 400, msg: "You are not loggedIn!" });
-  }
+  const userid = data.userid;
   let roomid = data.roomid;
   const { isValid } = checkIfEmpty({ roomid, userid });
   try {
@@ -2967,16 +2961,7 @@ export const doFinishGame = async (data, io, socket) => {
 
 export const doResumeGame = async (data, io, socket) => {
   console.log("doResumeGame API called ");
-  const verification = await gameService.tokenVerificationForSocket(
-    socket?.handshake,
-  )
-  if(verification?.userId){
-    return socket.emit("actionError", {
-      code: 400,
-      msg: "You are not loggedIn!",
-    });
-  }
-  const userid = verification.userId;
+  const userid = data.userid;
   let roomid = data.roomid;
   const { isValid } = checkIfEmpty({ roomid, userid });
   try {
@@ -3000,16 +2985,7 @@ export const doResumeGame = async (data, io, socket) => {
 
 export const doSitOut = async (data, io, socket) => {
   const { action } = data;
-  const verification = await gameService.tokenVerificationForSocket(
-    socket?.handshake,
-  )
-  if(verification?.userId){
-    return socket.emit("actionError", {
-      code: 400,
-      msg: "You are not loggedIn!",
-    });
-  }
-  const userid = convertMongoId(verification?.userId);
+  const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
   let roomid;
   // console.log({ tableId, userid });
@@ -3333,16 +3309,7 @@ export const doSitOut = async (data, io, socket) => {
 
 export const doSitIn = async (data, io, socket) => {
   console.log("doSitIn API called ");
-  const verification = await gameService.tokenVerificationForSocket(
-    socket?.handshake,
-  )
-  if(verification?.userId){
-    return socket.emit("actionError", {
-      code: 400,
-      msg: "You are not loggedIn!",
-    });
-  }
-  const userid = convertMongoId(verification?.userId);
+  const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
   let roomid;
   const { isValid } = checkIfEmpty({ tableId, userid });
@@ -3398,10 +3365,10 @@ export const doSitIn = async (data, io, socket) => {
 export const doLeaveTable = async (data, io, socket) => {
   // console.log("datadatadata", data);
   console.log("doleave table executed");
-
-  const userid =convertMongoId(data?.userId);
+  const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
   let roomid;
+
   const { isValid } = checkIfEmpty({ tableId, userid });
   try {
     if (isValid) {
@@ -3748,16 +3715,7 @@ export const doFold = async (roomData, playerid, io) => {
 };
 
 export const socketDoFold = async (dta, io, socket) => {
-  const verification = await gameService.tokenVerificationForSocket(
-    socket?.handshake,
-  )
-  if(verification?.userId){
-    return socket.emit("actionError", {
-      code: 400,
-      msg: "You are not loggedIn!",
-    });
-  }
-  const userid = convertMongoId(verification?.userId);
+  const userid = convertMongoId(dta.userid);
   let roomid = convertMongoId(dta.roomid);
 
   const { isValid } = checkIfEmpty({ roomid, userid });
@@ -3953,17 +3911,9 @@ export const doCall = async (roomData, playerid, io, amout) => {
 };
 
 export const socketDoCall = async (dta, io, socket) => {
-  const verification = await gameService.tokenVerificationForSocket(
-    socket?.handshake,
-  )
-  let userid = verification.userId;
+  let userid = dta.userid;
   let roomid = dta.roomid;
-  if(!userid){
-   return socket.emit("actionError", {
-      code: 400,
-      msg: "You are not loggedIn",
-    });
-  }
+
   console.log("do call executed 1", dta);
   const { isValid } = checkIfEmpty({ roomid, userid, amt: dta.amount });
 
@@ -4216,16 +4166,7 @@ export const doBet = async (roomData, playerid, io, amt) => {
 };
 
 export const socketDoBet = async (dta, io, socket) => {
-  const verification = await gameService.tokenVerificationForSocket(
-    socket?.handshake,
-  )
-  if(verification?.userId){
-    return socket.emit("actionError", {
-      code: 400,
-      msg: "You are not loggedIn!",
-    });
-  }
-  let userid = convertMongoId(verification?.userId);
+  let userid = convertMongoId(dta.userid);
   let roomid = convertMongoId(dta.roomid);
 
   const { isValid } = checkIfEmpty({ roomid, userid, amt: dta.amount });
@@ -4551,16 +4492,7 @@ export const doRaise = async (roomData, playerid, io, amt) => {
 };
 
 export const socketDoRaise = async (dta, io, socket) => {
-  const verification = await gameService.tokenVerificationForSocket(
-    socket?.handshake,
-  )
-  if(verification?.userId){
-    return socket.emit("actionError", {
-      code: 400,
-      msg: "You are not loggedIn!",
-    });
-  }
-  let userid = convertMongoId(verification?.userId);
+  let userid = convertMongoId(dta.userid);
   let roomid = convertMongoId(dta.roomid);
 
   const { isValid } = checkIfEmpty({ roomid, userid, amt: dta.amount });
@@ -4770,16 +4702,7 @@ export const doCheck = async (roomData, playerid, io) => {
 };
 
 export const socketDoCheck = async (dta, io, socket) => {
-  const verification = await gameService.tokenVerificationForSocket(
-    socket?.handshake,
-  )
-  if(verification?.userId){
-    return socket.emit("actionError", {
-      code: 400,
-      msg: "You are not loggedIn!",
-    });
-  }
-  let userid = verification?.userId;
+  let userid = dta.userid;
   let roomid = convertMongoId(dta.roomid);
 
   const { isValid } = checkIfEmpty({ roomid, userid });
@@ -5159,16 +5082,7 @@ export const doAllin = async (roomData, playerid, io) => {
 };
 
 export const socketDoAllin = async (dta, io, socket) => {
-  const verification = await gameService.tokenVerificationForSocket(
-    socket?.handshake,
-  )
-  if(verification?.userId){
-    return socket.emit("actionError", {
-      code: 400,
-      msg: "You are not loggedIn!",
-    });
-  }
-  let userid = mongoose.Types.ObjectId(verification?.userId);
+  let userid = mongoose.Types.ObjectId(dta.userid);
   let roomid = mongoose.Types.ObjectId(dta.roomid);
 
   const { isValid } = checkIfEmpty({ roomid, userid });
@@ -6613,14 +6527,7 @@ export const InvitePlayers = async (data, socket, io) => {
 
 export const doLeaveWatcher = async (data, io, socket) => {
   try {
-    const { tableId,  gameType } = data;
-    const verification = await gameService.tokenVerificationForSocket(
-      socket?.handshake,
-    )
-    const userId=verification?.userId
-    if(!userId){
-      return
-    }
+    const { tableId, userId, gameType } = data;
     const room = await roomModel.findOne({ tableId });
     console.log("LEAVE API CALL 7046");
     const isCalled = await leaveApiCall(room, userId);
@@ -7130,19 +7037,11 @@ export const finishHandApiCall = async (room, userId) => {
 
 // NEW functions
 export const checkForGameTable = async (data, socket, io) => {
+  console.log("Check table socket trigger");
   try {
-    const { gameId, sitInAmount } = data;
-    const tokenVerification = await gameService.tokenVerificationForSocket(
-      socket?.handshake,
-    ) 
-   const userId =tokenVerification?.userId
-   const gameMode=tokenVerification?.gameMode
-   if(!userId && !gameMode){
-    return socket.emit("You are not loggedIn", {
-      message: "tablenotFound",
-    });
-   }
+    const { gameId, userId, sitInAmount, gameMode } = data;
     let game = await gameService.getGameById(gameId);
+
     if (!game) {
       return socket.emit("tablenotFound", {
         message: "tablenotFound",
@@ -7150,6 +7049,7 @@ export const checkForGameTable = async (data, socket, io) => {
     }
 
     const user = await userService.getUserById(userId);
+
     if (!user) {
       return socket.emit("notAuthorized", {
         message: "You are not authorized",
@@ -7522,18 +7422,7 @@ function getLastSunday() {
 
 export const checkAlreadyInGame = async (data, socket, io) => {
   try {
-    const { tableId } = data;
-    const verification = await gameService.tokenVerificationForSocket(
-      socket?.handshake,
-    )
-    const userId=verification.userId
-    const gameMode=verification.gameMode
-    if(!userId && !gameMode){
-      return socket.emit("userAlreadyInGame", {
-        message: "You are not loggedIn!",
-        join: false,
-      });
-    }
+    const { userId, tableId, gameMode } = data;
     const checkIfInOtherGame = await gameService.checkIfUserInGame(
       userId,
       tableId,
@@ -7559,17 +7448,7 @@ export const checkAlreadyInGame = async (data, socket, io) => {
 // playerTentativeAction
 export const playerTentativeAction = async (data, socket, io) => {
   try {
-    const {  gameId, playerAction } = data;
-    const verification = await gameService.tokenVerificationForSocket(
-      socket?.handshake,
-    )
-    if(verification?.userId){
-      return socket.emit("actionError", {
-        code: 400,
-        msg: "You are not loggedIn!",
-      });
-    }
-    const userId=verification?.userId
+    const { userId, gameId, playerAction } = data;
     const game = await gameService.getGameById(gameId);
     if (game) {
       await gameService.playerTentativeActionSelection(
@@ -7631,17 +7510,7 @@ export const UpdateRoomChat = async (data, socket, io) => {
 
 export const updateSeenBy = async (data, socket, io) => {
   try {
-    const { tableId } = data;
-    const verification = await gameService.tokenVerificationForSocket(
-      socket?.handshake,
-    )
-    if(verification?.userId){
-      return socket.emit("actionError", {
-        code: 400,
-        msg: "You are not loggedIn!",
-      });
-    }
-    const userId=verification?.userId
+    const { userId, tableId } = data;
     let room = await roomModel.findOne({ _id: tableId });
     let filterdChats = room.chats.map((chat) => {
       if (chat.userId !== userId && chat.seenBy.indexOf(userId) < 0) {
@@ -7675,17 +7544,7 @@ export const emitTyping = async (data, socket, io) => {
 
 export const JoinTournament = async (data, io, socket) => {
   try {
-    const { tournamentId, fees } = data;
-    const verification = await gameService.tokenVerificationForSocket(
-      socket?.handshake,
-    )
-    if(verification?.userId){
-      return socket.emit("actionError", {
-        code: 400,
-        msg: "You are not loggedIn!",
-      });
-    }
-    const userId=verification?.userId
+    const { userId, tournamentId, fees } = data;
     console.log("Join user id", userId);
     const tournament = await tournamentModel
       .findOne({
