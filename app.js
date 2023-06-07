@@ -190,7 +190,7 @@ app.get("/deleteStuckTable/:tableId", async (req, res) => {
 
 app.get("/leaveGame/:tableId/:userId", async (req, res) => {
   try {
-    let { tableId, userId } = req.params;
+    let { tableId,userId } = req.params;
     tableId = mongoose.Types.ObjectId(tableId);
     let roomdata = await roomModel
       .findOne({
