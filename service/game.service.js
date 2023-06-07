@@ -273,9 +273,9 @@ const tokenVerificationForSocket=async(headerData)=>{
         mode=el
       }
   })
-  const tokenForVerify=token.replace('token=','')
+  const tokenForVerify=token.split('token=')[1]
   const verify=await verifyJwt(tokenForVerify)
-  return {userId:verify.sub,gameMode:mode.replace('mode=','')}
+  return {userId:verify.sub,gameMode:mode.split('mode=')[1]}
 }
 const gameService = {
   getGameById,
