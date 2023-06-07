@@ -7501,8 +7501,6 @@ export const UpdateRoomChat = async (data, socket, io) => {
     } else {
       io.in(tableId).emit("updateChat", { chat: [] });
     }
-
-    console.log("room : ----- >");
   } catch (error) {
     console.log("Error in updateRoomChat", error);
   }
