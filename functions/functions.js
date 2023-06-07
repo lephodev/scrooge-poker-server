@@ -3398,19 +3398,10 @@ export const doSitIn = async (data, io, socket) => {
 export const doLeaveTable = async (data, io, socket) => {
   // console.log("datadatadata", data);
   console.log("doleave table executed");
-  const verification = await gameService.tokenVerificationForSocket(
-    socket?.handshake,
-  )
-  if(verification?.userId){
-    return socket.emit("actionError", {
-      code: 400,
-      msg: "You are not loggedIn!",
-    });
-  }
-  const userid = convertMongoId(verification?.userId);
+
+  const userid =convertMongoId(data?.userId);
   let tableId = convertMongoId(data.tableId);
   let roomid;
-
   const { isValid } = checkIfEmpty({ tableId, userid });
   try {
     if (isValid) {
