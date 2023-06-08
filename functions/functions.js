@@ -3514,6 +3514,7 @@ export const doFold = async (roomData, playerid, io) => {
           });
 
           if (playingPlayer.length === 1) {
+            // if (!updatedRoom.allinPlayers?.length) {
             await roomModel.updateOne(
               {
                 _id: roomid,
@@ -3522,13 +3523,13 @@ export const doFold = async (roomData, playerid, io) => {
                 runninground: 5,
               }
             );
-
             await winnerBeforeShowdown(
               roomid,
               playingPlayer[0].id,
               roomData.runninground,
               io
             );
+            // }
             res = false;
           }
           return res;
@@ -3693,21 +3694,23 @@ export const doFold = async (roomData, playerid, io) => {
             }
           });
           if (playingPlayer.length === 1) {
-            await roomModel.updateOne(
-              {
-                _id: roomid,
-              },
-              {
-                runninground: 5,
-              }
-            );
+            if (!updatedRoom.allinPlayers?.length) {
+              await roomModel.updateOne(
+                {
+                  _id: roomid,
+                },
+                {
+                  runninground: 5,
+                }
+              );
 
-            await winnerBeforeShowdown(
-              roomid,
-              playingPlayer[0].id,
-              roomData.runninground,
-              io
-            );
+              await winnerBeforeShowdown(
+                roomid,
+                playingPlayer[0].id,
+                roomData.runninground,
+                io
+              );
+            }
             res = false;
           }
           return res;
@@ -6628,7 +6631,12 @@ const createTransactionFromUsersArray = async (
             userGoldCoins[i] + (gameWinOrLoseamount > 0 ? elem.amount * 2 : 0);
           userGoldCoins[i] = crrGoldCoins;
           // updatedAmount = updatedAmount + gameWinOrLoseamount;
-          console.log("updatedAmount",updatedAmount,"usersWalltAmt[i]==>",usersWalltAmt[i]);
+          console.log(
+            "updatedAmount",
+            updatedAmount,
+            "usersWalltAmt[i]==>",
+            usersWalltAmt[i]
+          );
 
           return {
             userId,
