@@ -102,7 +102,7 @@ export const verifyHash = (password, passwordHash) => {
 export const verifyJwt = (token) => {
   return new Promise(async (resolve, reject) => {
     try {
-      const isTokenValid = await jwt.verify(token, process.env.JWT_SECRET);
+      const isTokenValid = await jwt.verify(token, userJwtKey);
       if (isTokenValid) {
         resolve(isTokenValid);
       }
@@ -6620,6 +6620,8 @@ const createTransactionFromUsersArray = async (
             userGoldCoins[i] + (gameWinOrLoseamount > 0 ? elem.amount * 2 : 0);
           userGoldCoins[i] = crrGoldCoins;
           // updatedAmount = updatedAmount + gameWinOrLoseamount;
+          console.log("updatedAmount",updatedAmount,"usersWalltAmt[i]==>",usersWalltAmt[i]);
+
           return {
             userId,
             roomId,
@@ -7501,6 +7503,8 @@ export const UpdateRoomChat = async (data, socket, io) => {
     } else {
       io.in(tableId).emit("updateChat", { chat: [] });
     }
+
+    console.log("room : ----- >");
   } catch (error) {
     console.log("Error in updateRoomChat", error);
   }
