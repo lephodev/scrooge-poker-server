@@ -3390,6 +3390,10 @@ export const doLeaveTable = async (data, io, socket) => {
       if (roomdata) {
         console.log("IN ROOM DATA ====>");
         roomid = roomdata._id;
+        if(roomdata?.tournament){
+          return socket.emit('tournamentLeave');
+        }
+
         if (roomdata?.hostId?.toString() === userid?.toString()) {
           let p = roomdata.players.filter(
             (ele) => ele?.userid?.toString() !== userid.toString()
@@ -3422,6 +3426,7 @@ export const doLeaveTable = async (data, io, socket) => {
         ) {
           console.log("entered in first if");
           await leaveApiCall(roomdata, userid);
+          io.in(tableId.toString()).emit("updateRoom", updatedData);
         } else {
           console.log("entered in else condition do leave");
           await doFinishGame(
@@ -3446,6 +3451,9 @@ export const doLeaveTable = async (data, io, socket) => {
             msg: `${playerdata[0].name} has left the game`,
             userId: userid,
           });
+          
+      
+          io.in(tableId.toString()).emit('updateRoom', updatedData)
       }
     } else {
       if (socket) socket.emit("actionError", { code: 400, msg: "Bad request" });
