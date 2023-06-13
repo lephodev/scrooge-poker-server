@@ -2717,8 +2717,15 @@ export const distributeTournamentPrize = async (
             { $inc: { ticket: player.amount } },
             { new: true }
           );
+
+          const {
+            _id,username,email,firstName,lastName,profile
+          } = user
+
           await transactionModel.create({
-            userId: player.userId,
+            userId: {
+              _id,username,email,firstName,lastName,profile
+            },
             amount: player.amount,
             transactionDetails: {},
             prevTicket: parseFloat(user?.ticket),
@@ -2743,9 +2750,15 @@ export const distributeTournamentPrize = async (
                 { $inc: { ticket: player.amount } },
                 { new: true }
               );
+
+              const {
+                _id,username,email,firstName,lastName,profile
+              } = user
               // console.log("user =>", user);
               await transactionModel.create({
-                userId,
+                userId:{
+                  _id,username,email,firstName,lastName,profile
+                },
                 amount: player.amount,
                 transactionDetails: {},
                 prevTicket: parseFloat(user?.ticket),
@@ -2769,9 +2782,14 @@ export const distributeTournamentPrize = async (
                 { $inc: { ticket: player.amount } },
                 { new: true }
               );
+              const {
+                _id,username,email,firstName,lastName,profile
+              } = user
               // console.log("user =>", user);
               await transactionModel.create({
-                userId,
+                userId:{
+                  _id,username,email,firstName,lastName,profile
+                },
                 amount: player.amount,
                 transactionDetails: {},
                 prevTicket: parseFloat(user?.ticket),
@@ -3390,6 +3408,10 @@ export const doLeaveTable = async (data, io, socket) => {
       if (roomdata) {
         console.log("IN ROOM DATA ====>");
         roomid = roomdata._id;
+        if(roomdata?.tournament){
+          return socket.emit('tournamentLeave');
+        }
+
         if (roomdata?.hostId?.toString() === userid?.toString()) {
           let p = roomdata.players.filter(
             (ele) => ele?.userid?.toString() !== userid.toString()
@@ -3422,6 +3444,7 @@ export const doLeaveTable = async (data, io, socket) => {
         ) {
           console.log("entered in first if");
           await leaveApiCall(roomdata, userid);
+          io.in(tableId.toString()).emit("updateRoom", updatedData);
         } else {
           console.log("entered in else condition do leave");
           await doFinishGame(
@@ -3446,6 +3469,9 @@ export const doLeaveTable = async (data, io, socket) => {
             msg: `${playerdata[0].name} has left the game`,
             userId: userid,
           });
+          
+      
+          io.in(tableId.toString()).emit('updateRoom', updatedData)
       }
     } else {
       if (socket) socket.emit("actionError", { code: 400, msg: "Bad request" });
@@ -6582,11 +6608,20 @@ const createTransactionFromUsersArray = async (
     const room = await roomModel.findOne({ _id: roomId });
     tournament = room?.tournament;
 
+    const userData =[];
     for await (const user of users) {
       const crrUser = await userModel.findOne({ _id: user.uid });
       usersWalltAmt.push(crrUser.wallet);
       userTickets.push(crrUser.ticket);
       userGoldCoins.push(crrUser.goldCoin);
+      userData.push({
+        _id:crrUser._id,
+        username:crrUser.username,
+        email:crrUser.email,
+        firstName:crrUser.firstName,
+        lastName:crrUser.lastName,
+        profile:crrUser.profile
+      })
     }
 
     console.log("users wallet amount ================>", usersWalltAmt);
@@ -6639,7 +6674,7 @@ const createTransactionFromUsersArray = async (
           );
 
           return {
-            userId,
+            userId:userData[i],
             roomId,
             amount:
               gameWinOrLoseamount >= 0
@@ -6903,9 +6938,15 @@ export const leaveApiCall = async (room, userId, io) => {
             },
             { new: true }
           );
-          console.log();
+
+          const {
+            _id,username,email,firstName,lastName,profile
+          } = updateData;
+          
           transactionModel.create({
-            userId: userId,
+            userId: {
+              _id,username,email,firstName,lastName,profile
+            },
             amount: parseFloat(tournament.tournamentFee),
             transactionDetails: {},
             prevWallet: parseFloat(updateData?.wallet),
@@ -7635,8 +7676,15 @@ export const JoinTournament = async (data, io, socket) => {
       { $inc: { wallet: -parseFloat(fees) } },
       { new: true }
     );
+
+    const {
+      _id,username,email,firstName,lastName,profile
+    } = updatedUser
+
     await transactionModel.create({
-      userId: userId,
+      userId: {
+        _id,username,email,firstName,lastName,profile
+      },
       amount: -parseFloat(fees),
       transactionDetails: {},
       prevWallet: parseFloat(userData?.wallet),
