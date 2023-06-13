@@ -2717,8 +2717,15 @@ export const distributeTournamentPrize = async (
             { $inc: { ticket: player.amount } },
             { new: true }
           );
+
+          const {
+            _id,username,email,firstName,lastName,profile
+          } = user
+
           await transactionModel.create({
-            userId: player.userId,
+            userId: {
+              _id,username,email,firstName,lastName,profile
+            },
             amount: player.amount,
             transactionDetails: {},
             prevTicket: parseFloat(user?.ticket),
@@ -2743,9 +2750,15 @@ export const distributeTournamentPrize = async (
                 { $inc: { ticket: player.amount } },
                 { new: true }
               );
+
+              const {
+                _id,username,email,firstName,lastName,profile
+              } = user
               // console.log("user =>", user);
               await transactionModel.create({
-                userId,
+                userId:{
+                  _id,username,email,firstName,lastName,profile
+                },
                 amount: player.amount,
                 transactionDetails: {},
                 prevTicket: parseFloat(user?.ticket),
@@ -2769,9 +2782,14 @@ export const distributeTournamentPrize = async (
                 { $inc: { ticket: player.amount } },
                 { new: true }
               );
+              const {
+                _id,username,email,firstName,lastName,profile
+              } = user
               // console.log("user =>", user);
               await transactionModel.create({
-                userId,
+                userId:{
+                  _id,username,email,firstName,lastName,profile
+                },
                 amount: player.amount,
                 transactionDetails: {},
                 prevTicket: parseFloat(user?.ticket),
@@ -6590,11 +6608,20 @@ const createTransactionFromUsersArray = async (
     const room = await roomModel.findOne({ _id: roomId });
     tournament = room?.tournament;
 
+    const userData =[];
     for await (const user of users) {
       const crrUser = await userModel.findOne({ _id: user.uid });
       usersWalltAmt.push(crrUser.wallet);
       userTickets.push(crrUser.ticket);
       userGoldCoins.push(crrUser.goldCoin);
+      userData.push({
+        _id:crrUser._id,
+        username:crrUser.username,
+        email:crrUser.email,
+        firstName:crrUser.firstName,
+        lastName:crrUser.lastName,
+        profile:crrUser.profile
+      })
     }
 
     console.log("users wallet amount ================>", usersWalltAmt);
@@ -6647,7 +6674,7 @@ const createTransactionFromUsersArray = async (
           );
 
           return {
-            userId,
+            userId:userData[i],
             roomId,
             amount:
               gameWinOrLoseamount >= 0
@@ -6911,9 +6938,15 @@ export const leaveApiCall = async (room, userId, io) => {
             },
             { new: true }
           );
-          console.log();
+
+          const {
+            _id,username,email,firstName,lastName,profile
+          } = updateData;
+          
           transactionModel.create({
-            userId: userId,
+            userId: {
+              _id,username,email,firstName,lastName,profile
+            },
             amount: parseFloat(tournament.tournamentFee),
             transactionDetails: {},
             prevWallet: parseFloat(updateData?.wallet),
@@ -7643,8 +7676,15 @@ export const JoinTournament = async (data, io, socket) => {
       { $inc: { wallet: -parseFloat(fees) } },
       { new: true }
     );
+
+    const {
+      _id,username,email,firstName,lastName,profile
+    } = updatedUser
+
     await transactionModel.create({
-      userId: userId,
+      userId: {
+        _id,username,email,firstName,lastName,profile
+      },
       amount: -parseFloat(fees),
       transactionDetails: {},
       prevWallet: parseFloat(userData?.wallet),
