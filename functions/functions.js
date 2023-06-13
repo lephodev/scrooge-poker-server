@@ -102,7 +102,7 @@ export const verifyHash = (password, passwordHash) => {
 export const verifyJwt = (token) => {
   return new Promise(async (resolve, reject) => {
     try {
-      const isTokenValid = await jwt.verify(token, userJwtKey);
+      const isTokenValid = await jwt.verify(token, process.env.JWT_SECRET);
       if (isTokenValid) {
         resolve(isTokenValid);
       }

@@ -293,7 +293,7 @@ export const refillWallet = async (data, io, socket) => {
       const verification = await gameService.tokenVerificationForSocket(
         socket?.handshake,
       )
-      if (!verification.userId) {
+      if (!verification?.userId) {
         return socket.emit('notEnoughAmount', {
           message: 'Your not loggedIn!',
           code: 400,
