@@ -3103,6 +3103,11 @@
   dependencies:
     "function-bind" "^1.1.1"
 
+"helmet@^7.0.0":
+  "integrity" "sha512-MsIgYmdBh460ZZ8cJC81q4XJknjG567wzEmv46WOBblDb6TUd3z8/GhgmsM9pn8g2B80tAJ4m5/d3Bi1KrSUBQ=="
+  "resolved" "https://registry.npmjs.org/helmet/-/helmet-7.0.0.tgz"
+  "version" "7.0.0"
+
 "home-or-tmp@^2.0.0":
   "integrity" "sha1-42w/LSyufXRqhX440Y1fMqeILbg= sha512-ycURW7oUxE2sNiPVw1HVEFsW+ecOpJ5zaj7eC0RlwhibhRBod20muUN8qu/gzx956YrLolVvs1MTXwKgC2rVEg=="
   "resolved" "https://registry.npmjs.org/home-or-tmp/-/home-or-tmp-2.0.0.tgz"

@@ -2,6 +2,7 @@
 import express from "express";
 import http from "http";
 import { PORT } from "./config/keys";
+import helmet from 'helmet';
 import { mongoConnect } from "./config/mongo";
 import cors from "cors";
 import passport, { authenticate } from "passport";
@@ -21,15 +22,23 @@ import mongoose from "mongoose";
 import User from "./landing-server/models/user.model";
 import returnCron from "./cron/cron";
 import tournamentModel from "./models/tournament";
+import logger from "./landing-server/config/logger";
 
 let app = express();
 dotenv.config();
 const server = http.createServer(app);
+app.use(helmet());
+
+
 const io = socket(server, {
   pingInterval: 10000,
   pingTimeout: 5000,
 });
 
+app.use((req, _, next) => {
+  logger.info(`HEADERS ${req.headers} `);
+  next();
+});
 returnCron(io);
 
 const whitelist = [
