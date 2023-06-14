@@ -27,7 +27,12 @@ import logger from "./landing-server/config/logger";
 let app = express();
 dotenv.config();
 const server = http.createServer(app);
-app.use(helmet());
+// set security HTTP headers
+app.use(helmet.hsts({
+  maxAge: 31536000,     // HSTS directive ka max-age (1 year)
+  includeSubDomains: true,
+  preload: true
+}));
 
 
 const io = socket(server, {
