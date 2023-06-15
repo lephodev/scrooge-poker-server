@@ -902,7 +902,7 @@ export const prefloptimer = async (roomid, io) => {
               if (j <= 0) {
                 clearInterval(playerinterval);
                 if (
-                  (data.raiseAmount === intervalPlayer[0].pot ||
+                  (data.raiseAmount === intervalPlayer[0]?.pot ||
                     data.lastAction === "check") &&
                   data.players.length !== 1
                 ) {
@@ -1923,7 +1923,7 @@ export const showdown = async (roomid, io) => {
       await getSidePOt(updateRoom._id);
     }
     const updatedRoom = await roomModel.findOne({ _id: roomid });
-
+   console.log("Updated room-->",updatedRoom)
     const clcHand = (x) => {
       if (x.length) {
         x.forEach((e) => {
@@ -1964,7 +1964,7 @@ export const showdown = async (roomid, io) => {
     };
 
     clcHand(updatedRoom.sidePots);
-    console.log("hand", hands, updatedRoom.sidePots);
+    console.log("hand-->", hands, updatedRoom.sidePots);
     let showdownData = updatedRoom.showdown;
     let winnerPlayers = [];
     let sidePots = [...updatedRoom.sidePots];
@@ -1993,7 +1993,7 @@ export const showdown = async (roomid, io) => {
                 (winners.length > 1
                   ? parseInt(e.pot / winners.length, 10)
                   : e.pot) - totalPlayerTablePot;
-
+             console.log("Winning ammount-->",winningAmount,parseInt(e.pot / winners.length, 10))
               if (winnerPlayers.length) {
                 winnerPlayers.push({
                   id: winnerData[0].id,
@@ -2049,9 +2049,11 @@ export const showdown = async (roomid, io) => {
     await findWinner();
     const handWinner = updatedRoom.handWinner;
     handWinner.push(winnerPlayers);
+    console.log("Hand winner -->",handWinner)
     const upRoomData = await roomModel.findOne({ _id: updatedRoom._id });
 
     upRoomData.showdown.forEach((player, i) => {
+      console.log("showdown player -->",player)
       let action, amt;
       if (player.playing) {
         if (
@@ -2074,7 +2076,8 @@ export const showdown = async (roomid, io) => {
             } else if (winnerObj.winningAmount - updateRoomObj.amt === 0) {
               return;
             } else {
-              amt = winnerObj.winningAmount - player.prevPot;
+              // amt = winnerObj.winningAmount - player.prevPot;
+              amt = winnerObj.winningAmount
             }
           } else {
             amt = winnerObj.winningAmount;
@@ -6599,7 +6602,6 @@ const createTransactionFromUsersArray = async (
 ) => {
   try {
     console.log({ roomId, users: JSON.stringify(users) });
-    console.log("users ===>", users);
     let transactionObjectsArray = [];
     const rankModelUpdate = [];
     let usersWalltAmt = [];
@@ -6607,7 +6609,6 @@ const createTransactionFromUsersArray = async (
     let userGoldCoins = [];
     const room = await roomModel.findOne({ _id: roomId });
     tournament = room?.tournament;
-
     const userData =[];
     for await (const user of users) {
       const crrUser = await userModel.findOne({ _id: user.uid });
@@ -6624,12 +6625,8 @@ const createTransactionFromUsersArray = async (
       })
     }
 
-    console.log("users wallet amount ================>", usersWalltAmt);
-
     users.forEach(async (el, i) => {
-      console.log("7013", JSON.stringify(el));
       let updatedAmount = el.coinsBeforeJoin; //el.wallet;
-      console.log("Coinsbefore join ----->", el.coinsBeforeJoin);
       const userId = el.uid;
 
       let totalWinAmount = 0;
@@ -6650,36 +6647,28 @@ const createTransactionFromUsersArray = async (
             totalWinAmount += elem.amount;
             totalWin++;
           }
-          const prvAmt = updatedAmount + usersWalltAmt[i];
+          const prvAmt = usersWalltAmt[i] + (room?.gameMode !== "goldCoin" ? updatedAmount: 0);
           updatedAmount -= elem.amount;
-          // Get each transaction last and update wallet amount
-
           const gameWinOrLoseamount =
             elem.action === "game-lose" ? -elem.amount : elem.amount;
           //const lastAmount = updatedAmount + usersWalltAmt[i];
           const prevTickets = userTickets[i];
           const crrTicket =
-            userTickets[i] + (gameWinOrLoseamount > 0 ? elem.amount * 2 : 0);
+            userTickets[i] + (gameWinOrLoseamount > 0 ? elem.amount  : -elem.amount);
           userTickets[i] = crrTicket;
           const prevGoldCoins = userGoldCoins[i] + updatedAmount;
           const crrGoldCoins =
-            userGoldCoins[i] + (gameWinOrLoseamount > 0 ? elem.amount * 2 : 0);
+            userGoldCoins[i] + (gameWinOrLoseamount > 0 ? elem.amount  : -elem.amount);
           userGoldCoins[i] = crrGoldCoins;
           // updatedAmount = updatedAmount + gameWinOrLoseamount;
-          console.log(
-            "updatedAmount",
-            updatedAmount,
-            "usersWalltAmt[i]==>",
-            usersWalltAmt[i]
-          );
-
           return {
             userId:userData[i],
             roomId,
-            amount:
-              gameWinOrLoseamount >= 0
-                ? gameWinOrLoseamount * 2
-                : gameWinOrLoseamount,
+            // amount:
+            //   gameWinOrLoseamount >= 0
+            //     ? gameWinOrLoseamount * 2
+            //     : gameWinOrLoseamount,
+            amount:gameWinOrLoseamount,
             transactionDetails: {},
             prevWallet: prvAmt,
             updatedWallet:
@@ -6880,7 +6869,7 @@ export const leaveApiCall = async (room, userId, io) => {
 
     const [transactions, rankModelUpdate] =
       await createTransactionFromUsersArray(room._id, users, room.tournament);
-
+     console.log("transactions---->",transactions)
     // console.log("users2====>", users);
 
     let tournament = null;
