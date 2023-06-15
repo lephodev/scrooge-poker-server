@@ -28,13 +28,20 @@ let app = express();
 dotenv.config();
 const server = http.createServer(app);
 // set security HTTP headers
-app.use(helmet.hsts({
+// app.use(helmet.hsts({
+//   maxAge: 31536000,     // HSTS directive ka max-age (1 year)
+//   includeSubDomains: true,
+//   preload: true
+// }));
+app.use(
+  helmet({
+  strictTransportSecurity: {
   maxAge: 31536000,     // HSTS directive ka max-age (1 year)
   includeSubDomains: true,
   preload: true
-}));
-
-
+    }
+  })
+);
 const io = socket(server, {
   pingInterval: 10000,
   pingTimeout: 5000,
