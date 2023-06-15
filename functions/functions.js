@@ -6654,11 +6654,11 @@ const createTransactionFromUsersArray = async (
           //const lastAmount = updatedAmount + usersWalltAmt[i];
           const prevTickets = userTickets[i];
           const crrTicket =
-            userTickets[i] + (gameWinOrLoseamount > 0 ? elem.amount  : -elem.amount);
+            userTickets[i] + (gameWinOrLoseamount > 0 ? elem.amount  : 0);
           userTickets[i] = crrTicket;
-          const prevGoldCoins = userGoldCoins[i] + updatedAmount;
+          const prevGoldCoins = userGoldCoins[i] +  (room?.gameMode === "goldCoin" ? updatedAmount: 0);
           const crrGoldCoins =
-            userGoldCoins[i] + (gameWinOrLoseamount > 0 ? elem.amount  : -elem.amount);
+            userGoldCoins[i] + (gameWinOrLoseamount > 0 ? elem.amount  : room?.gameMode === "goldCoin" ? -elem.amount: 0);
           userGoldCoins[i] = crrGoldCoins;
           // updatedAmount = updatedAmount + gameWinOrLoseamount;
           return {
