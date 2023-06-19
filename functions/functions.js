@@ -2081,14 +2081,19 @@ export const showdown = async (roomid, io) => {
           const updateRoomObj = updatedRoom.allinPlayers.find(
             (allin) => allin.id.toString() === player.id.toString()
           );
+
+          console.log("updateRoomObj",updateRoomObj);
+          console.log("winnerObj",winnerObj);
           if (updateRoomObj && winnerObj) {
             if (winnerObj.winningAmount - updateRoomObj.amt < 0) {
               action = "game-lose";
               amt = Math.abs(winnerObj.winningAmount - updateRoomObj.amt);
               console.log("update amount in game loss section---", amt);
-            } else if (winnerObj.winningAmount - updateRoomObj.amt === 0) {
-              return;
-            } else {
+            } 
+            // else if (winnerObj.winningAmount - updateRoomObj.amt === 0) {
+            //   return;
+            // }
+             else {
               // amt = winnerObj.winningAmount - player.prevPot;
               amt = winnerObj.winningAmount;
             }
@@ -6711,6 +6716,8 @@ const createTransactionFromUsersArray = async (
           // userGoldCoins[i] + (gameWinOrLoseamount > 0 ? elem.amount  : room?.gameMode === "goldCoin" ? -elem.amount: 0);
           // userGoldCoins[i] = crrGoldCoins;
           // updatedAmount = updatedAmount + gameWinOrLoseamount;
+
+          console.log("6715",{gameWinOrLoseamount,crrGoldCoins});
           return {
             userId: userData[i],
             roomId,
