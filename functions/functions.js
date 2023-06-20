@@ -7200,7 +7200,7 @@ export const checkForGameTable = async (data, socket, io) => {
       );
     }
 
-    if (game.finish) {
+    if (game.finish && game?.tournament===null) {
       return socket.emit("notFound", {
         message: "Game not found. Either game is finished or not exist",
       });
