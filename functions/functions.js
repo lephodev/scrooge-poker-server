@@ -3049,7 +3049,7 @@ export const doSitOut = async (data, io, socket) => {
   const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
   let roomid;
-  // console.log({ tableId, userid });
+   console.log("3046",{ tableId, userid });
   const { isValid } = checkIfEmpty({ tableId, userid });
   let playingPlayer = [];
   let res = true;
@@ -3444,11 +3444,13 @@ export const doLeaveTable = async (data, io, socket) => {
         )
         .lean();
       if (roomdata) {
-        console.log("IN ROOM DATA ====>");
+        console.log("IN ROOM DATA ====>",roomdata);
         roomid = roomdata._id;
-        if (roomdata?.tournament) {
+        if (roomdata?.tournament && roomdata?.isGameRunning) {
+          console.log("tournamentLeave");
           return socket.emit("tournamentLeave");
         }
+        
 
         if (roomdata?.hostId?.toString() === userid?.toString()) {
           let p = roomdata.players.filter(
@@ -7332,7 +7334,7 @@ export const checkForGameTable = async (data, socket, io) => {
       );
     }
 
-    if (game.finish) {
+    if (game.finish && game?.tournament===null) {
       return socket.emit("notFound", {
         message: "Game not found. Either game is finished or not exist",
       });
