@@ -6631,291 +6631,116 @@ export const doLeaveWatcher = async (data, io, socket) => {
   }
 };
 
-// const createTransactionFromUsersArray = async (
-//   roomId,
-//   users = [],
-//   tournament
-// ) => {
-//   try {
-//     console.log({ roomId, users: JSON.stringify(users) });
-//     let transactionObjectsArray = [];
-//     const rankModelUpdate = [];
-//     let usersWalltAmt = [];
-//     let userTickets = [];
-//     let userGoldCoins = [];
-//     const room = await roomModel.findOne({ _id: roomId });
-//     tournament = room?.tournament;
-//     const userData = [];
-//     for await (const user of users) {
-//       const crrUser = await userModel.findOne({ _id: user.uid });
-//       usersWalltAmt.push(crrUser.wallet);
-//       userTickets.push(crrUser.ticket);
-//       userGoldCoins.push(crrUser.goldCoin);
-//       userData.push({
-//         _id: crrUser._id,
-//         username: crrUser.username,
-//         email: crrUser.email,
-//         firstName: crrUser.firstName,
-//         lastName: crrUser.lastName,
-//         profile: crrUser.profile,
-//       });
-//     }
-
-//     users.forEach(async (el, i) => {
-//       let updatedAmount = el.coinsBeforeJoin; //el.wallet;
-//       const userId = el.uid;
-
-//       let totalWinAmount = 0;
-//       let totalLossAmount = 0;
-//       let totalWin = 0;
-//       let totalLose = 0;
-//       let prevAmount = el.coinsBeforeJoin;
-//       let handsTransaction = [];
-//       if (!tournament) {
-//         handsTransaction = el.hands.map((elem) => {
-//           console.log({ elem });
-//           if (elem.action === "game-lose") {
-//             console.log("GAME LOSE");
-//             totalLossAmount += elem.amount;
-//             totalLose++;
-//           } else {
-//             console.log("GAME WIN");
-//             totalWinAmount += elem.amount;
-//             totalWin++;
-//           }
-//           let gameWinOrLoseamount =
-//             elem.action === "game-lose" ? -elem.amount : room?.gameMode !== "goldCoin" ?(elem.amount + elem.betAmount):elem.amount;
-
-//           console.log("")
-
-//           const prvAmt =
-//             usersWalltAmt[i] +
-//             (room?.gameMode !== "goldCoin" ? updatedAmount : 0);
-
-//           const updatedAmt =
-//             prvAmt - (room?.gameMode !== "goldCoin" ? elem.betAmount : 0);
-//           // usersWalltAmt[i] = updatedAmt;
-
-//           //const lastAmount = updatedAmount + usersWalltAmt[i];
-//           const prevTickets = userTickets[i];
-//           console.log("Game win")
-//           const crrTicket =
-//             userTickets[i] +
-//             (room?.gameMode !== "goldCoin" && gameWinOrLoseamount > 0
-//               ? gameWinOrLoseamount
-//               : 0);
-//           // userTickets[i] + (gameWinOrLoseamount > 0 ? elem.amount : 0);
-//            userTickets[i] = crrTicket;
-//           const prevGoldCoins =
-//             userGoldCoins[i] +
-//             (room?.gameMode === "goldCoin" ? updatedAmount : 0);
-//           const crrGoldCoins =
-//             prevGoldCoins +
-//             (room?.gameMode === "goldCoin" ? gameWinOrLoseamount : 0);
-//             // userGoldCoins[i] = crrGoldCoins
-
-//           console.log("transa comsole",{
-//             prevWallet: prvAmt,
-//             updatedAmt,
-//             prevTickets,
-//             crrTicket,
-//             prevGoldCoins,
-//             crrGoldCoins,
-//           });
-
-//           // userGoldCoins[i] +
-//           // (room?.gameMode === "goldCoin" ? updatedAmount : 0);
-//           // updatedAmount = (room?.gameMode === "goldCoin" ? gameWinOrLoseamount :)
-//           //prevAmount -= elem.amount;
-//           // userGoldCoins[i] + (gameWinOrLoseamount > 0 ? elem.amount  : room?.gameMode === "goldCoin" ? -elem.amount: 0);
-//           // userGoldCoins[i] = crrGoldCoins;
-//           updatedAmount = updatedAmount + (room?.gameMode === "goldCoin" ? gameWinOrLoseamount : gameWinOrLoseamount > 0 ? (gameWinOrLoseamount * -1) : gameWinOrLoseamount );
-
-//           console.log("6715",{gameWinOrLoseamount,crrGoldCoins});
-//           return {
-//             userId: userData[i],
-//             roomId,
-//             amount: gameWinOrLoseamount,
-//             transactionDetails: {},
-//             transactionType: "poker",
-//             prevWallet: prvAmt,
-//             updatedWallet:updatedAmt,
-//             prevTicket: prevTickets,
-//             updatedTicket: crrTicket,
-//             prevGoldCoin: prevGoldCoins,
-//             updatedGoldCoin: crrGoldCoins,
-//           };
-//           // return {
-//           //   userId: userData[i],
-//           //   roomId,
-//           //   // amount:
-//           //   //   gameWinOrLoseamount >= 0
-//           //   //     ? gameWinOrLoseamount * 2
-//           //   //     : gameWinOrLoseamount,
-//           //   amount: gameWinOrLoseamount,
-//           //   transactionDetails: {},
-//           //   prevWallet: prvAmt,
-//           //   updatedWallet:
-//               // room?.gameMode !== "goldCoin"
-//               //   ? updatedAmount + usersWalltAmt[i] > 0
-//               //     ? updatedAmount + usersWalltAmt[i]
-//               //     : 0
-//               //   : prvAmt > 0
-//               //   ? prvAmt
-//               //   : 0,
-//           //   transactionType: "poker",
-//           //   prevTicket: prevTickets,
-//           //   updatedTicket:
-//           //     room?.gameMode !== "goldCoin"
-//           //       ? crrTicket > 0
-//           //         ? crrTicket
-//           //         : 0
-//           //       : prevTickets > 0
-//           //       ? prevTickets
-//           //       : 0,
-//           //   prevGoldCoin: prevGoldCoins,
-//           //   updatedGoldCoin:
-//           //     room?.gameMode !== "goldCoin"
-//           //       ? prevGoldCoins > 0
-//           //         ? prevGoldCoins
-//           //         : 0
-//           //       : crrGoldCoins > 0
-//           //       ? crrGoldCoins
-//           //       : 0,
-//           // };
-//         });
-//       }
-
-//       console.log({ totalWin, totalLose, totalWinAmount, totalLossAmount });
-
-//       if (totalWin || totalLose || totalWinAmount || totalLossAmount) {
-//         rankModelUpdate.push(
-//           rankModel.updateOne(
-//             {
-//               userId: convertMongoId(userId),
-//               gameName: "poker",
-//             },
-//             {
-//               $inc: {
-//                 win: totalWin,
-//                 loss: totalLose,
-//                 totalWinAmount: totalWinAmount,
-//                 totalLossAmount: totalLossAmount,
-//               },
-//             },
-//             { upsert: true }
-//           )
-//         );
-//       }
-
-//       transactionObjectsArray = [
-//         ...transactionObjectsArray,
-//         ...handsTransaction,
-//       ];
-//       users[i].newBalance = updatedAmount;
-//     });
-
-//     return [transactionObjectsArray, rankModelUpdate];
-//   } catch (error) {
-//     console.log("rreeeemmm", error);
-//   }
-// };
 const createTransactionFromUsersArray = async (
   roomId,
   users = [],
-  tournament,
+  tournament
 ) => {
   try {
-    console.log({ roomId, users: JSON.stringify(users) })
-    let transactionObjectsArray = []
-    const rankModelUpdate = []
-    const room = await roomModel.findOne({ _id: roomId })
-    tournament = room?.tournament
+    console.log({ roomId, users: JSON.stringify(users) });
+    let transactionObjectsArray = [];
+    const rankModelUpdate = [];
+    let usersWalltAmt = [];
+    let userTickets = [];
+    let userGoldCoins = [];
+    const room = await roomModel.findOne({ _id: roomId });
+    tournament = room?.tournament;
+    const userData = [];
+    for await (const user of users) {
+      const crrUser = await userModel.findOne({ _id: user.uid });
+      console.log("current users wallet ==>", crrUser.goldCoin);
+      usersWalltAmt.push(crrUser.wallet);
+      userTickets.push(crrUser.ticket);
+      userGoldCoins.push(crrUser.goldCoin);
+      userData.push({
+        _id: crrUser._id,
+        username: crrUser.username,
+        email: crrUser.email,
+        firstName: crrUser.firstName,
+        lastName: crrUser.lastName,
+        profile: crrUser.profile,
+      });
+    }
 
-    for await (let el of users){
-     console.log("el-->",el)
-      let updatedAmount = el.coinsBeforeJoin //el.wallet;
-      const userId = el.uid
+    users.forEach(async (el, i) => {
+      let updatedAmount = el.coinsBeforeJoin; //el.wallet;
+      const userId = el.uid;
+      console.log("user ===gshab>", el);
 
-      let totalWinAmount = 0
-      let totalLossAmount = 0
-      let totalWin = 0
-      let totalLose = 0
-      let totalTicketWon=0
-      let handsTransaction = []
-      let userTransaction=[]
+      let totalWinAmount = 0;
+      let totalLossAmount = 0;
+      let totalWin = 0;
+      let totalLose = 0;
+      let prevAmount = el.coinsBeforeJoin;
+      let handsTransaction = [];
       if (!tournament) {
-        handsTransaction = el.hands.map((elem) => {
-          console.log({ elem })
-          if (elem.action === 'game-lose') {
-            console.log('GAME LOSE')
-            totalLossAmount += elem.amount
-            totalLose++
+        el.hands.forEach((elem) => {
+          console.log({ elem });
+          if (elem.action === "game-lose") {
+            console.log("GAME LOSE");
+            totalLossAmount += elem.amount;
+            totalLose++;
           } else {
-            console.log('GAME WIN')
-            totalWinAmount += elem.amount
-            totalTicketWon += elem.amount + elem.betAmount
-            totalWin++
+            console.log("GAME WIN");
+            totalWinAmount += elem.amount;
+            totalWin++;
           }
+          });
+
+        const ticketAmt = totalLossAmount >= totalWinAmount ? 0 : totalWinAmount - totalLossAmount;
+        const totalLooseAmt = totalLossAmount >= totalWinAmount ? (totalLossAmount - totalWinAmount) : 0;
+        console.log("ticket amount ==>", ticketAmt, userGoldCoins[i], el.wallet)
+        // if(totalWinAmount){
+          let updatedWallet = room?.gameMode !== "goldCoin" ? usersWalltAmt[i] + el.wallet - ticketAmt : usersWalltAmt[i];
+          let updatedTicket= room?.gameMode !== "goldCoin" ? userTickets[i] + totalWinAmount : ticketAmt;
+          let updatedGoldCoin=room?.gameMode!=="goldCoin" ? userGoldCoins[i] :userGoldCoins[i] + el.wallet;
+          let prevGoinCoin = room?.gameMode!=="goldCoin" ? userGoldCoins[i] :userGoldCoins[i] + el.wallet - ticketAmt;
+
+          // if(room?.gameMode!=="goldCoin"){
+            handsTransaction.push({
+              userId: userData[i],
+              roomId,
+              amount: ticketAmt || -totalLooseAmt,
+              transactionDetails: {},
+              transactionType: "poker",
+              prevWallet: usersWalltAmt[i],
+              updatedWallet: updatedWallet,
+              prevTicket: userTickets[i],
+              updatedTicket: updatedTicket,
+              prevGoldCoin: prevGoinCoin,
+              updatedGoldCoin: updatedGoldCoin,
+          });
+          // }
+          // else {
+          //   handsTransaction.push({
+          //     userId: userData[i],
+          //     roomId,
+          //     amount: ticketAmt || -totalLooseAmt,
+          //     transactionDetails: {},
+          //     transactionType: "poker",
+          //     prevWallet: usersWalltAmt[i],
+          //     updatedWallet: updatedWallet,
+          //     prevTicket: userTickets[i],
+          //     updatedTicket: updatedTicket,
+          //     prevGoldCoin: prevGoinCoin,
+          //     updatedGoldCoin: updatedGoldCoin,
+          // });
+          // }
           
-          let gameWinOrLoseamount =
-            elem.action === 'game-lose'
-              ? -elem.amount
-              : room?.gameMode !== 'goldCoin'
-              ? elem.amount + elem.betAmount
-              : elem.amount
-          updatedAmount =
-            updatedAmount +
-            (room?.gameMode === 'goldCoin'
-              ? gameWinOrLoseamount
-              : gameWinOrLoseamount > 0
-              ? elem.betAmount * -1
-              : gameWinOrLoseamount)
+        // }
 
-          console.log('updatedAmount ==>', updatedAmount)
-
-          console.log('6715', { gameWinOrLoseamount })
-          return {
-            roomId,
-            amount: gameWinOrLoseamount,
-            transactionDetails: {},
-            transactionType: 'poker',
-          }
-        })
-        const crrUser = await userModel.findOne({ _id: el.uid })
-        const preWallet=crrUser.wallet
-        const prevTicket=crrUser.ticket
-        const preGoldCoins=crrUser.goldCoin
-        const updatedWallet=room?.gameMode !== 'goldCoin'?preWallet+updatedAmount :preWallet
-        const updatedTicket= room?.gameMode !== 'goldCoin' ?prevTicket + totalTicketWon:prevTicket
-        const updatedGoldCoins=room?.gameMode === 'goldCoin'?preGoldCoins +updatedAmount:preGoldCoins
-       
-         userTransaction.push({
-          userId:{
-            _id: crrUser._id,
-            username: crrUser.username,
-            email: crrUser.email,
-            firstName: crrUser.firstName,
-            lastName: crrUser.lastName,
-            profile: crrUser.profile,
-           },
-            prevWallet: preWallet,
-            updatedWallet: updatedWallet,
-            prevTicket: prevTicket,
-            updatedTicket: updatedTicket,
-            prevGoldCoin: preGoldCoins,
-            updatedGoldCoin: updatedGoldCoins,
-        })
+        
       }
+      console.log("handsTransaction",handsTransaction);
 
-      console.log({ totalWin, totalLose, totalWinAmount, totalLossAmount })
+      console.log({ totalWin, totalLose, totalWinAmount, totalLossAmount });
 
       if (totalWin || totalLose || totalWinAmount || totalLossAmount) {
         rankModelUpdate.push(
           rankModel.updateOne(
             {
               userId: convertMongoId(userId),
-              gameName: 'poker',
+              gameName: "poker",
             },
             {
               $inc: {
@@ -6925,23 +6750,149 @@ const createTransactionFromUsersArray = async (
                 totalLossAmount: totalLossAmount,
               },
             },
-            { upsert: true },
-          ),
-        )
+            { upsert: true }
+          )
+        );
       }
-   console.log("user transaction push-->",userTransaction)
+
       transactionObjectsArray = [
         ...transactionObjectsArray,
         ...handsTransaction,
-        ...userTransaction
-      ]
-      users.find((u)=>u.uid ===crrUser._id).newBalance = updatedAmount
-    }
-    return [transactionObjectsArray, rankModelUpdate]
+      ];
+      users[i].newBalance = updatedAmount;
+    });
+
+    return [transactionObjectsArray, rankModelUpdate];
   } catch (error) {
-    console.log('rreeeemmm', error)
+    console.log("rreeeemmm", error);
   }
-}
+};
+
+
+
+
+// const createTransactionFromUsersArray = async (
+//   roomId,
+//   users = [],
+//   tournament,
+// ) => {
+//   try {
+//     console.log({ roomId, users: JSON.stringify(users) })
+//     let transactionObjectsArray = []
+//     const rankModelUpdate = []
+//     const room = await roomModel.findOne({ _id: roomId })
+//     tournament = room?.tournament
+
+//     for await (let el of users){
+//      console.log("el-->",el)
+//       let updatedAmount = el.coinsBeforeJoin //el.wallet;
+//       const userId = el.uid
+
+//       let totalWinAmount = 0
+//       let totalLossAmount = 0
+//       let totalWin = 0
+//       let totalLose = 0
+//       let totalTicketWon=0
+//       let handsTransaction = []
+//       let userTransaction=[]
+//       if (!tournament) {
+//         handsTransaction = el.hands.map((elem) => {
+//           console.log({ elem })
+//           if (elem.action === 'game-lose') {
+//             console.log('GAME LOSE')
+//             totalLossAmount += elem.amount
+//             totalLose++
+//           } else {
+//             console.log('GAME WIN')
+//             totalWinAmount += elem.amount
+//             totalTicketWon += elem.amount + elem.betAmount
+//             totalWin++
+//           }
+          
+//           let gameWinOrLoseamount =
+//             elem.action === 'game-lose'
+//               ? -elem.amount
+//               : room?.gameMode !== 'goldCoin'
+//               ? elem.amount + elem.betAmount
+//               : elem.amount
+//           updatedAmount =
+//             updatedAmount +
+//             (room?.gameMode === 'goldCoin'
+//               ? gameWinOrLoseamount
+//               : gameWinOrLoseamount > 0
+//               ? elem.betAmount * -1
+//               : gameWinOrLoseamount)
+
+//           console.log('updatedAmount ==>', updatedAmount)
+
+//           console.log('6715', { gameWinOrLoseamount })
+//           return {
+//             roomId,
+//             amount: gameWinOrLoseamount,
+//             transactionDetails: {},
+//             transactionType: 'poker',
+//           }
+//         })
+//         const crrUser = await userModel.findOne({ _id: el.uid })
+//         const preWallet=crrUser.wallet
+//         const prevTicket=crrUser.ticket
+//         const preGoldCoins=crrUser.goldCoin
+//         const updatedWallet=room?.gameMode !== 'goldCoin'?preWallet+updatedAmount :preWallet
+//         const updatedTicket= room?.gameMode !== 'goldCoin' ?prevTicket + totalTicketWon:prevTicket
+//         const updatedGoldCoins=room?.gameMode === 'goldCoin'?preGoldCoins +updatedAmount:preGoldCoins
+       
+//          userTransaction.push({
+//           userId:{
+//             _id: crrUser._id,
+//             username: crrUser.username,
+//             email: crrUser.email,
+//             firstName: crrUser.firstName,
+//             lastName: crrUser.lastName,
+//             profile: crrUser.profile,
+//            },
+//             prevWallet: preWallet,
+//             updatedWallet: updatedWallet,
+//             prevTicket: prevTicket,
+//             updatedTicket: updatedTicket,
+//             prevGoldCoin: preGoldCoins,
+//             updatedGoldCoin: updatedGoldCoins,
+//         })
+//       }
+
+//       console.log({ totalWin, totalLose, totalWinAmount, totalLossAmount })
+
+//       if (totalWin || totalLose || totalWinAmount || totalLossAmount) {
+//         rankModelUpdate.push(
+//           rankModel.updateOne(
+//             {
+//               userId: convertMongoId(userId),
+//               gameName: 'poker',
+//             },
+//             {
+//               $inc: {
+//                 win: totalWin,
+//                 loss: totalLose,
+//                 totalWinAmount: totalWinAmount,
+//                 totalLossAmount: totalLossAmount,
+//               },
+//             },
+//             { upsert: true },
+//           ),
+//         )
+//       }
+//    console.log("user transaction push-->",userTransaction)
+//       transactionObjectsArray = [
+//         ...transactionObjectsArray,
+//         ...handsTransaction,
+//         ...userTransaction
+//       ]
+//       users.find((u)=>u.uid ===crrUser._id).newBalance = updatedAmount
+//     }
+//     return [transactionObjectsArray, rankModelUpdate]
+//   } catch (error) {
+//     console.log('rreeeemmm', error)
+//   }
+// }
 
 export const leaveApiCall = async (room, userId, io) => {
   try {
@@ -7094,21 +7045,25 @@ export const leaveApiCall = async (room, userId, io) => {
     const userBalancePromise = users.map(async (el) => {
       if (!room.tournament) {
         let totalTicketWon = 0;
+        let totalLoose = 0;
         // console.log("user hand ===>", el.hands);
         el.hands.forEach((hand) => {
           if (hand.action === "game-win") {
-            totalTicketWon += (hand.amount + hand.betAmount);
+            totalTicketWon += (hand.amount);
+          }else{
+            totalLoose += (hand.amount)
           }
         });
-
+        totalTicketWon = totalTicketWon <= totalLoose ? 0 : totalTicketWon - totalLoose
         // console.log("total tickets token", totalTicketWon);
-        const newBalnce = el.newBalance > 0 ? el.newBalance : 0;
+        // const newBalnce = totalTicketWon//el.newBalance > 0 ? el.newBalance : 0;
+        const crrntWallt = el.wallet - totalTicketWon;
         let query;
         if (room.gameMode === "goldCoin") {
           query = { goldCoin: el.wallet };
         } else {
           query = {
-            wallet: room.gameType !== "poker-tournament" ? newBalnce : 0,
+            wallet: room.gameType !== "poker-tournament" ? crrntWallt : 0,
             ticket: totalTicketWon,
           };
         }
@@ -7217,7 +7172,7 @@ export const leaveApiCall = async (room, userId, io) => {
 
     return true;
   } catch (err) {
-    console.log("Error in Leave APi call =>", err.message);
+    console.log("Error in Leave APi call =>", err);
     return false;
   }
 };
