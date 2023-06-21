@@ -474,7 +474,7 @@ export const preflopround = async (room, io) => {
 
     // console.log("io", io);
     room = await roomModel.findOne(room._id).lean();
-    console.log("room players ==>", room);
+    // console.log("room players ==>", room);
     if (!room) {
       return;
     }
@@ -482,7 +482,7 @@ export const preflopround = async (room, io) => {
     let playingPlayer = room?.players?.filter(
       (el) => el.playing && el.wallet > 0
     );
-    console.log("Playing playerssss ==>", playingPlayer);
+    // console.log("Playing playerssss ==>", playingPlayer);
     let positions = room?.players?.map((pos) => pos.position);
     let isNewLeave = false;
     let i = 0;
@@ -517,7 +517,7 @@ export const preflopround = async (room, io) => {
         { new: true }
       );
     }
-    console.log("playingPlayer =====> 2", playingPlayer);
+    // console.log("playingPlayer =====> 2", playingPlayer);
     if (!room.finish) {
       if (room.runninground === 0) {
         if (playingPlayer.length > 1) {
@@ -902,7 +902,7 @@ export const prefloptimer = async (roomid, io) => {
               if (j <= 0) {
                 clearInterval(playerinterval);
                 if (
-                  (data.raiseAmount === intervalPlayer[0].pot ||
+                  (data.raiseAmount === intervalPlayer[0]?.pot ||
                     data.lastAction === "check") &&
                   data.players.length !== 1
                 ) {
@@ -1700,7 +1700,9 @@ export const riverTimer = async (roomid, io) => {
       if (udata.runninground === 5) {
         return;
       }
+      console.log({ i, maxPosition });
       if (i < maxPosition) {
+        console.log("coming");
         const cPlayer = udata.riverround.filter(
           (el) => el.position === i && el.playing
         );
@@ -1790,6 +1792,7 @@ export const riverTimer = async (roomid, io) => {
           timer(++i, maxPosition);
         }
       } else if (i === totalPlayer) {
+        console.log("coming11");
         let newPosition = 0;
         if (
           udata?.smallBlindPosition === totalPlayer - 1 &&
@@ -1825,10 +1828,12 @@ export const riverTimer = async (roomid, io) => {
 
         timer(0, newPosition);
       } else {
+        console.log("coming22");
         if (
           udata?.raisePlayerPosition === null ||
           i === udata?.raisePlayerPosition
         ) {
+          console.log("this condition", udata);
           setTimeout(() => {
             showdown(roomid, io);
           }, 50);
@@ -1918,7 +1923,7 @@ export const showdown = async (roomid, io) => {
       await getSidePOt(updateRoom._id);
     }
     const updatedRoom = await roomModel.findOne({ _id: roomid });
-
+    console.log("Updated room-->", updatedRoom);
     const clcHand = (x) => {
       if (x.length) {
         x.forEach((e) => {
@@ -1959,7 +1964,6 @@ export const showdown = async (roomid, io) => {
     };
 
     clcHand(updatedRoom.sidePots);
-    console.log("hand", hands, updatedRoom.sidePots);
     let showdownData = updatedRoom.showdown;
     let winnerPlayers = [];
     let sidePots = [...updatedRoom.sidePots];
@@ -1981,14 +1985,26 @@ export const showdown = async (roomid, io) => {
               winner.cards.forEach((c) => {
                 winnerHand.push(`${c.value}${c.suit}`);
               });
-              const totalPlayerTablePot = winnerData[0].prevPot;
+              let totalPlayerTablePot = winnerData[0].prevPot;
+
+              if (!totalPlayerTablePot) {
+                updatedRoom.allinPlayers.forEach((el) => {
+                  if (el.id.toString() === el.id.toString()) {
+                    totalPlayerTablePot = el.amt;
+                  }
+                });
+              }
 
               console.log("totalPlayerTablePot", totalPlayerTablePot);
               let winningAmount =
                 (winners.length > 1
                   ? parseInt(e.pot / winners.length, 10)
                   : e.pot) - totalPlayerTablePot;
-
+              console.log(
+                "Winning ammount-->",
+                winningAmount,
+                parseInt(e.pot / winners.length, 10)
+              );
               if (winnerPlayers.length) {
                 winnerPlayers.push({
                   id: winnerData[0].id,
@@ -1997,6 +2013,7 @@ export const showdown = async (roomid, io) => {
                   winningAmount: winningAmount,
                   handName: winner.name,
                   winnerHand: winnerHand,
+                  betAmount: totalPlayerTablePot, 
                   potPlayer: e.p,
                   winnerCards: winnerData[0].cards.map((card) =>
                     decryptCard(card)
@@ -2027,6 +2044,7 @@ export const showdown = async (roomid, io) => {
                   winningAmount: winningAmount,
                   handName: winner.name,
                   winnerHand: winnerHand,
+                  betAmount: totalPlayerTablePot,
                   potPlayer: e.p,
                   winnerCards: winnerData[0].cards.map((card) =>
                     decryptCard(card)
@@ -2044,10 +2062,14 @@ export const showdown = async (roomid, io) => {
     await findWinner();
     const handWinner = updatedRoom.handWinner;
     handWinner.push(winnerPlayers);
+    console.log("Hand winner -->", handWinner);
+    console.log("Winner players -->", winnerPlayers);
     const upRoomData = await roomModel.findOne({ _id: updatedRoom._id });
 
     upRoomData.showdown.forEach((player, i) => {
+      console.log("showdown player -->", player);
       let action, amt;
+      let betAmt = 0;
       if (player.playing) {
         if (
           winnerPlayers.find((ele) => {
@@ -2061,15 +2083,23 @@ export const showdown = async (roomid, io) => {
           const updateRoomObj = updatedRoom.allinPlayers.find(
             (allin) => allin.id.toString() === player.id.toString()
           );
+
+          betAmt = winnerObj.betAmount;
+
+          console.log("updateRoomObj",updateRoomObj);
+          console.log("winnerObj",winnerObj);
           if (updateRoomObj && winnerObj) {
             if (winnerObj.winningAmount - updateRoomObj.amt < 0) {
               action = "game-lose";
               amt = Math.abs(winnerObj.winningAmount - updateRoomObj.amt);
               console.log("update amount in game loss section---", amt);
-            } else if (winnerObj.winningAmount - updateRoomObj.amt === 0) {
-              return;
-            } else {
-              amt = winnerObj.winningAmount - player.prevPot;
+            } 
+            // else if (winnerObj.winningAmount - updateRoomObj.amt === 0) {
+            //   return;
+            // }
+             else {
+              // amt = winnerObj.winningAmount - player.prevPot;
+              amt = winnerObj.winningAmount;
             }
           } else {
             amt = winnerObj.winningAmount;
@@ -2084,6 +2114,7 @@ export const showdown = async (roomid, io) => {
           } else {
             amt = player.prevPot;
           }
+          betAmt = amt;
         }
         player.wallet = showdownData[i].wallet;
         player.tickets = amt;
@@ -2092,6 +2123,7 @@ export const showdown = async (roomid, io) => {
           amount: amt,
           date: new Date(),
           isWatcher: false,
+          betAmount: betAmt
         });
       }
     });
@@ -2712,8 +2744,18 @@ export const distributeTournamentPrize = async (
             { $inc: { ticket: player.amount } },
             { new: true }
           );
+
+          const { _id, username, email, firstName, lastName, profile } = user;
+
           await transactionModel.create({
-            userId: player.userId,
+            userId: {
+              _id,
+              username,
+              email,
+              firstName,
+              lastName,
+              profile,
+            },
             amount: player.amount,
             transactionDetails: {},
             prevTicket: parseFloat(user?.ticket),
@@ -2738,9 +2780,19 @@ export const distributeTournamentPrize = async (
                 { $inc: { ticket: player.amount } },
                 { new: true }
               );
+
+              const { _id, username, email, firstName, lastName, profile } =
+                user;
               // console.log("user =>", user);
               await transactionModel.create({
-                userId,
+                userId: {
+                  _id,
+                  username,
+                  email,
+                  firstName,
+                  lastName,
+                  profile,
+                },
                 amount: player.amount,
                 transactionDetails: {},
                 prevTicket: parseFloat(user?.ticket),
@@ -2764,9 +2816,18 @@ export const distributeTournamentPrize = async (
                 { $inc: { ticket: player.amount } },
                 { new: true }
               );
+              const { _id, username, email, firstName, lastName, profile } =
+                user;
               // console.log("user =>", user);
               await transactionModel.create({
-                userId,
+                userId: {
+                  _id,
+                  username,
+                  email,
+                  firstName,
+                  lastName,
+                  profile,
+                },
                 amount: player.amount,
                 transactionDetails: {},
                 prevTicket: parseFloat(user?.ticket),
@@ -2988,7 +3049,7 @@ export const doSitOut = async (data, io, socket) => {
   const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
   let roomid;
-  // console.log({ tableId, userid });
+   console.log("3046",{ tableId, userid });
   const { isValid } = checkIfEmpty({ tableId, userid });
   let playingPlayer = [];
   let res = true;
@@ -3383,8 +3444,14 @@ export const doLeaveTable = async (data, io, socket) => {
         )
         .lean();
       if (roomdata) {
-        console.log("IN ROOM DATA ====>");
+        console.log("IN ROOM DATA ====>",roomdata);
         roomid = roomdata._id;
+        if (roomdata?.tournament && roomdata?.isGameRunning) {
+          console.log("tournamentLeave");
+          return socket.emit("tournamentLeave");
+        }
+        
+
         if (roomdata?.hostId?.toString() === userid?.toString()) {
           let p = roomdata.players.filter(
             (ele) => ele?.userid?.toString() !== userid.toString()
@@ -3417,6 +3484,7 @@ export const doLeaveTable = async (data, io, socket) => {
         ) {
           console.log("entered in first if");
           await leaveApiCall(roomdata, userid);
+          io.in(tableId.toString()).emit("updateRoom", updatedData);
         } else {
           console.log("entered in else condition do leave");
           await doFinishGame(
@@ -3441,6 +3509,8 @@ export const doLeaveTable = async (data, io, socket) => {
             msg: `${playerdata[0].name} has left the game`,
             userId: userid,
           });
+
+        io.in(tableId.toString()).emit("updateRoom", updatedData);
       }
     } else {
       if (socket) socket.emit("actionError", { code: 400, msg: "Bad request" });
@@ -3509,6 +3579,7 @@ export const doFold = async (roomData, playerid, io) => {
           });
 
           if (playingPlayer.length === 1) {
+            // if (!updatedRoom.allinPlayers?.length) {
             await roomModel.updateOne(
               {
                 _id: roomid,
@@ -3517,13 +3588,13 @@ export const doFold = async (roomData, playerid, io) => {
                 runninground: 5,
               }
             );
-
             await winnerBeforeShowdown(
               roomid,
               playingPlayer[0].id,
               roomData.runninground,
               io
             );
+            // }
             res = false;
           }
           return res;
@@ -3674,32 +3745,37 @@ export const doFold = async (roomData, playerid, io) => {
           io.in(roomData._id.toString()).emit("fold", {
             updatedRoom: roomData,
           });
+
           updatedRoom.riverround.forEach((el) => {
             if (
               !el.fold &&
               (el.wallet > 0 ||
-                updatedRoom.allinPlayers.find((all) => all.id === el.id)) &&
+                updatedRoom.allinPlayers.find(
+                  (all) => all.id.toString() === el.id.toString()
+                )) &&
               el.playing
             ) {
               playingPlayer.push({ id: el.id, position: el.position });
             }
           });
           if (playingPlayer.length === 1) {
-            await roomModel.updateOne(
-              {
-                _id: roomid,
-              },
-              {
-                runninground: 5,
-              }
-            );
+            if (!updatedRoom.allinPlayers?.length) {
+              await roomModel.updateOne(
+                {
+                  _id: roomid,
+                },
+                {
+                  runninground: 5,
+                }
+              );
 
-            await winnerBeforeShowdown(
-              roomid,
-              playingPlayer[0].id,
-              roomData.runninground,
-              io
-            );
+              await winnerBeforeShowdown(
+                roomid,
+                playingPlayer[0].id,
+                roomData.runninground,
+                io
+              );
+            }
             res = false;
           }
           return res;
@@ -5237,7 +5313,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
       }
     );
 
-    console.log("showwwwww---->", updatedRoom.showdown);
+    // console.log("showwwwww---->", updatedRoom.showdown);
     gameRestartSeconds = 3000;
 
     // await finishHandApiCall(updatedRoom);
@@ -5267,23 +5343,23 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         let updatedRoomPlayers = await roomModel.findOne({
           _id: roomid,
         });
-        console.log(
-          "I am here--- for check re arrange table",
-          updatedRoomPlayers
-        );
-        console.log("auto hand 1--->");
+        // console.log(
+        //   "I am here--- for check re arrange table",
+        //   updatedRoomPlayers
+        // );
+        // console.log("auto hand 1--->");
         if (!updatedRoom.pause) {
-          console.log("auto hand 2--->");
+          // console.log("auto hand 2--->");
           if (updatedRoom.autoNextHand) {
             preflopround(updatedRoom, io);
           } else {
-            console.log("updated room player-->");
+            // console.log("updated room player-->");
             let havemoney = updatedRoomPlayers.players.filter(
               (el) => el.wallet > 0
             );
-            console.log("havemoney-->");
+            // console.log("havemoney-->");
             if (havemoney.length > 1) {
-              console.log("Table stop waiting for start game");
+              // console.log("Table stop waiting for start game");
               io.in(updatedRoom._id.toString()).emit("tablestopped", {
                 msg: "Waiting to start game",
               });
@@ -6356,7 +6432,7 @@ export const findLoserAndWinner = async (room) => {
 export const finishedTableGame = async (io, room, userid) => {
   try {
     console.log("LEAVE API CALL 6885");
-    const dd = await leaveApiCall(room, userid,io);
+    const dd = await leaveApiCall(room, userid, io);
     const checkRoom = await roomModel.find({
       finish: false,
       public: true,
@@ -6562,7 +6638,6 @@ const createTransactionFromUsersArray = async (
 ) => {
   try {
     console.log({ roomId, users: JSON.stringify(users) });
-    console.log("users ===>", users);
     let transactionObjectsArray = [];
     const rankModelUpdate = [];
     let usersWalltAmt = [];
@@ -6570,30 +6645,36 @@ const createTransactionFromUsersArray = async (
     let userGoldCoins = [];
     const room = await roomModel.findOne({ _id: roomId });
     tournament = room?.tournament;
-
+    const userData = [];
     for await (const user of users) {
       const crrUser = await userModel.findOne({ _id: user.uid });
+      console.log("current users wallet ==>", crrUser.goldCoin);
       usersWalltAmt.push(crrUser.wallet);
       userTickets.push(crrUser.ticket);
       userGoldCoins.push(crrUser.goldCoin);
+      userData.push({
+        _id: crrUser._id,
+        username: crrUser.username,
+        email: crrUser.email,
+        firstName: crrUser.firstName,
+        lastName: crrUser.lastName,
+        profile: crrUser.profile,
+      });
     }
 
-    console.log("users wallet amount ================>", usersWalltAmt);
-
     users.forEach(async (el, i) => {
-      console.log("7013", JSON.stringify(el));
       let updatedAmount = el.coinsBeforeJoin; //el.wallet;
-      console.log("Coinsbefore join ----->", el.coinsBeforeJoin);
       const userId = el.uid;
+      console.log("user ===gshab>", el);
 
       let totalWinAmount = 0;
       let totalLossAmount = 0;
       let totalWin = 0;
       let totalLose = 0;
-      let prevAmount = 0;
+      let prevAmount = el.coinsBeforeJoin;
       let handsTransaction = [];
       if (!tournament) {
-        handsTransaction = el.hands.map((elem) => {
+        el.hands.forEach((elem) => {
           console.log({ elem });
           if (elem.action === "game-lose") {
             console.log("GAME LOSE");
@@ -6604,61 +6685,53 @@ const createTransactionFromUsersArray = async (
             totalWinAmount += elem.amount;
             totalWin++;
           }
-          const prvAmt = updatedAmount + usersWalltAmt[i];
-          updatedAmount -= elem.amount;
-          // Get each transaction last and update wallet amount
+          });
 
-          const gameWinOrLoseamount =
-            elem.action === "game-lose" ? -elem.amount : elem.amount;
-          //const lastAmount = updatedAmount + usersWalltAmt[i];
-          const prevTickets = userTickets[i];
-          const crrTicket =
-            userTickets[i] + (gameWinOrLoseamount > 0 ? elem.amount * 2 : 0);
-          userTickets[i] = crrTicket;
-          const prevGoldCoins = userGoldCoins[i] + updatedAmount;
-          const crrGoldCoins =
-            userGoldCoins[i] + (gameWinOrLoseamount > 0 ? elem.amount * 2 : 0);
-          userGoldCoins[i] = crrGoldCoins;
-          // updatedAmount = updatedAmount + gameWinOrLoseamount;
-          return {
-            userId,
-            roomId,
-            amount:
-              gameWinOrLoseamount >= 0
-                ? gameWinOrLoseamount * 2
-                : gameWinOrLoseamount,
-            transactionDetails: {},
-            prevWallet: prvAmt,
-            updatedWallet:
-              room?.gameMode !== "goldCoin"
-                ? updatedAmount + usersWalltAmt[i] > 0
-                  ? updatedAmount + usersWalltAmt[i]
-                  : 0
-                : prvAmt > 0
-                ? prvAmt
-                : 0,
-            transactionType: "poker",
-            prevTicket: prevTickets,
-            updatedTicket:
-              room?.gameMode !== "goldCoin"
-                ? crrTicket > 0
-                  ? crrTicket
-                  : 0
-                : prevTickets > 0
-                ? prevTickets
-                : 0,
-            prevGoldCoin: prevGoldCoins,
-            updatedGoldCoin:
-              room?.gameMode !== "goldCoin"
-                ? prevGoldCoins > 0
-                  ? prevGoldCoins
-                  : 0
-                : crrGoldCoins > 0
-                ? crrGoldCoins
-                : 0,
-          };
-        });
+        const ticketAmt = totalLossAmount >= totalWinAmount ? 0 : totalWinAmount - totalLossAmount;
+        const totalLooseAmt = totalLossAmount >= totalWinAmount ? (totalLossAmount - totalWinAmount) : 0;
+        console.log("ticket amount ==>", ticketAmt, userGoldCoins[i], el.wallet)
+        // if(totalWinAmount){
+          let updatedWallet = room?.gameMode !== "goldCoin" ? usersWalltAmt[i] + el.wallet - ticketAmt : usersWalltAmt[i];
+          let updatedTicket= room?.gameMode !== "goldCoin" ? userTickets[i] + ticketAmt : userTickets[i];
+          let updatedGoldCoin=room?.gameMode!=="goldCoin" ? userGoldCoins[i] :userGoldCoins[i] + el.wallet;
+          let prevGoinCoin = room?.gameMode!=="goldCoin" ? userGoldCoins[i] :userGoldCoins[i] + el.wallet - ticketAmt;
+
+          // if(room?.gameMode!=="goldCoin"){
+            handsTransaction.push({
+              userId: userData[i],
+              roomId,
+              amount: ticketAmt || -totalLooseAmt,
+              transactionDetails: {},
+              transactionType: "poker",
+              prevWallet: usersWalltAmt[i],
+              updatedWallet: updatedWallet,
+              prevTicket: userTickets[i],
+              updatedTicket: updatedTicket,
+              prevGoldCoin: prevGoinCoin,
+              updatedGoldCoin: updatedGoldCoin,
+          });
+          // }
+          // else {
+          //   handsTransaction.push({
+          //     userId: userData[i],
+          //     roomId,
+          //     amount: ticketAmt || -totalLooseAmt,
+          //     transactionDetails: {},
+          //     transactionType: "poker",
+          //     prevWallet: usersWalltAmt[i],
+          //     updatedWallet: updatedWallet,
+          //     prevTicket: userTickets[i],
+          //     updatedTicket: updatedTicket,
+          //     prevGoldCoin: prevGoinCoin,
+          //     updatedGoldCoin: updatedGoldCoin,
+          // });
+          // }
+          
+        // }
+
+        
       }
+      console.log("handsTransaction",handsTransaction);
 
       console.log({ totalWin, totalLose, totalWinAmount, totalLossAmount });
 
@@ -6695,7 +6768,133 @@ const createTransactionFromUsersArray = async (
   }
 };
 
-export const leaveApiCall = async (room, userId,io) => {
+
+
+
+// const createTransactionFromUsersArray = async (
+//   roomId,
+//   users = [],
+//   tournament,
+// ) => {
+//   try {
+//     console.log({ roomId, users: JSON.stringify(users) })
+//     let transactionObjectsArray = []
+//     const rankModelUpdate = []
+//     const room = await roomModel.findOne({ _id: roomId })
+//     tournament = room?.tournament
+
+//     for await (let el of users){
+//      console.log("el-->",el)
+//       let updatedAmount = el.coinsBeforeJoin //el.wallet;
+//       const userId = el.uid
+
+//       let totalWinAmount = 0
+//       let totalLossAmount = 0
+//       let totalWin = 0
+//       let totalLose = 0
+//       let totalTicketWon=0
+//       let handsTransaction = []
+//       let userTransaction=[]
+//       if (!tournament) {
+//         handsTransaction = el.hands.map((elem) => {
+//           console.log({ elem })
+//           if (elem.action === 'game-lose') {
+//             console.log('GAME LOSE')
+//             totalLossAmount += elem.amount
+//             totalLose++
+//           } else {
+//             console.log('GAME WIN')
+//             totalWinAmount += elem.amount
+//             totalTicketWon += elem.amount + elem.betAmount
+//             totalWin++
+//           }
+          
+//           let gameWinOrLoseamount =
+//             elem.action === 'game-lose'
+//               ? -elem.amount
+//               : room?.gameMode !== 'goldCoin'
+//               ? elem.amount + elem.betAmount
+//               : elem.amount
+//           updatedAmount =
+//             updatedAmount +
+//             (room?.gameMode === 'goldCoin'
+//               ? gameWinOrLoseamount
+//               : gameWinOrLoseamount > 0
+//               ? elem.betAmount * -1
+//               : gameWinOrLoseamount)
+
+//           console.log('updatedAmount ==>', updatedAmount)
+
+//           console.log('6715', { gameWinOrLoseamount })
+//           return {
+//             roomId,
+//             amount: gameWinOrLoseamount,
+//             transactionDetails: {},
+//             transactionType: 'poker',
+//           }
+//         })
+//         const crrUser = await userModel.findOne({ _id: el.uid })
+//         const preWallet=crrUser.wallet
+//         const prevTicket=crrUser.ticket
+//         const preGoldCoins=crrUser.goldCoin
+//         const updatedWallet=room?.gameMode !== 'goldCoin'?preWallet+updatedAmount :preWallet
+//         const updatedTicket= room?.gameMode !== 'goldCoin' ?prevTicket + totalTicketWon:prevTicket
+//         const updatedGoldCoins=room?.gameMode === 'goldCoin'?preGoldCoins +updatedAmount:preGoldCoins
+       
+//          userTransaction.push({
+//           userId:{
+//             _id: crrUser._id,
+//             username: crrUser.username,
+//             email: crrUser.email,
+//             firstName: crrUser.firstName,
+//             lastName: crrUser.lastName,
+//             profile: crrUser.profile,
+//            },
+//             prevWallet: preWallet,
+//             updatedWallet: updatedWallet,
+//             prevTicket: prevTicket,
+//             updatedTicket: updatedTicket,
+//             prevGoldCoin: preGoldCoins,
+//             updatedGoldCoin: updatedGoldCoins,
+//         })
+//       }
+
+//       console.log({ totalWin, totalLose, totalWinAmount, totalLossAmount })
+
+//       if (totalWin || totalLose || totalWinAmount || totalLossAmount) {
+//         rankModelUpdate.push(
+//           rankModel.updateOne(
+//             {
+//               userId: convertMongoId(userId),
+//               gameName: 'poker',
+//             },
+//             {
+//               $inc: {
+//                 win: totalWin,
+//                 loss: totalLose,
+//                 totalWinAmount: totalWinAmount,
+//                 totalLossAmount: totalLossAmount,
+//               },
+//             },
+//             { upsert: true },
+//           ),
+//         )
+//       }
+//    console.log("user transaction push-->",userTransaction)
+//       transactionObjectsArray = [
+//         ...transactionObjectsArray,
+//         ...handsTransaction,
+//         ...userTransaction
+//       ]
+//       users.find((u)=>u.uid ===crrUser._id).newBalance = updatedAmount
+//     }
+//     return [transactionObjectsArray, rankModelUpdate]
+//   } catch (error) {
+//     console.log('rreeeemmm', error)
+//   }
+// }
+
+export const leaveApiCall = async (room, userId, io) => {
   try {
     let player;
     console.log("leave api call", room.players.length);
@@ -6827,7 +7026,7 @@ export const leaveApiCall = async (room, userId,io) => {
 
     const [transactions, rankModelUpdate] =
       await createTransactionFromUsersArray(room._id, users, room.tournament);
-
+    console.log("transactions---->", transactions);
     // console.log("users2====>", users);
 
     let tournament = null;
@@ -6843,25 +7042,29 @@ export const leaveApiCall = async (room, userId,io) => {
 
     console.log("users ======>", users);
 
-    const userBalancePromise = users.map(async(el) => {
+    const userBalancePromise = users.map(async (el) => {
       if (!room.tournament) {
         let totalTicketWon = 0;
+        let totalLoose = 0;
         // console.log("user hand ===>", el.hands);
         el.hands.forEach((hand) => {
           if (hand.action === "game-win") {
-            totalTicketWon += hand.amount;
+            totalTicketWon += (hand.amount);
+          }else{
+            totalLoose += (hand.amount)
           }
         });
-
+        totalTicketWon = totalTicketWon <= totalLoose ? 0 : totalTicketWon - totalLoose
         // console.log("total tickets token", totalTicketWon);
-        const newBalnce = el.newBalance > 0 ? el.newBalance : 0;
+        // const newBalnce = totalTicketWon//el.newBalance > 0 ? el.newBalance : 0;
+        const crrntWallt = el.wallet - totalTicketWon;
         let query;
         if (room.gameMode === "goldCoin") {
           query = { goldCoin: el.wallet };
         } else {
           query = {
-            wallet: room.gameType !== "poker-tournament" ? newBalnce : 0,
-            ticket: totalTicketWon * 2,
+            wallet: room.gameType !== "poker-tournament" ? crrntWallt : 0,
+            ticket: totalTicketWon,
           };
         }
         return userModel.updateOne(
@@ -6874,7 +7077,7 @@ export const leaveApiCall = async (room, userId,io) => {
         );
       } else {
         if (!tournament.isStart) {
-          let updateData= await userModel.findOneAndUpdate(
+          let updateData = await userModel.findOneAndUpdate(
             {
               _id: convertMongoId(el.uid),
             },
@@ -6882,11 +7085,22 @@ export const leaveApiCall = async (room, userId,io) => {
               $inc: {
                 wallet: tournament.tournamentFee,
               },
-            },{new:true}
-          )
-          console.log();
+            },
+            { new: true }
+          );
+
+          const { _id, username, email, firstName, lastName, profile } =
+            updateData;
+
           transactionModel.create({
-            userId: userId,
+            userId: {
+              _id,
+              username,
+              email,
+              firstName,
+              lastName,
+              profile,
+            },
             amount: parseFloat(tournament.tournamentFee),
             transactionDetails: {},
             prevWallet: parseFloat(updateData?.wallet),
@@ -6898,18 +7112,16 @@ export const leaveApiCall = async (room, userId,io) => {
             transactionType: "poker tournament",
           });
           try {
-            
-          
-          return io.emit("leaveTournament", {
-            message: "You leave the game.",
-            code: 200,
-            user: updateData || {},
-          });   
-          
-      } catch (error) {
-          console.log("error",error);  
-      }       
-    }}
+            return io.emit("leaveTournament", {
+              message: "You leave the game.",
+              code: 200,
+              user: updateData || {},
+            });
+          } catch (error) {
+            console.log("error", error);
+          }
+        }
+      }
     });
 
     // console.log("transactions ====>", transactions);
@@ -6960,7 +7172,7 @@ export const leaveApiCall = async (room, userId,io) => {
 
     return true;
   } catch (err) {
-    console.log("Error in Leave APi call =>", err.message);
+    console.log("Error in Leave APi call =>", err);
     return false;
   }
 };
@@ -7077,7 +7289,7 @@ export const checkForGameTable = async (data, socket, io) => {
       );
     }
 
-    if (game.finish) {
+    if (game.finish && game?.tournament===null) {
       return socket.emit("notFound", {
         message: "Game not found. Either game is finished or not exist",
       });
@@ -7618,8 +7830,18 @@ export const JoinTournament = async (data, io, socket) => {
       { $inc: { wallet: -parseFloat(fees) } },
       { new: true }
     );
+
+    const { _id, username, email, firstName, lastName, profile } = updatedUser;
+
     await transactionModel.create({
-      userId: userId,
+      userId: {
+        _id,
+        username,
+        email,
+        firstName,
+        lastName,
+        profile,
+      },
       amount: -parseFloat(fees),
       transactionDetails: {},
       prevWallet: parseFloat(userData?.wallet),

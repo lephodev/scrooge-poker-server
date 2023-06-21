@@ -2,6 +2,7 @@
 import express from "express";
 import http from "http";
 import { PORT } from "./config/keys";
+import helmet from 'helmet';
 import { mongoConnect } from "./config/mongo";
 import cors from "cors";
 import passport, { authenticate } from "passport";
@@ -21,15 +22,35 @@ import mongoose from "mongoose";
 import User from "./landing-server/models/user.model";
 import returnCron from "./cron/cron";
 import tournamentModel from "./models/tournament";
+import logger from "./landing-server/config/logger";
 
 let app = express();
 dotenv.config();
 const server = http.createServer(app);
+// set security HTTP headers
+// app.use(helmet.hsts({
+//   maxAge: 31536000,     // HSTS directive ka max-age (1 year)
+//   includeSubDomains: true,
+//   preload: true
+// }));
+app.use(
+  helmet({
+  strictTransportSecurity: {
+  maxAge: 31536000,     // HSTS directive ka max-age (1 year)
+  includeSubDomains: true,
+  preload: true
+    }
+  })
+);
 const io = socket(server, {
   pingInterval: 10000,
   pingTimeout: 5000,
 });
 
+app.use((req, _, next) => {
+  logger.info(`HEADERS ${req.headers} `);
+  next();
+});
 returnCron(io);
 
 const whitelist = [
@@ -55,7 +76,38 @@ app.use(
     extended: false,
   })
 );
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:3004',
+      'https://scrooge.casino',
+      'https://poker.scrooge.casino',
+      'https://blackjack.scrooge.casino',
+      'https://slot.scrooge.casino',
+      'https://admin.scrooge.casino',
+      'https://market.scrooge.casino',
+      'https://roulette.scrooge.casino',
+      'https://dev.scrooge.casino',
+      'https://devpoker.scrooge.casino',
+      'https://devslot.scrooge.casino',
+      'https://devblackjack.scrooge.casino',
+      'https://devadmin.scrooge.casino',
+      'https://devmarket.scrooge.casino',
+      'https://devroulette.scrooge.casino',
+
+      'https://beta.scrooge.casino',
+      'https://betapoker.scrooge.casino',
+      'https://betaslot.scrooge.casino',
+      'https://betablackjack.scrooge.casino',
+      'https://betaadmin.scrooge.casino',
+      'https://betamarket.scrooge.casino',
+      'https://betaroulette.scrooge.casino',
+    ],
+    credentials: true,
+  })
+);
 mongoConnect();
 
 // Auth functions
@@ -297,6 +349,8 @@ app.get("/getUserForInvite/:tableId", async (req, res) => {
     return res.status(500).send({ msg: "Internal server error" });
   }
 });
+
+
 
 app.use("/poker", auth(), pokerRoute(io));
 app.use("/tournament", auth(), tournamentRoute);

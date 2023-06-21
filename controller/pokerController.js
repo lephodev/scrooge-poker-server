@@ -290,8 +290,45 @@ export const getTablePlayers = async (req, res) => {
 export const refillWallet = async (data, io, socket) => {
   process.nextTick(async () => {
     try {
-      let { tableId, amount, userid, username } = data;
-      amount = parseInt(amount);
+      const verification = await gameService.tokenVerificationForSocket(
+        socket?.handshake,
+      )
+      if (!verification?.userId) {
+        return socket.emit('notEnoughAmount', {
+          message: 'Your not loggedIn!',
+          code: 400,
+        })
+      }
+      let { tableId, amount, username } = data
+      const userid = verification?.userId
+      const gameMode=verification?.gameMode
+      amount = parseInt(amount)
+      if (!gameMode) {
+        return socket.emit('notEnoughAmount', {
+          message: 'Please select game mode.',
+          code: 400,
+        })
+      }
+     
+      if (parseInt(amount) < 100) {
+        return socket.emit('notEnoughAmount', {
+          message: 'Minimum amount to enter is 100.',
+          code: 400,
+        })
+      }
+      if (parseFloat(amount) > user?.wallet && gameMode === 'token') {
+        return socket.emit('notEnoughAmount', {
+          message: "You don't have enough token.",
+          code: 400,
+        })
+      }
+      if (parseFloat(amount) > user?.goldCoin && gameMode === 'goldCoin') {
+        return socket.emit('notEnoughAmount', {
+          message: "You don't have enough gold coin.",
+          code: 400,
+        })
+      }
+
       let room = await roomModel.findOne({
         _id: tableId,
       });
