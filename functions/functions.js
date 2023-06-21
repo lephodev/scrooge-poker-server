@@ -6692,7 +6692,7 @@ const createTransactionFromUsersArray = async (
         console.log("ticket amount ==>", ticketAmt, userGoldCoins[i], el.wallet)
         // if(totalWinAmount){
           let updatedWallet = room?.gameMode !== "goldCoin" ? usersWalltAmt[i] + el.wallet - ticketAmt : usersWalltAmt[i];
-          let updatedTicket= room?.gameMode !== "goldCoin" ? userTickets[i] + totalWinAmount : ticketAmt;
+          let updatedTicket= room?.gameMode !== "goldCoin" ? userTickets[i] + ticketAmt : userTickets[i];
           let updatedGoldCoin=room?.gameMode!=="goldCoin" ? userGoldCoins[i] :userGoldCoins[i] + el.wallet;
           let prevGoinCoin = room?.gameMode!=="goldCoin" ? userGoldCoins[i] :userGoldCoins[i] + el.wallet - ticketAmt;
 
