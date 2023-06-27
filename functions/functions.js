@@ -191,7 +191,6 @@ export const verifycards = (distributedCards, noOfCards) => {
     console.log("carrsssdss", error);
   }
 };
-
 export const getSidePOt = async (roomId) => {
   const updatedRoomData = await roomModel.findOne({ _id: roomId });
   let sidePot = updatedRoomData.sidePots;
@@ -249,6 +248,7 @@ export const getSidePOt = async (roomId) => {
         }
         playersOfPot.push(el.position);
       });
+
       foldPlayer.forEach((el) => {
         if (el.prevPot < pots[0]) {
           sidePotValue += el.prevPot;
@@ -263,17 +263,14 @@ export const getSidePOt = async (roomId) => {
       } else {
         sidePot.push({ pot: sidePotValue, players: playersOfPot });
       }
-
-      otherPlayer = roundData1.filter(
-        (el) => el.prevPot > 0 && el.fold === false
-      );
+      otherPlayer = roundData1.filter((el) => el.prevPot > 0);
       if (otherPlayer.length) {
         z(otherPlayer);
       }
     };
     z(roundData);
     sidePot = sidePot.filter((el) => el.pot > 0 && el.players.length > 0);
-    if (sidePot.length > 2) {
+    if (sidePot.length >= 2) {
       const pots = [];
       // eslint-disable-next-line no-plusplus
       for (let i = 0; i < sidePot.length; i++) {
@@ -346,7 +343,6 @@ export const getSidePOt = async (roomId) => {
       sidePot[sidePot.length - 1].pot += el.prevPot;
       el.prevPot = 0;
     });
-    // sidePot[sidePot.length - 1].pot += updatedRoomData.pot;
     switch (updatedRoomData.runninground) {
       case 0:
         await roomModel.updateOne(
@@ -392,6 +388,207 @@ export const getSidePOt = async (roomId) => {
     }
   }
 };
+
+// export const getSidePOt = async (roomId) => {
+//   const updatedRoomData = await roomModel.findOne({ _id: roomId });
+//   let sidePot = updatedRoomData.sidePots;
+//   let playerData = [];
+//   switch (updatedRoomData.runninground) {
+//     case 0:
+//       playerData = updatedRoomData.players;
+//       break;
+//     case 1:
+//       playerData = updatedRoomData.preflopround;
+//       break;
+//     case 2:
+//       playerData = updatedRoomData.flopround;
+//       break;
+//     case 3:
+//       playerData = updatedRoomData.turnround;
+//       break;
+//     case 4:
+//       playerData = updatedRoomData.riverround;
+//       break;
+//     case 5:
+//       playerData = updatedRoomData.showdown;
+//       break;
+//     default:
+//       playerData = updatedRoomData.players;
+//   }
+//   if (
+//     updatedRoomData.allinPlayers.length &&
+//     updatedRoomData.allinPlayers.length + 1 > sidePot.length
+//   ) {
+//     const roundData = playerData;
+//     const z = (roundData1) => {
+//       let otherPlayer = roundData1.filter(
+//         (el) => el.prevPot > 0 && el.fold === false
+//       );
+//       const foldPlayer = roundData1.filter(
+//         (el) => el.prevPot > 0 && el.fold === true
+//       );
+//       const pots = [];
+//       otherPlayer.forEach((element) => {
+//         pots.push(element.prevPot);
+//       });
+//       pots.sort(function (a, b) {
+//         return a - b;
+//       });
+//       let sidePotValue = 0;
+//       const playersOfPot = [];
+//       otherPlayer.forEach((el) => {
+//         if (el.prevPot < pots[0]) {
+//           sidePotValue += el.prevPot;
+//           el.prevPot = 0;
+//         } else {
+//           el.prevPot -= pots[0];
+//           sidePotValue += pots[0];
+//         }
+//         playersOfPot.push(el.position);
+//       });
+//       foldPlayer.forEach((el) => {
+//         if (el.prevPot < pots[0]) {
+//           sidePotValue += el.prevPot;
+//           el.prevPot = 0;
+//         } else {
+//           el.prevPot -= pots[0];
+//           sidePotValue += pots[0];
+//         }
+//       });
+//       if (playersOfPot.length === 1) {
+//         playerData[playersOfPot[0]].wallet += sidePotValue;
+//       } else {
+//         sidePot.push({ pot: sidePotValue, players: playersOfPot });
+//       }
+
+//       otherPlayer = roundData1.filter(
+//         (el) => el.prevPot > 0 && el.fold === false
+//       );
+//       if (otherPlayer.length) {
+//         z(otherPlayer);
+//       }
+//     };
+//     z(roundData);
+//     sidePot = sidePot.filter((el) => el.pot > 0 && el.players.length > 0);
+//     if (sidePot.length > 2) {
+//       const pots = [];
+//       // eslint-disable-next-line no-plusplus
+//       for (let i = 0; i < sidePot.length; i++) {
+//         const p = { pot: sidePot[i].pot, players: sidePot[i].players };
+//         // eslint-disable-next-line no-plusplus
+//         for (let j = i + 1; j < sidePot.length; j++) {
+//           // eslint-disable-next-line no-loop-func
+//           if (
+//             p.players.every((val, index) => val === sidePot[j].players[index])
+//           ) {
+//             p.pot += sidePot[j].pot;
+//           }
+//         }
+//         pots.push(p);
+//       }
+//       const filterPot = pots.filter(
+//         (value, index, self) =>
+//           index ===
+//           self.findIndex(
+//             (t) => t.players.toString() === value.players.toString()
+//           )
+//       );
+//       sidePot = filterPot;
+//     }
+//     switch (updatedRoomData.runninground) {
+//       case 0:
+//         await roomModel.updateOne(
+//           { _id: updatedRoomData._id },
+//           { sidePots: sidePot, players: playerData, pot: 0 }
+//         );
+//         break;
+//       case 1:
+//         await roomModel.updateOne(
+//           { _id: updatedRoomData._id },
+//           { sidePots: sidePot, preflopround: playerData, pot: 0 }
+//         );
+//         break;
+//       case 2:
+//         await roomModel.updateOne(
+//           { _id: updatedRoomData._id },
+//           { sidePots: sidePot, flopround: playerData, pot: 0 }
+//         );
+//         break;
+//       case 3:
+//         await roomModel.updateOne(
+//           { _id: updatedRoomData._id },
+//           { sidePots: sidePot, turnround: playerData, pot: 0 }
+//         );
+//         break;
+//       case 4:
+//         await roomModel.updateOne(
+//           { _id: updatedRoomData._id },
+//           { sidePots: sidePot, riverround: playerData, pot: 0 }
+//         );
+//         break;
+//       case 5:
+//         await roomModel.updateOne(
+//           { _id: updatedRoomData._id },
+//           { sidePots: sidePot, showdown: playerData, pot: 0 }
+//         );
+//         break;
+//       default:
+//         await roomModel.updateOne(
+//           { _id: updatedRoomData._id },
+//           { sidePots: sidePot, players: playerData, pot: 0 }
+//         );
+//     }
+//   } else if (updatedRoomData.allinPlayers.length && sidePot.length) {
+//     playerData.forEach((el) => {
+//       sidePot[sidePot.length - 1].pot += el.prevPot;
+//       el.prevPot = 0;
+//     });
+//     // sidePot[sidePot.length - 1].pot += updatedRoomData.pot;
+//     switch (updatedRoomData.runninground) {
+//       case 0:
+//         await roomModel.updateOne(
+//           { _id: updatedRoomData._id },
+//           { sidePots: sidePot, players: playerData, pot: 0 }
+//         );
+//         break;
+//       case 1:
+//         await roomModel.updateOne(
+//           { _id: updatedRoomData._id },
+//           { sidePots: sidePot, preflopround: playerData, pot: 0 }
+//         );
+//         break;
+//       case 2:
+//         await roomModel.updateOne(
+//           { _id: updatedRoomData._id },
+//           { sidePots: sidePot, flopround: playerData, pot: 0 }
+//         );
+//         break;
+//       case 3:
+//         await roomModel.updateOne(
+//           { _id: updatedRoomData._id },
+//           { sidePots: sidePot, turnround: playerData, pot: 0 }
+//         );
+//         break;
+//       case 4:
+//         await roomModel.updateOne(
+//           { _id: updatedRoomData._id },
+//           { sidePots: sidePot, riverround: playerData, pot: 0 }
+//         );
+//         break;
+//       case 5:
+//         await roomModel.updateOne(
+//           { _id: updatedRoomData._id },
+//           { sidePots: sidePot, showdown: playerData, pot: 0 }
+//         );
+//         break;
+//       default:
+//         await roomModel.updateOne(
+//           { _id: updatedRoomData._id },
+//           { sidePots: sidePot, players: playerData, pot: 0 }
+//         );
+//     }
+//   }
+// };
 
 export const preflopPlayerPush = async (players, roomid) => {
   try {
@@ -1868,6 +2065,7 @@ export const showdown = async (roomid, io) => {
     let showDownPlayers = [];
     let totalPot = roomData.pot;
     let playerData = roomData.riverround;
+    let playerWithWallets = [];
     playerData.forEach((e) => {
       let actionType = null;
       if (e.fold === true) {
@@ -1876,6 +2074,12 @@ export const showdown = async (roomid, io) => {
       if (e.actionType === "all-in") {
         actionType = "all-in";
       }
+      playerWithWallets.push({
+        id: e.id,
+        wallet: e.wallet,
+        totalWin: 0,
+        totalBet: 0,
+      });
       let p = {
         cards: e.cards,
         id: e.id,
@@ -1906,6 +2110,7 @@ export const showdown = async (roomid, io) => {
       totalPot += e.pot;
       showDownPlayers.push(p);
     });
+    // return;
     const updateRoom = await roomModel.findOneAndUpdate(
       {
         _id: roomid,
@@ -1964,6 +2169,7 @@ export const showdown = async (roomid, io) => {
     };
 
     clcHand(updatedRoom.sidePots);
+    console.log("hands ==mjsddbjdc", hands);
     let showdownData = updatedRoom.showdown;
     let winnerPlayers = [];
     let sidePots = [...updatedRoom.sidePots];
@@ -1971,6 +2177,17 @@ export const showdown = async (roomid, io) => {
     const findWinner = async () => {
       hands.forEach((e) => {
         let winners = Hand.winners(e.h);
+        const betdAmt = e.pot / e.p.length;
+
+        e.p.forEach((el) => {
+          playerWithWallets = playerWithWallets.map((plyr) => {
+            if (plyr.id.toString() === el.id.toString()) {
+              plyr.totalBet += betdAmt;
+            }
+            return plyr;
+          });
+        });
+
         winners.forEach((winner) => {
           e.p.forEach((el) => {
             if (JSON.stringify(el.hand) == JSON.stringify(winner)) {
@@ -1987,19 +2204,36 @@ export const showdown = async (roomid, io) => {
               });
               let totalPlayerTablePot = winnerData[0].prevPot;
 
-              if (!totalPlayerTablePot) {
-                updatedRoom.allinPlayers.forEach((el) => {
-                  if (el.id.toString() === el.id.toString()) {
-                    totalPlayerTablePot = el.amt;
-                  }
-                });
-              }
+              // console.log("totalPlayerTablePot before", {
+              //   totalPlayerTablePot,
+              // });
 
-              console.log("totalPlayerTablePot", totalPlayerTablePot);
+              // if (!totalPlayerTablePot) {
+              //   const playrsWallt = playerWithWallets.filter(
+              //     (el) => el.id.toString() === winnerData[0].id.toString()
+              //   );
+              //   console.log("playrsWallt ===>", playrsWallt);
+              //   updatedRoom.allinPlayers.forEach((el) => {
+              //     if (el.id.toString() === winnerData[0].id.toString()) {
+              //       console.log("all in amount", el.amt, playrsWallt[0].wallet);
+              //       totalPlayerTablePot = el.amt - playrsWallt[0].wallet;
+              //     }
+              //   });
+              // }
+              // const betAmt = e
+              // console.log("totalPlayerTablePot", totalPlayerTablePot);
+              // console.log("wallet amount", playrsWallt[0].wallet);
+
               let winningAmount =
-                (winners.length > 1
+                winners.length > 1
                   ? parseInt(e.pot / winners.length, 10)
-                  : e.pot) - totalPlayerTablePot;
+                  : e.pot; // - totalPlayerTablePot;
+              playerWithWallets = playerWithWallets.map((plyr) => {
+                if (plyr.id.toString() === el.id.toString()) {
+                  plyr.totalWin += winningAmount;
+                }
+                return plyr;
+              });
               console.log(
                 "Winning ammount-->",
                 winningAmount,
@@ -2013,7 +2247,7 @@ export const showdown = async (roomid, io) => {
                   winningAmount: winningAmount,
                   handName: winner.name,
                   winnerHand: winnerHand,
-                  betAmount: totalPlayerTablePot, 
+                  betAmount: totalPlayerTablePot,
                   potPlayer: e.p,
                   winnerCards: winnerData[0].cards.map((card) =>
                     decryptCard(card)
@@ -2060,6 +2294,9 @@ export const showdown = async (roomid, io) => {
       });
     };
     await findWinner();
+
+    console.log("playerWithWallets ===>", playerWithWallets);
+
     const handWinner = updatedRoom.handWinner;
     handWinner.push(winnerPlayers);
     console.log("Hand winner -->", handWinner);
@@ -2086,18 +2323,18 @@ export const showdown = async (roomid, io) => {
 
           betAmt = winnerObj.betAmount;
 
-          console.log("updateRoomObj",updateRoomObj);
-          console.log("winnerObj",winnerObj);
+          console.log("updateRoomObj", updateRoomObj);
+          console.log("winnerObj", winnerObj);
           if (updateRoomObj && winnerObj) {
             if (winnerObj.winningAmount - updateRoomObj.amt < 0) {
               action = "game-lose";
               amt = Math.abs(winnerObj.winningAmount - updateRoomObj.amt);
               console.log("update amount in game loss section---", amt);
-            } 
+            }
             // else if (winnerObj.winningAmount - updateRoomObj.amt === 0) {
             //   return;
             // }
-             else {
+            else {
               // amt = winnerObj.winningAmount - player.prevPot;
               amt = winnerObj.winningAmount;
             }
@@ -2118,12 +2355,23 @@ export const showdown = async (roomid, io) => {
         }
         player.wallet = showdownData[i].wallet;
         player.tickets = amt;
+
+        const plyr = playerWithWallets.filter(
+          (el) => player.id.toString() === el.id.toString()
+        )[0];
+
+        if (plyr) {
+          action = plyr.totalWin > plyr.totalBet ? "game-win" : "game-lose";
+          amt = plyr.totalWin - plyr.totalBet;
+          amt = action === "game-win" ? amt : amt * -1;
+        }
+
         player.hands.push({
           action,
           amount: amt,
           date: new Date(),
           isWatcher: false,
-          betAmount: betAmt
+          betAmount: betAmt,
         });
       }
     });
@@ -3049,7 +3297,7 @@ export const doSitOut = async (data, io, socket) => {
   const userid = convertMongoId(data.userId);
   let tableId = convertMongoId(data.tableId);
   let roomid;
-   console.log("3046",{ tableId, userid });
+  console.log("3046", { tableId, userid });
   const { isValid } = checkIfEmpty({ tableId, userid });
   let playingPlayer = [];
   let res = true;
@@ -3444,13 +3692,12 @@ export const doLeaveTable = async (data, io, socket) => {
         )
         .lean();
       if (roomdata) {
-        console.log("IN ROOM DATA ====>",roomdata);
+        console.log("IN ROOM DATA ====>", roomdata);
         roomid = roomdata._id;
         if (roomdata?.tournament && roomdata?.isGameRunning) {
           console.log("tournamentLeave");
           return socket.emit("tournamentLeave");
         }
-        
 
         if (roomdata?.hostId?.toString() === userid?.toString()) {
           let p = roomdata.players.filter(
@@ -4845,7 +5092,7 @@ export const doAllin = async (roomData, playerid, io) => {
 
           allinPlayer.push({
             id: playerid,
-            amt: roundData[0].wallet + roundData[0].pot,
+            amt: roundData[0].wallet + roundData[0].pot + roundData[0].prevPot,
             wallet: roundData[0].wallet,
             round: roomData.runninground,
           });
@@ -4925,7 +5172,7 @@ export const doAllin = async (roomData, playerid, io) => {
               : raiseAmount;
           allinPlayer.push({
             id: playerid,
-            amt: roundData[0].wallet + roundData[0].pot,
+            amt: roundData[0].wallet + roundData[0].pot + roundData[0].prevPot,
             round: roomData.runninground,
             wallet: roundData[0].wallet,
           });
@@ -5007,7 +5254,7 @@ export const doAllin = async (roomData, playerid, io) => {
               : raiseAmount;
           allinPlayer.push({
             id: playerid,
-            amt: roundData[0].wallet + roundData[0].pot,
+            amt: roundData[0].wallet + roundData[0].pot + roundData[0].prevPot,
             round: roomData.runninground,
             wallet: roundData[0].wallet,
           });
@@ -5088,7 +5335,7 @@ export const doAllin = async (roomData, playerid, io) => {
               : raiseAmount;
           allinPlayer.push({
             id: playerid,
-            amt: roundData[0].wallet + roundData[0].pot,
+            amt: roundData[0].wallet + roundData[0].pot + roundData[0].prevPot,
             round: roomData.runninground,
             wallet: roundData[0].wallet,
           });
@@ -6685,53 +6932,74 @@ const createTransactionFromUsersArray = async (
             totalWinAmount += elem.amount;
             totalWin++;
           }
-          });
+        });
 
-        const ticketAmt = totalLossAmount >= totalWinAmount ? 0 : totalWinAmount - totalLossAmount;
-        const totalLooseAmt = totalLossAmount >= totalWinAmount ? (totalLossAmount - totalWinAmount) : 0;
-        console.log("ticket amount ==>", ticketAmt, userGoldCoins[i], el.wallet)
+        const ticketAmt =
+          totalLossAmount >= totalWinAmount
+            ? 0
+            : totalWinAmount - totalLossAmount;
+        const totalLooseAmt =
+          totalLossAmount >= totalWinAmount
+            ? totalLossAmount - totalWinAmount
+            : 0;
+        console.log(
+          "ticket amount ==>",
+          ticketAmt,
+          userGoldCoins[i],
+          el.wallet
+        );
         // if(totalWinAmount){
-          let updatedWallet = room?.gameMode !== "goldCoin" ? usersWalltAmt[i] + el.wallet - ticketAmt : usersWalltAmt[i];
-          let updatedTicket= room?.gameMode !== "goldCoin" ? userTickets[i] + ticketAmt : userTickets[i];
-          let updatedGoldCoin=room?.gameMode!=="goldCoin" ? userGoldCoins[i] :userGoldCoins[i] + el.wallet;
-          let prevGoinCoin = room?.gameMode!=="goldCoin" ? userGoldCoins[i] :userGoldCoins[i] + el.wallet - ticketAmt;
+        let updatedWallet =
+          room?.gameMode !== "goldCoin"
+            ? usersWalltAmt[i] + el.wallet - ticketAmt
+            : usersWalltAmt[i];
+        let updatedTicket =
+          room?.gameMode !== "goldCoin"
+            ? userTickets[i] + ticketAmt
+            : userTickets[i];
+        let updatedGoldCoin =
+          room?.gameMode !== "goldCoin"
+            ? userGoldCoins[i]
+            : userGoldCoins[i] + el.wallet;
+        let prevGoinCoin =
+          room?.gameMode !== "goldCoin"
+            ? userGoldCoins[i]
+            : userGoldCoins[i] + el.wallet - ticketAmt;
 
-          // if(room?.gameMode!=="goldCoin"){
-            handsTransaction.push({
-              userId: userData[i],
-              roomId,
-              amount: ticketAmt || -totalLooseAmt,
-              transactionDetails: {},
-              transactionType: "poker",
-              prevWallet: usersWalltAmt[i],
-              updatedWallet: updatedWallet,
-              prevTicket: userTickets[i],
-              updatedTicket: updatedTicket,
-              prevGoldCoin: prevGoinCoin,
-              updatedGoldCoin: updatedGoldCoin,
-          });
-          // }
-          // else {
-          //   handsTransaction.push({
-          //     userId: userData[i],
-          //     roomId,
-          //     amount: ticketAmt || -totalLooseAmt,
-          //     transactionDetails: {},
-          //     transactionType: "poker",
-          //     prevWallet: usersWalltAmt[i],
-          //     updatedWallet: updatedWallet,
-          //     prevTicket: userTickets[i],
-          //     updatedTicket: updatedTicket,
-          //     prevGoldCoin: prevGoinCoin,
-          //     updatedGoldCoin: updatedGoldCoin,
-          // });
-          // }
-          
+        // if(room?.gameMode!=="goldCoin"){
+        handsTransaction.push({
+          userId: userData[i],
+          roomId,
+          amount: ticketAmt || -totalLooseAmt,
+          transactionDetails: {},
+          transactionType: "poker",
+          prevWallet: usersWalltAmt[i],
+          updatedWallet: updatedWallet,
+          prevTicket: userTickets[i],
+          updatedTicket: updatedTicket,
+          prevGoldCoin: prevGoinCoin,
+          updatedGoldCoin: updatedGoldCoin,
+        });
+        // }
+        // else {
+        //   handsTransaction.push({
+        //     userId: userData[i],
+        //     roomId,
+        //     amount: ticketAmt || -totalLooseAmt,
+        //     transactionDetails: {},
+        //     transactionType: "poker",
+        //     prevWallet: usersWalltAmt[i],
+        //     updatedWallet: updatedWallet,
+        //     prevTicket: userTickets[i],
+        //     updatedTicket: updatedTicket,
+        //     prevGoldCoin: prevGoinCoin,
+        //     updatedGoldCoin: updatedGoldCoin,
+        // });
         // }
 
-        
+        // }
       }
-      console.log("handsTransaction",handsTransaction);
+      console.log("handsTransaction", handsTransaction);
 
       console.log({ totalWin, totalLose, totalWinAmount, totalLossAmount });
 
@@ -6767,9 +7035,6 @@ const createTransactionFromUsersArray = async (
     console.log("rreeeemmm", error);
   }
 };
-
-
-
 
 // const createTransactionFromUsersArray = async (
 //   roomId,
@@ -6808,7 +7073,7 @@ const createTransactionFromUsersArray = async (
 //             totalTicketWon += elem.amount + elem.betAmount
 //             totalWin++
 //           }
-          
+
 //           let gameWinOrLoseamount =
 //             elem.action === 'game-lose'
 //               ? -elem.amount
@@ -6840,7 +7105,7 @@ const createTransactionFromUsersArray = async (
 //         const updatedWallet=room?.gameMode !== 'goldCoin'?preWallet+updatedAmount :preWallet
 //         const updatedTicket= room?.gameMode !== 'goldCoin' ?prevTicket + totalTicketWon:prevTicket
 //         const updatedGoldCoins=room?.gameMode === 'goldCoin'?preGoldCoins +updatedAmount:preGoldCoins
-       
+
 //          userTransaction.push({
 //           userId:{
 //             _id: crrUser._id,
@@ -7049,12 +7314,13 @@ export const leaveApiCall = async (room, userId, io) => {
         // console.log("user hand ===>", el.hands);
         el.hands.forEach((hand) => {
           if (hand.action === "game-win") {
-            totalTicketWon += (hand.amount);
-          }else{
-            totalLoose += (hand.amount)
+            totalTicketWon += hand.amount;
+          } else {
+            totalLoose += hand.amount;
           }
         });
-        totalTicketWon = totalTicketWon <= totalLoose ? 0 : totalTicketWon - totalLoose
+        totalTicketWon =
+          totalTicketWon <= totalLoose ? 0 : totalTicketWon - totalLoose;
         // console.log("total tickets token", totalTicketWon);
         // const newBalnce = totalTicketWon//el.newBalance > 0 ? el.newBalance : 0;
         const crrntWallt = el.wallet - totalTicketWon;
@@ -7289,7 +7555,7 @@ export const checkForGameTable = async (data, socket, io) => {
       );
     }
 
-    if (game.finish && game?.tournament===null) {
+    if (game.finish && game?.tournament === null) {
       return socket.emit("notFound", {
         message: "Game not found. Either game is finished or not exist",
       });
