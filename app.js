@@ -3,6 +3,7 @@ import express from "express";
 import http from "http";
 import { PORT } from "./config/keys";
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { mongoConnect } from "./config/mongo";
 import cors from "cors";
 import passport, { authenticate } from "passport";
@@ -33,6 +34,8 @@ const server = http.createServer(app);
 //   includeSubDomains: true,
 //   preload: true
 // }));
+app.use(cookieParser());
+
 app.use(
   helmet({
   strictTransportSecurity: {
