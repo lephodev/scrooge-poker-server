@@ -33,7 +33,7 @@ const auth =
     let decryptedToken = decryptPass(req.cookies['token']);
     req.headers.authEncrypted = req.headers.authorization;
     req.headers.authorization=`Bearer ${decryptedToken}`
-    console.log("decryptedToken",decryptedToken);
+    // console.log("decryptedToken",decryptedToken);
     return new Promise((resolve, reject) => {
       passport.authenticate(
         'jwt',
