@@ -7,6 +7,7 @@ import smsService from './sms.service.js'
 import moment from 'moment'
 import Notification from '../models/notificationModal.js'
 import { verifyJwt } from '../functions/functions.js'
+import { decryptPass } from '../validation/poker.validation.js'
 
 const converMongoId = (id) => mongoose.Types.ObjectId(id)
 const maxPlayer = 9
@@ -281,7 +282,8 @@ const tokenVerificationForSocket = async (headerData) => {
         }
       })
     const tokenForVerify = token?.split('token=')[1]
-    const verify = await verifyJwt(tokenForVerify)
+    let decryptedToken = decryptPass(tokenForVerify);   
+     const verify = await verifyJwt(decryptedToken)
     return { userId: verify?.sub, gameMode: mode?.split('mode=')[1] }
   } catch (err) {
     console.log('Error-->', err)
