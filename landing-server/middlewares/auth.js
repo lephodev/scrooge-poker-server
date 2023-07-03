@@ -29,11 +29,11 @@ const verifyCallback =
 const auth =
   (...requiredRights) =>
   async (req, res, next) => {
-    console.log("req?.headers?.authorization?.split(' ')[1]",req?.headers?.authorization?.split(' ')[1]);
-    let decryptedToken = decryptPass(req?.headers?.authorization?.split(' ')[1]);
+    // console.log("req?.headers?.authorization?.split(' ')[1]",req?.headers?.authorization?.split(' ')[1]);
+    let decryptedToken = decryptPass(req.cookies['token']);
     req.headers.authEncrypted = req.headers.authorization;
     req.headers.authorization=`Bearer ${decryptedToken}`
-    console.log("decryptedToken",decryptedToken);
+    // console.log("decryptedToken",decryptedToken);
     return new Promise((resolve, reject) => {
       passport.authenticate(
         'jwt',
