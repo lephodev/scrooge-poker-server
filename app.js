@@ -2,8 +2,8 @@
 import express from "express";
 import http from "http";
 import { PORT } from "./config/keys";
-import helmet from 'helmet';
-import cookieParser from 'cookie-parser';
+import helmet from "helmet";
+import cookieParser from "cookie-parser";
 import { mongoConnect } from "./config/mongo";
 import cors from "cors";
 import passport, { authenticate } from "passport";
@@ -38,11 +38,11 @@ app.use(cookieParser());
 
 app.use(
   helmet({
-  strictTransportSecurity: {
-  maxAge: 31536000,     // HSTS directive ka max-age (1 year)
-  includeSubDomains: true,
-  preload: true
-    }
+    strictTransportSecurity: {
+      maxAge: 31536000, // HSTS directive ka max-age (1 year)
+      includeSubDomains: true,
+      preload: true,
+    },
   })
 );
 const io = socket(server, {
@@ -54,7 +54,7 @@ app.use((req, _, next) => {
   logger.info(`HEADERS ${req.headers} `);
   next();
 });
-returnCron(io);
+// returnCron(io);
 
 const whitelist = [
   "http://localhost:3000",
@@ -82,31 +82,31 @@ app.use(
 app.use(
   cors({
     origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:3004',
-      'https://scrooge.casino',
-      'https://poker.scrooge.casino',
-      'https://blackjack.scrooge.casino',
-      'https://slot.scrooge.casino',
-      'https://admin.scrooge.casino',
-      'https://market.scrooge.casino',
-      'https://roulette.scrooge.casino',
-      'https://dev.scrooge.casino',
-      'https://devpoker.scrooge.casino',
-      'https://devslot.scrooge.casino',
-      'https://devblackjack.scrooge.casino',
-      'https://devadmin.scrooge.casino',
-      'https://devmarket.scrooge.casino',
-      'https://devroulette.scrooge.casino',
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:3004",
+      "https://scrooge.casino",
+      "https://poker.scrooge.casino",
+      "https://blackjack.scrooge.casino",
+      "https://slot.scrooge.casino",
+      "https://admin.scrooge.casino",
+      "https://market.scrooge.casino",
+      "https://roulette.scrooge.casino",
+      "https://dev.scrooge.casino",
+      "https://devpoker.scrooge.casino",
+      "https://devslot.scrooge.casino",
+      "https://devblackjack.scrooge.casino",
+      "https://devadmin.scrooge.casino",
+      "https://devmarket.scrooge.casino",
+      "https://devroulette.scrooge.casino",
 
-      'https://beta.scrooge.casino',
-      'https://betapoker.scrooge.casino',
-      'https://betaslot.scrooge.casino',
-      'https://betablackjack.scrooge.casino',
-      'https://betaadmin.scrooge.casino',
-      'https://betamarket.scrooge.casino',
-      'https://betaroulette.scrooge.casino',
+      "https://beta.scrooge.casino",
+      "https://betapoker.scrooge.casino",
+      "https://betaslot.scrooge.casino",
+      "https://betablackjack.scrooge.casino",
+      "https://betaadmin.scrooge.casino",
+      "https://betamarket.scrooge.casino",
+      "https://betaroulette.scrooge.casino",
     ],
     credentials: true,
   })
@@ -245,7 +245,7 @@ app.get("/deleteStuckTable/:tableId", async (req, res) => {
 
 app.get("/leaveGame/:tableId/:userId", async (req, res) => {
   try {
-    let { tableId,userId } = req.params;
+    let { tableId, userId } = req.params;
     tableId = mongoose.Types.ObjectId(tableId);
     let roomdata = await roomModel
       .findOne({
@@ -352,8 +352,6 @@ app.get("/getUserForInvite/:tableId", async (req, res) => {
     return res.status(500).send({ msg: "Internal server error" });
   }
 });
-
-
 
 app.use("/poker", auth(), pokerRoute(io));
 app.use("/tournament", auth(), tournamentRoute);
