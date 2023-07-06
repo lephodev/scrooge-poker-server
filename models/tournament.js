@@ -27,6 +27,7 @@ const tournamentSchema = new Schema(
     tournamentType:{ type: String, required: true },
     prizeDistribution:{ type: String, required: true },
     prizePool: { type: Number, default: 0 },
+    joinTime: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
