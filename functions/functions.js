@@ -8032,7 +8032,7 @@ export const emitTyping = async (data, socket, io) => {
 
 export const JoinTournament = async (data, io, socket) => {
   try {
-    const { userId, tournamentId, fees } = data;
+    const { userId, tournamentId, fees, } = data;
     console.log("Join user id", userId);
     const tournament = await tournamentModel
       .findOne({
@@ -8046,14 +8046,29 @@ export const JoinTournament = async (data, io, socket) => {
       });
     }
 
-    const { rooms = [], isStart, isFinished } = tournament;
-
-    if (isStart) {
+    const { rooms = [], isStart, isFinished,joinTime, startDate, startTime } = tournament;
+    // console.log("tournamenttournament",tournament);
+    console.log("joinTimejoinTime",joinTime);
+    let endDate= new Date(startDate+" "+startTime);
+    console.log("endDate", endDate, startDate+" "+startTime, joinTime);
+    endDate.setMinutes(endDate.getMinutes() + joinTime);
+    console.log("endDate", endDate);
+    let endTime = endDate.getTime();
+    let crrTime = new Date().getTime();
+    console.log("endTime==>",endTime,"crrTime===>>",crrTime);
+    if(crrTime > endTime){
       return socket.emit("tournamentAlreadyStarted", {
-        message: "Tournament Has been already started",
-        code: 400,
+          message: "Joining time has been exceeded",
+          code: 400,
       });
     }
+
+    // if (isStart) {
+    //   return socket.emit("tournamentAlreadyStarted", {
+    //     message: "Tournament Has been already started",
+    //     code: 400,
+    //   });
+    // }
 
     if (isFinished) {
       return socket.emit("tournamentAlreadyFinished", {
