@@ -8224,13 +8224,19 @@ const pushPlayerInRoom = async (
         blindTimer(checkTournament, io);
         let timer = 10;
         io.emit("tournamentStart", { rooms });
-        const interval = setInterval(() => {
+        const interval = setInterval(async() => {
           if (timer < 0) {
             clearInterval(interval);
             preflopround(
               rooms.find((room) => room.players.length === playerLimit),
               io
             );
+            const date = new Date().toISOString().split("T")[0];
+            const time = `${new Date().getUTCHours()}:${new Date().getUTCMinutes()}:00`;
+            await tournamentModel.findOneAndUpdate({_id:tournamentId},{
+             startDate:date,
+             startTime:time
+            })
           } else {
             io.in(roomId.toString()).emit("tournamentStarted", { time: timer });
             timer -= 1;
