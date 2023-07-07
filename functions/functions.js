@@ -3818,7 +3818,9 @@ export const doFold = async (roomData, playerid, io) => {
             if (
               !el.fold &&
               (el.wallet > 0 ||
-                updatedRoom.allinPlayers.find((all) => all.id === el.id)) &&
+                updatedRoom.allinPlayers.find(
+                  (all) => all.id.toString() === el.id.toString()
+                )) &&
               el.playing
             ) {
               playingPlayer.push({ id: el.id, position: el.position });
@@ -3826,23 +3828,23 @@ export const doFold = async (roomData, playerid, io) => {
           });
 
           if (playingPlayer.length === 1) {
-            // if (!updatedRoom.allinPlayers?.length) {
-            await roomModel.updateOne(
-              {
-                _id: roomid,
-              },
-              {
-                runninground: 5,
-              }
-            );
-            await winnerBeforeShowdown(
-              roomid,
-              playingPlayer[0].id,
-              roomData.runninground,
-              io
-            );
-            // }
-            res = false;
+            if (!updatedRoom.allinPlayers?.length) {
+              await roomModel.updateOne(
+                {
+                  _id: roomid,
+                },
+                {
+                  runninground: 5,
+                }
+              );
+              await winnerBeforeShowdown(
+                roomid,
+                playingPlayer[0].id,
+                roomData.runninground,
+                io
+              );
+              res = false;
+            }
           }
           return res;
         }
@@ -3879,29 +3881,33 @@ export const doFold = async (roomData, playerid, io) => {
             if (
               !el.fold &&
               (el.wallet > 0 ||
-                updatedRoom.allinPlayers.find((all) => all.id === el.id)) &&
+                updatedRoom.allinPlayers.find(
+                  (all) => all.id.toString() === el.id.toString()
+                )) &&
               el.playing
             ) {
               playingPlayer.push({ id: el.id, position: el.position });
             }
           });
           if (playingPlayer.length === 1) {
-            await roomModel.updateOne(
-              {
-                _id: roomid,
-              },
-              {
-                runninground: 5,
-              }
-            );
+            if (!updatedRoom.allinPlayers?.length) {
+              await roomModel.updateOne(
+                {
+                  _id: roomid,
+                },
+                {
+                  runninground: 5,
+                }
+              );
 
-            await winnerBeforeShowdown(
-              roomid,
-              playingPlayer[0].id,
-              roomData.runninground,
-              io
-            );
-            res = false;
+              await winnerBeforeShowdown(
+                roomid,
+                playingPlayer[0].id,
+                roomData.runninground,
+                io
+              );
+              res = false;
+            }
           }
           return res;
         }
@@ -3937,29 +3943,33 @@ export const doFold = async (roomData, playerid, io) => {
             if (
               !el.fold &&
               (el.wallet > 0 ||
-                updatedRoom.allinPlayers.find((all) => all.id === el.id)) &&
+                updatedRoom.allinPlayers.find(
+                  (all) => all.id.toString() === el.id.toString()
+                )) &&
               el.playing
             ) {
               playingPlayer.push({ id: el.id, position: el.position });
             }
           });
           if (playingPlayer.length === 1) {
-            await roomModel.updateOne(
-              {
-                _id: roomid,
-              },
-              {
-                runninground: 5,
-              }
-            );
+            if (!updatedRoom.allinPlayers?.length) {
+              await roomModel.updateOne(
+                {
+                  _id: roomid,
+                },
+                {
+                  runninground: 5,
+                }
+              );
 
-            await winnerBeforeShowdown(
-              roomid,
-              playingPlayer[0].id,
-              roomData.runninground,
-              io
-            );
-            res = false;
+              await winnerBeforeShowdown(
+                roomid,
+                playingPlayer[0].id,
+                roomData.runninground,
+                io
+              );
+              res = false;
+            }
           }
           return res;
         }
@@ -8022,7 +8032,7 @@ export const emitTyping = async (data, socket, io) => {
 
 export const JoinTournament = async (data, io, socket) => {
   try {
-    const { userId, tournamentId, fees } = data;
+    const { userId, tournamentId, fees, } = data;
     console.log("Join user id", userId);
     const tournament = await tournamentModel
       .findOne({
@@ -8036,14 +8046,29 @@ export const JoinTournament = async (data, io, socket) => {
       });
     }
 
-    const { rooms = [], isStart, isFinished } = tournament;
-
-    if (isStart) {
+    const { rooms = [], isStart, isFinished,joinTime, startDate, startTime } = tournament;
+    // console.log("tournamenttournament",tournament);
+    console.log("joinTimejoinTime",joinTime);
+    let endDate= new Date(startDate+" "+startTime);
+    console.log("endDate", endDate, startDate+" "+startTime, joinTime);
+    endDate.setMinutes(endDate.getMinutes() + joinTime);
+    console.log("endDate", endDate);
+    let endTime = endDate.getTime();
+    let crrTime = new Date().getTime();
+    console.log("endTime==>",endTime,"crrTime===>>",crrTime);
+    if(crrTime > endTime){
       return socket.emit("tournamentAlreadyStarted", {
-        message: "Tournament Has been already started",
-        code: 400,
+          message: "Joining time has been exceeded",
+          code: 400,
       });
     }
+
+    // if (isStart) {
+    //   return socket.emit("tournamentAlreadyStarted", {
+    //     message: "Tournament Has been already started",
+    //     code: 400,
+    //   });
+    // }
 
     if (isFinished) {
       return socket.emit("tournamentAlreadyFinished", {
