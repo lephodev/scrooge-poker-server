@@ -6341,7 +6341,7 @@ export const findAvailablePosition = async (playerList) => {
     try {
       let i = 0;
       let isFound = false;
-      while (i < 9 && !isFound) {
+      while (i < playerLimit && !isFound) {
         let have = playerList.filter((el) => el.position === i);
         if (!have.length) {
           isFound = true;
@@ -8032,7 +8032,7 @@ export const emitTyping = async (data, socket, io) => {
 
 export const JoinTournament = async (data, io, socket) => {
   try {
-    const { userId, tournamentId, fees, } = data;
+    const { userId, tournamentId, fees } = data;
     console.log("Join user id", userId);
     const tournament = await tournamentModel
       .findOne({
@@ -8046,20 +8046,27 @@ export const JoinTournament = async (data, io, socket) => {
       });
     }
 
-    const { rooms = [], isStart, isFinished,joinTime, startDate, startTime } = tournament;
+    const {
+      rooms = [],
+      isStart,
+      isFinished,
+      joinTime,
+      startDate,
+      startTime,
+    } = tournament;
     // console.log("tournamenttournament",tournament);
-    console.log("joinTimejoinTime",joinTime);
-    let endDate= new Date(startDate+" "+startTime);
-    console.log("endDate", endDate, startDate+" "+startTime, joinTime);
+    console.log("joinTimejoinTime", joinTime);
+    let endDate = new Date(startDate + " " + startTime);
+    console.log("endDate", endDate, startDate + " " + startTime, joinTime);
     endDate.setMinutes(endDate.getMinutes() + joinTime);
     console.log("endDate", endDate);
     let endTime = endDate.getTime();
     let crrTime = new Date().getTime();
-    console.log("endTime==>",endTime,"crrTime===>>",crrTime);
-    if(crrTime > endTime){
+    console.log("endTime==>", endTime, "crrTime===>>", crrTime);
+    if (crrTime > endTime) {
       return socket.emit("tournamentAlreadyStarted", {
-          message: "Joining time has been exceeded",
-          code: 400,
+        message: "Joining time has been exceeded",
+        code: 400,
       });
     }
 
@@ -8224,7 +8231,7 @@ const pushPlayerInRoom = async (
         blindTimer(checkTournament, io);
         let timer = 10;
         io.emit("tournamentStart", { rooms });
-        const interval = setInterval(async() => {
+        const interval = setInterval(async () => {
           if (timer < 0) {
             clearInterval(interval);
             preflopround(
@@ -8233,17 +8240,20 @@ const pushPlayerInRoom = async (
             );
             const date = new Date().toISOString().split("T")[0];
             const time = `${new Date().getUTCHours()}:${new Date().getUTCMinutes()}:00`;
-            await tournamentModel.findOneAndUpdate({_id:tournamentId},{
-             startDate:date,
-             startTime:time
-            })
+            await tournamentModel.findOneAndUpdate(
+              { _id: tournamentId },
+              {
+                startDate: date,
+                startTime: time,
+              }
+            );
           } else {
             io.in(roomId.toString()).emit("tournamentStarted", { time: timer });
             timer -= 1;
           }
         }, 1000);
 
-        return;
+        // return;
       }
     } else {
       let smallBlind = checkTournament?.levels?.smallBlind?.amount;
@@ -8326,6 +8336,8 @@ export const activateTournament = async (io) => {
         }
       }
     }
+    const getAllTournament = await tournamentModel.find({}).populate("rooms");
+    io.emit("updatePlayerList", getAllTournament);
   } catch (error) {
     console.log("activateTournament", error);
   }
