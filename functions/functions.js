@@ -6088,8 +6088,18 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
     } else {
       console.log("Not enough blank spot");
       if (room.showdown.length > 1) {
-        preflopround(room, io);
+        console.log("wait for rearrange =====>", {showDown:room.showdown});
+        const updatedRoom = await roomModel.findOneAndUpdate({
+          _id: room._id
+        }, {
+          players: room.showdown,
+          runninground: 0,
+          gamestart: false
+        }, {new: true});
+        // io.in(room._id.toString()).emit("updateRoom", updatedRoom);
+        preflopround(updatedRoom, io);
       } else {
+        console.log("wait for rearrange =====>", {showDown:room.showdown})
         io.in(room._id.toString()).emit("waitForReArrange", {
           userIds: room.showdown.map((p) => p.id || p.userid),
         });
@@ -8311,6 +8321,7 @@ export const activateTournament = async (io) => {
   try {
     const date = new Date().toISOString().split("T")[0];
     const time = `${new Date().getUTCHours()}:${new Date().getUTCMinutes()}:00`;
+    console.log("date and time ==>", date, time)
     const checkTournament = await tournamentModel
       .findOne({
         startDate: date,
