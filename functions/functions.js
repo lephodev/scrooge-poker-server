@@ -20,7 +20,7 @@ import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
 
 let gameRestartSeconds = 3000;
-const playerLimit = 2;
+const playerLimit = 9;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
@@ -6088,18 +6088,20 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
     } else {
       console.log("Not enough blank spot");
       if (room.showdown.length > 1) {
-        console.log("wait for rearrange =====>", {showDown:room.showdown});
+        
+        // console.log("UPdateeeeddddddd dataaaaaaa -->", updatedRoom);
+        // io.in(room._id.toString()).emit("updateRoom", updatedRoom);
+        preflopround(room_, io);
+      } else {
+        // console.log("wait for rearrange =====>", {showDown:room.showdown})
+        console.log("wait for rearrangesdfsdf =====>", {showDown:room.showdown}, room._id);
         const updatedRoom = await roomModel.findOneAndUpdate({
-          _id: room._id
+          _id: convertMongoId(room._id)
         }, {
           players: room.showdown,
           runninground: 0,
           gamestart: false
         }, {new: true});
-        // io.in(room._id.toString()).emit("updateRoom", updatedRoom);
-        preflopround(updatedRoom, io);
-      } else {
-        console.log("wait for rearrange =====>", {showDown:room.showdown})
         io.in(room._id.toString()).emit("waitForReArrange", {
           userIds: room.showdown.map((p) => p.id || p.userid),
         });
