@@ -6245,8 +6245,27 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
     } else {
       console.log("Not enough blank spot");
       if (room.showdown.length > 1) {
-        preflopround(room, io);
+        // console.log("UPdateeeeddddddd dataaaaaaa -->", updatedRoom);
+        // io.in(room._id.toString()).emit("updateRoom", updatedRoom);
+        preflopround(room_, io);
       } else {
+        // console.log("wait for rearrange =====>", {showDown:room.showdown})
+        console.log(
+          "wait for rearrangesdfsdf =====>",
+          { showDown: room.showdown },
+          room._id
+        );
+        const updatedRoom = await roomModel.findOneAndUpdate(
+          {
+            _id: convertMongoId(room._id),
+          },
+          {
+            players: room.showdown,
+            runninground: 0,
+            gamestart: false,
+          },
+          { new: true }
+        );
         io.in(room._id.toString()).emit("waitForReArrange", {
           userIds: room.showdown.map((p) => p.id || p.userid),
         });
