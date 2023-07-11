@@ -20,7 +20,7 @@ import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
 
 let gameRestartSeconds = 3000;
-const playerLimit = 9;
+const playerLimit = 4;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
@@ -6247,7 +6247,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
       if (room.showdown.length > 1) {
         // console.log("UPdateeeeddddddd dataaaaaaa -->", updatedRoom);
         // io.in(room._id.toString()).emit("updateRoom", updatedRoom);
-        preflopround(room_, io);
+        preflopround(room, io);
       } else {
         // console.log("wait for rearrange =====>", {showDown:room.showdown})
         console.log(
@@ -6263,9 +6263,11 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
             players: room.showdown,
             runninground: 0,
             gamestart: false,
+            communityCard: [],
           },
           { new: true }
         );
+        io.in(room._id.toString()).emit("updateGame", { game: updatedRoom });
         io.in(room._id.toString()).emit("waitForReArrange", {
           userIds: room.showdown.map((p) => p.id || p.userid),
         });
@@ -8496,7 +8498,7 @@ export const activateTournament = async (io) => {
       })
       .populate("rooms")
       .lean();
-    // console.log("checkTournament ==>", checkTournament);
+    console.log("checkTournament ==>", checkTournament);
     if (checkTournament) {
       //preflopround()
       if (checkTournament?.isStart) {
