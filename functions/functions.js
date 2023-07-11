@@ -20,7 +20,7 @@ import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
 
 let gameRestartSeconds = 3000;
-const playerLimit = 4;
+const playerLimit = 9;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
@@ -8241,12 +8241,12 @@ export const JoinTournament = async (data, io, socket) => {
     let endTime = endDate.getTime();
     let crrTime = new Date().getTime();
     console.log("endTime==>", endTime, "crrTime===>>", crrTime);
-    if (crrTime > endTime) {
-      return socket.emit("tournamentAlreadyStarted", {
-        message: "Joining time has been exceeded",
-        code: 400,
-      });
-    }
+    // if (crrTime > endTime) {
+    //   return socket.emit("tournamentAlreadyStarted", {
+    //     message: "Joining time has been exceeded",
+    //     code: 400,
+    //   });
+    // }
 
     // if (isStart) {
     //   return socket.emit("tournamentAlreadyStarted", {
@@ -8382,7 +8382,11 @@ const pushPlayerInRoom = async (
         leavereq: leaveReq,
       };
 
-      await roomModel.updateOne({ _id: roomId }, payload);
+      const updatedRoom = await roomModel.findOneAndUpdate(
+        { _id: roomId },
+        payload,
+        { new: true }
+      );
       const tournament = await tournamentModel.findOneAndUpdate(
         { _id: tournamentId },
         {
@@ -8432,6 +8436,17 @@ const pushPlayerInRoom = async (
         }, 1000);
 
         // return;
+      }
+
+      console.log("updatedRoom after joining player ==>", updatedRoom);
+      if (
+        tournament?.tournamentType !== "sit&go" &&
+        tournament?.isStart &&
+        updatedRoom?.players > 1 &&
+        !updatedRoom.gamestart
+      ) {
+        console.log("started preflop round");
+        preflopround(updatedRoom, io);
       }
     } else {
       let smallBlind = checkTournament?.levels?.smallBlind?.amount;
