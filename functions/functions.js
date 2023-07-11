@@ -8442,7 +8442,7 @@ const pushPlayerInRoom = async (
       if (
         tournament?.tournamentType !== "sit&go" &&
         tournament?.isStart &&
-        updatedRoom?.players > 1 &&
+        updatedRoom?.players.length > 1 &&
         !updatedRoom.gamestart
       ) {
         console.log("started preflop round");
