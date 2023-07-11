@@ -8519,23 +8519,25 @@ export const activateTournament = async (io) => {
       if (checkTournament?.isStart) {
         return;
       }
-      if (checkTournament?.rooms?.length > 0 && !checkTournament?.isStart) {
+      if (!checkTournament?.isStart) {
         await tournamentModel.updateOne(
           { _id: checkTournament?._id },
           { isStart: true }
         );
-        console.log("Tournament started");
         blindTimer(checkTournament, io);
-        const allRooms = await roomModel.find({
-          tournament: checkTournament._id,
-        });
-        const updatedRooms = await reArrangementBeforeTournamentStart(
-          allRooms,
-          io,
-          checkTournament._id
-        );
-        for (let room of updatedRooms) {
-          preflopround(room, io);
+        if (checkTournament?.rooms?.length > 0) {
+          console.log("Tournament started");
+          const allRooms = await roomModel.find({
+            tournament: checkTournament._id,
+          });
+          const updatedRooms = await reArrangementBeforeTournamentStart(
+            allRooms,
+            io,
+            checkTournament._id
+          );
+          for (let room of updatedRooms) {
+            preflopround(room, io);
+          }
         }
       }
     }
