@@ -8449,6 +8449,7 @@ const pushPlayerInRoom = async (
         preflopround(updatedRoom, io);
       }
     } else {
+      console.log("checkTournament ===>", checkTournament.actionTime);
       let smallBlind = checkTournament?.levels?.smallBlind?.amount;
       let bigBlind = checkTournament?.levels?.bigBlind?.amount;
       const payload = {
@@ -8474,7 +8475,10 @@ const pushPlayerInRoom = async (
         smallBlind: smallBlind || 100,
         bigBlind: bigBlind || 200,
         gameType: "poker-tournament",
+        timer: checkTournament.actionTime,
       };
+
+      console.log("payload: " + payload);
 
       const roomData = new roomModel(payload);
       const savedroom = await roomData.save();
