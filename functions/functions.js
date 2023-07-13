@@ -20,7 +20,7 @@ import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
 
 let gameRestartSeconds = 3000;
-const playerLimit = 3;
+const playerLimit = 2;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
@@ -7701,6 +7701,30 @@ export const finishHandApiCall = async (room, userId) => {
   }
 };
 
+const joinAsWatcher = async (data, socket, io) => {
+  try {
+    console.log("join as watcher executed");
+    const { gameId, userId } = data;
+    const game = await roomModel.findOneAndUpdate(
+      {
+        _id: gameId,
+      },
+      { $push: { watchers: userId } },
+      { new: true }
+    );
+    // addUserInSocket(io, socket, gameId, userId);
+    // socket.join(gameId);
+    socket.emit("redirectToTableAsWatcher", { userId, gameId });
+    socket.emit("newWatcherJoin", {
+      watcherId: userId.toString(),
+      roomData: game,
+    });
+    io.in(gameId).emit("updateGame", { game: game });
+  } catch (err) {
+    console.log("Error in joinAsWatcher", err);
+  }
+};
+
 // NEW functions
 export const checkForGameTable = async (data, socket, io) => {
   console.log("Check table socket trigger");
@@ -7748,7 +7772,19 @@ export const checkForGameTable = async (data, socket, io) => {
         message: "Game not found. Either game is finished or not exist",
       });
     }
-    const { players } = game;
+    const { players, watchers } = game;
+    console.log("watchers ===>", watchers);
+    if (watchers.find((el) => el.toString() === userId)) {
+      addUserInSocket(io, socket, gameId, userId);
+      socket.join(gameId);
+      socket.emit("newWatcherJoin", {
+        watcherId: userId.toString(),
+        roomData: game,
+      });
+      io.in(gameId.toString()).emit("updateGame", { game: game });
+      return;
+    }
+
     if (players.find((el) => el.userid?.toString() === userId.toString())) {
       addUserInSocket(io, socket, gameId, userId);
       socket.join(gameId);
@@ -7775,6 +7811,13 @@ export const checkForGameTable = async (data, socket, io) => {
 
     console.log("USER WALLET ", user.wallet);
 
+    // addUserInSocket(io, socket, gameId, userId);
+    // socket.join(gameId);
+
+    // await joinAsWatcher(data, socket, io);
+
+    // return;
+
     const updatedRoom = await gameService.joinRoomByUserId(
       game,
       userId,
@@ -7785,6 +7828,8 @@ export const checkForGameTable = async (data, socket, io) => {
     if (updatedRoom && Object.keys(updatedRoom).length > 0) {
       addUserInSocket(io, socket, gameId, userId);
       socket.join(gameId);
+
+      // return;
       let walletAmount;
       let query;
       if (gameMode === "goldCoin") {
@@ -8241,12 +8286,23 @@ export const JoinTournament = async (data, io, socket) => {
     let endTime = endDate.getTime();
     let crrTime = new Date().getTime();
     console.log("endTime==>", endTime, "crrTime===>>", crrTime);
-    // if (crrTime > endTime) {
-    //   return socket.emit("tournamentAlreadyStarted", {
-    //     message: "Joining time has been exceeded",
-    //     code: 400,
-    //   });
-    // }
+    if (crrTime > endTime && tournament.tournamentType !== "sit&go") {
+      socket.emit("tournamentAlreadyStarted", {
+        message: "Joining time has been exceeded",
+        code: 400,
+      });
+
+      return;
+    }
+    if (tournament.isStart && tournament.tournamentType === "sit&go") {
+      await joinAsWatcher(
+        { gameId: tournament.rooms[0]._id, userId: userId },
+        socket,
+        io
+      );
+
+      return;
+    }
 
     // if (isStart) {
     //   return socket.emit("tournamentAlreadyStarted", {
