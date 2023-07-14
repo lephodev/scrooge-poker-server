@@ -8682,3 +8682,18 @@ export const doCalculateCardPair = async (data, io, socket) => {
     });
   }
 };
+
+export const spectateMultiTable = async (data, io, socket) => {
+  try {
+    const { roomId, userId } = data;
+    const room = await roomModel.findOne({
+      _id: roomId,
+    });
+    console.log("tournament rooomm ===>", room);
+    if (room) {
+      await joinAsWatcher({ gameId: roomId, userId }, socket, io);
+    }
+  } catch (err) {
+    console.log("error in spectateMultiTable", err);
+  }
+};
