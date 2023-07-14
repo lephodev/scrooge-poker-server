@@ -306,11 +306,11 @@ const checkJoinTimeExceeded = async (io) => {
         let endDate = new Date(startDate + " " + startTime);
         console.log("endDate", endDate, startDate + " " + startTime, joinTime);
         endDate.setMinutes(endDate.getMinutes() + joinTime);
-        // console.log("endDate", endDate);
+        console.log("endDate", endDate);
         let endTime = endDate.getTime();
         let crrTime = new Date().getTime();
         console.log("endTime==>", endTime, "crrTime===>>", crrTime);
-        if (crrTime > endTime && tournament.tournamentType !== "sit&go") {
+        if (crrTime > endTime) {
           await tournamentModel.updateOne(
             {
               _id: converMongoId(tournament._id),
