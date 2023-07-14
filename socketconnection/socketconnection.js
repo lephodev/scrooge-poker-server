@@ -30,6 +30,7 @@ import {
   JoinTournament,
   checkAlreadyInGame,
   doCalculateCardPair,
+  spectateMultiTable,
 } from "../functions/functions";
 import mongoose from "mongoose";
 import { refillWallet } from "../controller/pokerController";
@@ -38,7 +39,6 @@ import { connetToLanding, landingSocket } from "./landing_Connection";
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
 let returnSocket = (io) => {
-  
   const users = {};
 
   const socketToRoom = {};
@@ -46,7 +46,7 @@ let returnSocket = (io) => {
   io.room = [];
   io.on("connection", async (socket) => {
     connetToLanding(socket);
-    console.log("sockket connecteds")
+    console.log("sockket connecteds");
     socket.on("room", (roomData) => {
       socket.join(roomData.roomid);
       socket.emit("welcome", { msg: "hello welcome to socket.io" });
@@ -155,7 +155,6 @@ let returnSocket = (io) => {
     });
 
     socket.on("doresumegame", async (data) => {
-
       process.nextTick(async () => {
         await doResumeGame(data, io, socket);
       });
@@ -168,7 +167,6 @@ let returnSocket = (io) => {
     socket.on("dositin", async (data) => {
       await doSitIn(data, io, socket);
     });
-
 
     socket.on("doleavetable", async (data) => {
       if (data.isWatcher) {
@@ -345,6 +343,9 @@ let returnSocket = (io) => {
     });
     socket.on("calCulateCardPair", async (data) => {
       await doCalculateCardPair(data, io, socket);
+    });
+    socket.on("spectateMultiTable", async (data) => {
+      await spectateMultiTable(data, io, socket);
     });
   });
 };

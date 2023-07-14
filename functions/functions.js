@@ -20,7 +20,7 @@ import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
 
 let gameRestartSeconds = 3000;
-const playerLimit = 9;
+const playerLimit = 4;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
@@ -5977,6 +5977,163 @@ export const reArrangeTables = async (tournamentId, io, roomId) => {
   }
 };
 
+const reArrangementBeforeTournamentStart = async (
+  allRooms,
+  io,
+  tournamentId,
+  roomId
+) => {
+  try {
+    console.log("fill spot called");
+
+    // Calculate the total number of players in all remaining rooms
+    const totalPlayers = allRooms.reduce(
+      (count, room) => count + room.players.length,
+      0
+    );
+
+    console.log("totalPlayers ==>", totalPlayers);
+
+    // Calculate the ideal number of players per table
+    const idealPlayerCount = Math.floor(totalPlayers / allRooms.length);
+
+    console.log("idealPlayerCount ==>", idealPlayerCount);
+
+    // Sort the rooms in descending order based on the number of players
+    allRooms.sort((a, b) => b.players.length - a.players.length);
+
+    // Iterate over the rooms and redistribute the players evenly
+
+    // const updatedRooms = [];
+
+    for await (let room of allRooms) {
+      // const room = allRooms[i];
+      const currentPlayerCount = room.players.length;
+      const playersToMoveCount = currentPlayerCount - idealPlayerCount;
+
+      if (playersToMoveCount > 0) {
+        // Calculate the number of players to move from the current room
+
+        console.log("playersToMoveCount ==>", playersToMoveCount);
+
+        // console.log("before spliced ==>", room.players.length);
+        const playersToMove = room.players.splice(0, playersToMoveCount);
+        console.log("playersToMove ==>", playersToMove);
+        // console.log("remaining player ==>", { players: room.players });
+
+        // console.log("after spliced ==>", room.players.length);
+        // Find the destination room to accommodate the moved players
+
+        // const destinationRoom = allRooms.find(
+        //   (r) => r !== room && r.players.length < idealPlayerCount
+        // );
+        let flag = true;
+        let userIds;
+        allRooms = allRooms.map((r) => {
+          if (r !== room && r.players.length < idealPlayerCount) {
+            console.log("entered in cond", playersToMove);
+            r.players.push(...playersToMove);
+            userIds = playersToMove.map((player) => ({
+              userId: player.userid,
+              newRoomId: r._id,
+            }));
+            flag = false;
+          }
+          return r;
+        });
+        // console.log("allRooms ===>", allRooms);
+
+        if (flag) {
+          room.players.push(...playersToMove);
+        }
+
+        // Move the players to the destination room
+        // destinationRoom.players.push(...playersToMove);
+
+        // updatedRooms.push(room);
+
+        console.log("user Ids ==>", userIds);
+        // if (destinationRoom) {
+        // allRooms = allRooms.map((r) => {
+        //   if (r.id === room._id) {
+        //     return room;
+        //   }
+        //   return r;
+        // });
+
+        // }
+        console.log("userIds ====>", userIds);
+        const udpatedRoom = await roomModel.findOneAndUpdate(
+          { _id: room._id },
+          {
+            players: room.players,
+          },
+          { new: true }
+        );
+
+        console.log("udpatedRoom ==>", udpatedRoom?.players);
+
+        // Emit the "roomchanged" event for the moved players
+
+        io.in(room._id.toString()).emit("roomchanged", { userIds });
+
+        // Start the game in the destination room if it hasn't started already
+        // if (!destinationRoom.gamestart) {
+        // preflopround(destinationRoom, io);
+        // }
+      } else {
+        const udpatedRoom = await roomModel.findOneAndUpdate(
+          { _id: room._id },
+          {
+            players: room.players,
+          },
+          { new: true }
+        );
+
+        console.log("udpatedRoom ==>", udpatedRoom?.players);
+      }
+    }
+
+    // for await (const room of updatedRooms) {
+    //   console.log("total players", room.players.length);
+    //   await roomModel.findOneAndUpdate(
+    //     { _id: room._id },
+    //     {
+    //       players: room.players,
+    //     }
+    //   );
+    // }
+
+    // Check if any rooms have fewer players than the ideal count
+    const underfilledRooms = allRooms.filter(
+      (room) => room.players.length < idealPlayerCount
+    );
+
+    if (underfilledRooms.length === 1) {
+      // Only one room left, start the game or emit "waitForReArrange" event
+      const room = underfilledRooms[0];
+      if (room.players.length > 1) {
+        // preflopround(room, io);
+      } else {
+        io.in(room._id.toString()).emit("waitForReArrange", {
+          userIds: room.showdown.map((p) => p.id || p.userid),
+        });
+      }
+    } else if (underfilledRooms.length === 0) {
+      // All rooms have reached the ideal player count
+      console.log("All tables have reached the ideal player count");
+    } else {
+      // More than one room still underfilled, continue the redistribution process
+      console.log("Continue redistributing players");
+    }
+    return await roomModel.find({
+      tournament: tournamentId,
+    });
+  } catch (error) {
+    console.log("error in fillSpot function =>", error);
+  }
+};
+
 const fillSpot = async (allRooms, io, tournamentId, roomId) => {
   try {
     console.log("fill spot called");
@@ -6088,8 +6245,29 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
     } else {
       console.log("Not enough blank spot");
       if (room.showdown.length > 1) {
+        // console.log("UPdateeeeddddddd dataaaaaaa -->", updatedRoom);
+        // io.in(room._id.toString()).emit("updateRoom", updatedRoom);
         preflopround(room, io);
       } else {
+        // console.log("wait for rearrange =====>", {showDown:room.showdown})
+        console.log(
+          "wait for rearrangesdfsdf =====>",
+          { showDown: room.showdown },
+          room._id
+        );
+        const updatedRoom = await roomModel.findOneAndUpdate(
+          {
+            _id: convertMongoId(room._id),
+          },
+          {
+            players: room.showdown,
+            runninground: 0,
+            gamestart: false,
+            communityCard: [],
+          },
+          { new: true }
+        );
+        io.in(room._id.toString()).emit("updateGame", { game: updatedRoom });
         io.in(room._id.toString()).emit("waitForReArrange", {
           userIds: room.showdown.map((p) => p.id || p.userid),
         });
@@ -6341,7 +6519,7 @@ export const findAvailablePosition = async (playerList) => {
     try {
       let i = 0;
       let isFound = false;
-      while (i < 9 && !isFound) {
+      while (i < playerLimit && !isFound) {
         let have = playerList.filter((el) => el.position === i);
         if (!have.length) {
           isFound = true;
@@ -7523,6 +7701,30 @@ export const finishHandApiCall = async (room, userId) => {
   }
 };
 
+const joinAsWatcher = async (data, socket, io) => {
+  try {
+    console.log("join as watcher executed");
+    const { gameId, userId } = data;
+    const game = await roomModel.findOneAndUpdate(
+      {
+        _id: gameId,
+      },
+      { $push: { watchers: userId } },
+      { new: true }
+    );
+    // addUserInSocket(io, socket, gameId, userId);
+    // socket.join(gameId);
+    socket.emit("redirectToTableAsWatcher", { userId, gameId });
+    socket.emit("newWatcherJoin", {
+      watcherId: userId.toString(),
+      roomData: game,
+    });
+    io.in(gameId).emit("updateGame", { game: game });
+  } catch (err) {
+    console.log("Error in joinAsWatcher", err);
+  }
+};
+
 // NEW functions
 export const checkForGameTable = async (data, socket, io) => {
   console.log("Check table socket trigger");
@@ -7570,7 +7772,19 @@ export const checkForGameTable = async (data, socket, io) => {
         message: "Game not found. Either game is finished or not exist",
       });
     }
-    const { players } = game;
+    const { players, watchers } = game;
+    console.log("watchers ===>", watchers);
+    if (watchers.find((el) => el.toString() === userId)) {
+      addUserInSocket(io, socket, gameId, userId);
+      socket.join(gameId);
+      socket.emit("newWatcherJoin", {
+        watcherId: userId.toString(),
+        roomData: game,
+      });
+      io.in(gameId.toString()).emit("updateGame", { game: game });
+      return;
+    }
+
     if (players.find((el) => el.userid?.toString() === userId.toString())) {
       addUserInSocket(io, socket, gameId, userId);
       socket.join(gameId);
@@ -7597,6 +7811,13 @@ export const checkForGameTable = async (data, socket, io) => {
 
     console.log("USER WALLET ", user.wallet);
 
+    // addUserInSocket(io, socket, gameId, userId);
+    // socket.join(gameId);
+
+    // await joinAsWatcher(data, socket, io);
+
+    // return;
+
     const updatedRoom = await gameService.joinRoomByUserId(
       game,
       userId,
@@ -7607,6 +7828,8 @@ export const checkForGameTable = async (data, socket, io) => {
     if (updatedRoom && Object.keys(updatedRoom).length > 0) {
       addUserInSocket(io, socket, gameId, userId);
       socket.join(gameId);
+
+      // return;
       let walletAmount;
       let query;
       if (gameMode === "goldCoin") {
@@ -8032,7 +8255,7 @@ export const emitTyping = async (data, socket, io) => {
 
 export const JoinTournament = async (data, io, socket) => {
   try {
-    const { userId, tournamentId, fees, } = data;
+    const { userId, tournamentId, fees } = data;
     console.log("Join user id", userId);
     const tournament = await tournamentModel
       .findOne({
@@ -8046,21 +8269,39 @@ export const JoinTournament = async (data, io, socket) => {
       });
     }
 
-    const { rooms = [], isStart, isFinished,joinTime, startDate, startTime } = tournament;
+    const {
+      rooms = [],
+      isStart,
+      isFinished,
+      joinTime,
+      startDate,
+      startTime,
+    } = tournament;
     // console.log("tournamenttournament",tournament);
-    console.log("joinTimejoinTime",joinTime);
-    let endDate= new Date(startDate+" "+startTime);
-    console.log("endDate", endDate, startDate+" "+startTime, joinTime);
+    console.log("joinTimejoinTime", joinTime);
+    let endDate = new Date(startDate + " " + startTime);
+    console.log("endDate", endDate, startDate + " " + startTime, joinTime);
     endDate.setMinutes(endDate.getMinutes() + joinTime);
     console.log("endDate", endDate);
     let endTime = endDate.getTime();
     let crrTime = new Date().getTime();
-    console.log("endTime==>",endTime,"crrTime===>>",crrTime);
-    if(crrTime > endTime){
-      return socket.emit("tournamentAlreadyStarted", {
-          message: "Joining time has been exceeded",
-          code: 400,
+    console.log("endTime==>", endTime, "crrTime===>>", crrTime);
+    if (crrTime > endTime && tournament.tournamentType !== "sit&go") {
+      socket.emit("tournamentAlreadyStarted", {
+        message: "Joining time has been exceeded",
+        code: 400,
       });
+
+      return;
+    }
+    if (tournament.isStart && tournament.tournamentType === "sit&go") {
+      await joinAsWatcher(
+        { gameId: tournament.rooms[0]._id, userId: userId },
+        socket,
+        io
+      );
+
+      return;
     }
 
     // if (isStart) {
@@ -8197,7 +8438,11 @@ const pushPlayerInRoom = async (
         leavereq: leaveReq,
       };
 
-      await roomModel.updateOne({ _id: roomId }, payload);
+      const updatedRoom = await roomModel.findOneAndUpdate(
+        { _id: roomId },
+        payload,
+        { new: true }
+      );
       const tournament = await tournamentModel.findOneAndUpdate(
         { _id: tournamentId },
         {
@@ -8224,12 +8469,21 @@ const pushPlayerInRoom = async (
         blindTimer(checkTournament, io);
         let timer = 10;
         io.emit("tournamentStart", { rooms });
-        const interval = setInterval(() => {
+        const interval = setInterval(async () => {
           if (timer < 0) {
             clearInterval(interval);
             preflopround(
               rooms.find((room) => room.players.length === playerLimit),
               io
+            );
+            const date = new Date().toISOString().split("T")[0];
+            const time = `${new Date().getUTCHours()}:${new Date().getUTCMinutes()}:00`;
+            await tournamentModel.findOneAndUpdate(
+              { _id: tournamentId },
+              {
+                startDate: date,
+                startTime: time,
+              }
             );
           } else {
             io.in(roomId.toString()).emit("tournamentStarted", { time: timer });
@@ -8237,9 +8491,21 @@ const pushPlayerInRoom = async (
           }
         }, 1000);
 
-        return;
+        // return;
+      }
+
+      console.log("updatedRoom after joining player ==>", updatedRoom);
+      if (
+        tournament?.tournamentType !== "sit&go" &&
+        tournament?.isStart &&
+        updatedRoom?.players.length > 1 &&
+        !updatedRoom.gamestart
+      ) {
+        console.log("started preflop round");
+        preflopround(updatedRoom, io);
       }
     } else {
+      console.log("checkTournament ===>", checkTournament.actionTime);
       let smallBlind = checkTournament?.levels?.smallBlind?.amount;
       let bigBlind = checkTournament?.levels?.bigBlind?.amount;
       const payload = {
@@ -8265,7 +8531,10 @@ const pushPlayerInRoom = async (
         smallBlind: smallBlind || 100,
         bigBlind: bigBlind || 200,
         gameType: "poker-tournament",
+        timer: checkTournament.actionTime,
       };
+
+      console.log("payload: " + payload);
 
       const roomData = new roomModel(payload);
       const savedroom = await roomData.save();
@@ -8295,6 +8564,7 @@ export const activateTournament = async (io) => {
   try {
     const date = new Date().toISOString().split("T")[0];
     const time = `${new Date().getUTCHours()}:${new Date().getUTCMinutes()}:00`;
+    console.log("timing ==>", date, time);
     const checkTournament = await tournamentModel
       .findOne({
         startDate: date,
@@ -8303,23 +8573,36 @@ export const activateTournament = async (io) => {
       })
       .populate("rooms")
       .lean();
+    console.log("checkTournament ==>", checkTournament);
     if (checkTournament) {
       //preflopround()
       if (checkTournament?.isStart) {
         return;
       }
-      if (checkTournament?.rooms?.length > 0 && !checkTournament?.isStart) {
+      if (!checkTournament?.isStart) {
         await tournamentModel.updateOne(
           { _id: checkTournament?._id },
           { isStart: true }
         );
-        console.log("Tournament started");
         blindTimer(checkTournament, io);
-        for (let room of checkTournament?.rooms) {
-          preflopround(room, io);
+        if (checkTournament?.rooms?.length > 0) {
+          console.log("Tournament started");
+          const allRooms = await roomModel.find({
+            tournament: checkTournament._id,
+          });
+          const updatedRooms = await reArrangementBeforeTournamentStart(
+            allRooms,
+            io,
+            checkTournament._id
+          );
+          for (let room of updatedRooms) {
+            preflopround(room, io);
+          }
         }
       }
     }
+    const getAllTournament = await tournamentModel.find({}).populate("rooms");
+    io.emit("updatePlayerList", getAllTournament);
   } catch (error) {
     console.log("activateTournament", error);
   }
@@ -8397,5 +8680,20 @@ export const doCalculateCardPair = async (data, io, socket) => {
     io.in(data.roomId.toString()).emit("showPairCard", {
       hands: p,
     });
+  }
+};
+
+export const spectateMultiTable = async (data, io, socket) => {
+  try {
+    const { roomId, userId } = data;
+    const room = await roomModel.findOne({
+      _id: roomId,
+    });
+    console.log("tournament rooomm ===>", room);
+    if (room) {
+      await joinAsWatcher({ gameId: roomId, userId }, socket, io);
+    }
+  } catch (err) {
+    console.log("error in spectateMultiTable", err);
   }
 };
