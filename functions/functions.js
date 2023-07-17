@@ -8341,7 +8341,9 @@ export const JoinTournament = async (data, io, socket) => {
       });
     }
 
-    let roomWithSpace = rooms.find((room) => room.players.length < playerLimit);
+    let roomWithSpace = rooms.find(
+      (room) => room.players.length < playerLimit && !room.gamestart
+    );
     const userData = await User.findById(userId).lean();
     if (userData?.wallet < fees) {
       return socket.emit("notEnoughAmount", {
