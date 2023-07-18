@@ -7795,7 +7795,7 @@ export const checkForGameTable = async (data, socket, io) => {
     }
     const { players, watchers } = game;
     console.log("watchers ===>", watchers);
-    if (watchers.find((el) => el.toString() === userId)) {
+    if (watchers.find((el) => el?.toString() === userId?.toString())) {
       addUserInSocket(io, socket, gameId, userId);
       socket.join(gameId);
       socket.emit("newWatcherJoin", {
