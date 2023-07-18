@@ -7471,6 +7471,7 @@ export const leaveApiCall = async (room, userId, io) => {
           {
             $inc: {
               havePlayers: -1,
+              totalJoinPlayer: -1,
             },
           }
         )
