@@ -1119,17 +1119,17 @@ export const prefloptimer = async (roomid, io) => {
                   await doCheck(roomid, intervalPlayer[0].id, io);
                   timer(++i, maxPosition);
                 } else {
-                  const isContinue = await doFold(
-                    data,
-                    intervalPlayer[0].id,
-                    io
-                  );
-                  io.in(data?._id?.toString()).emit("automaticFold", {
-                    msg: `${intervalPlayer[0].name} has automatically folded`,
-                  });
-                  console.log("do sit out executed 1");
-                  await doSitOut(data, io);
-                  console.log("do sit out executed 2", isContinue);
+                  let isContinue = false;
+                  if (intervalPlayer[0]) {
+                    isContinue = await doFold(data, intervalPlayer[0].id, io);
+
+                    io.in(data?._id?.toString()).emit("automaticFold", {
+                      msg: `${intervalPlayer[0]?.name} has automatically folded`,
+                    });
+                    console.log("do sit out executed 1");
+                    await doSitOut(data, io);
+                    console.log("do sit out executed 2", isContinue);
+                  }
                   if (isContinue) {
                     timer(++i, maxPosition);
                   }
@@ -1409,15 +1409,14 @@ export const flopTimer = async (roomid, io) => {
                   await doCheck(roomid, intervalPlayer[0].id, io);
                   timer(++i, maxPosition);
                 } else {
-                  const isContinue = await doFold(
-                    data,
-                    intervalPlayer[0].id,
-                    io
-                  );
-                  io.in(data?._id?.toString()).emit("automaticFold", {
-                    msg: `${intervalPlayer[0].name} has automatically folded`,
-                  });
-                  await doSitOut(data, io);
+                  let isContinue = false;
+                  if (intervalPlayer[0]) {
+                    isContinue = await doFold(data, intervalPlayer[0].id, io);
+                    io.in(data?._id?.toString()).emit("automaticFold", {
+                      msg: `${intervalPlayer[0].name} has automatically folded`,
+                    });
+                    await doSitOut(data, io);
+                  }
                   if (isContinue) {
                     timer(++i, maxPosition);
                   }
@@ -1692,15 +1691,14 @@ export const turnTimer = async (roomid, io) => {
                   await doCheck(roomid, intervalPlayer[0]?.id, io);
                   timer(++i, maxPosition);
                 } else {
-                  const isContinue = await doFold(
-                    data,
-                    intervalPlayer[0].id,
-                    io
-                  );
-                  io.in(data?._id?.toString()).emit("automaticFold", {
-                    msg: `${intervalPlayer[0]?.name} has automatically folded`,
-                  });
-                  await doSitOut(data, io);
+                  let isContinue = false;
+                  if (intervalPlayer[0]) {
+                    isContinue = await doFold(data, intervalPlayer[0]?.id, io);
+                    io.in(data?._id?.toString()).emit("automaticFold", {
+                      msg: `${intervalPlayer[0]?.name} has automatically folded`,
+                    });
+                    await doSitOut(data, io);
+                  }
                   if (isContinue) {
                     timer(++i, maxPosition);
                   }
@@ -1985,15 +1983,14 @@ export const riverTimer = async (roomid, io) => {
                   await doCheck(roomid, intervalPlayer[0]?.id, io);
                   timer(++i, maxPosition);
                 } else {
-                  const isContinue = await doFold(
-                    data,
-                    intervalPlayer[0].id,
-                    io
-                  );
-                  io.in(data?._id?.toString()).emit("automaticFold", {
-                    msg: `${intervalPlayer[0]?.name} has automatically folded`,
-                  });
-                  await doSitOut(data, io);
+                  let isContinue = false;
+                  if (intervalPlayer[0]) {
+                    isContinue = await doFold(data, intervalPlayer[0]?.id, io);
+                    io.in(data?._id?.toString()).emit("automaticFold", {
+                      msg: `${intervalPlayer[0]?.name} has automatically folded`,
+                    });
+                    await doSitOut(data, io);
+                  }
                   if (isContinue) {
                     timer(++i, maxPosition);
                   }
