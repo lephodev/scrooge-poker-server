@@ -3768,7 +3768,7 @@ export const doLeaveTable = async (data, io, socket) => {
         ) {
           console.log("entered in first if");
           await leaveApiCall(roomdata, userid);
-          io.in(tableId.toString()).emit("updateRoom", updatedData);
+          // io.in(tableId.toString()).emit("updateRoom", updatedData);
         } else {
           console.log("entered in else condition do leave");
           await doFinishGame(
@@ -3794,7 +3794,7 @@ export const doLeaveTable = async (data, io, socket) => {
             userId: userid,
           });
 
-        io.in(tableId.toString()).emit("updateRoom", updatedData);
+        // io.in(tableId.toString()).emit("updateRoom", updatedData);
       }
     } else {
       if (socket) socket.emit("actionError", { code: 400, msg: "Bad request" });
