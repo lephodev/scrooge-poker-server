@@ -2619,6 +2619,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
               let haveBuyin = buyin.filter(
                 (e) => e.userid.toString() === uid.toString() && !e.redeem
               );
+
               if (haveBuyin.length) {
                 haveBuyin.forEach((x) => {
                   buyinchips += parseInt(x.wallet);
@@ -2646,6 +2647,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                     (el) => el.toString() !== uid.toString()
                   );
                 }
+                console.log("havePlayer ===>", havePlayer);
               }
               const haveleave = leavereq.filter(
                 (el) => el.toString() === uid.toString()
@@ -2688,6 +2690,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 newHandPlayer,
                 roomData.players
               );
+              console.log("new hand players ==>", newHandPlayer);
               const upRoom = await roomModel.findOneAndUpdate(
                 {
                   _id: roomid,
@@ -3791,7 +3794,7 @@ export const doLeaveTable = async (data, io, socket) => {
             userId: userid,
           });
 
-        // io.in(tableId.toString()).emit("updateRoom", updatedData);
+        io.in(tableId.toString()).emit("updateRoom", updatedData);
       }
     } else {
       if (socket) socket.emit("actionError", { code: 400, msg: "Bad request" });
