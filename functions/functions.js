@@ -258,8 +258,16 @@ export const getSidePOt = async (roomId) => {
           sidePotValue += pots[0];
         }
       });
+      console.log(
+        "players of pot ===>",
+        playersOfPot.length,
+        playersOfPot,
+        playerData
+      );
       if (playersOfPot.length === 1) {
-        playerData[playersOfPot[0]].wallet += sidePotValue;
+        // playerData[playersOfPot[0]].wallet += sidePotValue;
+        playerData.filter((el) => playersOfPot[0] === el.position)[0].wallet +=
+          sidePotValue;
       } else {
         sidePot.push({ pot: sidePotValue, players: playersOfPot });
       }
