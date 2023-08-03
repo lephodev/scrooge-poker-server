@@ -764,6 +764,8 @@ export const preflopround = async (room, io) => {
 
           let totalplayer = maxPosition + room1111.eleminated.length;
 
+          console.log("maxPosition ==>", maxPosition);
+
           const checkIsPlaying = (d, type) => {
             if (typeof type === "number") {
               if (
@@ -779,7 +781,7 @@ export const preflopround = async (room, io) => {
               return d;
             }
 
-            if (d < totalplayer - 1) {
+            if (d <= totalplayer - 1) {
               d += 1;
             } else {
               d = 0;
