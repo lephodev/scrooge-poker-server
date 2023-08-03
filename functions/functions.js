@@ -755,7 +755,7 @@ export const preflopround = async (room, io) => {
           let smallBlindPosition = null;
           let bigBlindPosition = null;
           let dealerPosition = null;
-          const maxPosition = 0;
+          let maxPosition = 0;
           room1111.preflopround.forEach((el) => {
             if (el.position > maxPosition) maxPosition = el.position;
           });
