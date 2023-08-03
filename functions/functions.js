@@ -755,8 +755,14 @@ export const preflopround = async (room, io) => {
           let smallBlindPosition = null;
           let bigBlindPosition = null;
           let dealerPosition = null;
-          let totalplayer =
-            room1111.preflopround.length + room1111.eleminated.length;
+          const maxPosition = 0;
+          room1111.preflopround.forEach((el) => {
+            if (el.position > maxPosition) maxPosition = el.position;
+          });
+          // let totalplayer =
+          //   room1111.preflopround.length + room1111.eleminated.length;
+
+          let totalplayer = maxPosition + room1111.eleminated.length;
 
           const checkIsPlaying = (d, type) => {
             if (typeof type === "number") {
@@ -778,7 +784,7 @@ export const preflopround = async (room, io) => {
             } else {
               d = 0;
             }
-            console.log("position in check is playing ==>", d);
+            // console.log("position in check is playing ==>", d);
             return checkIsPlaying(d, type);
           };
 
