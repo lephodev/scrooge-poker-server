@@ -778,6 +778,7 @@ export const preflopround = async (room, io) => {
             } else {
               d = 0;
             }
+            console.log("position in check is playing ==>", d);
             return checkIsPlaying(d, type);
           };
 
