@@ -258,8 +258,16 @@ export const getSidePOt = async (roomId) => {
           sidePotValue += pots[0];
         }
       });
+      console.log(
+        "players of pot ===>",
+        playersOfPot.length,
+        playersOfPot,
+        playerData
+      );
       if (playersOfPot.length === 1) {
-        playerData[playersOfPot[0]].wallet += sidePotValue;
+        // playerData[playersOfPot[0]].wallet += sidePotValue;
+        playerData.filter((el) => playersOfPot[0] === el.position)[0].wallet +=
+          sidePotValue;
       } else {
         sidePot.push({ pot: sidePotValue, players: playersOfPot });
       }
@@ -747,8 +755,16 @@ export const preflopround = async (room, io) => {
           let smallBlindPosition = null;
           let bigBlindPosition = null;
           let dealerPosition = null;
-          let totalplayer =
-            room1111.preflopround.length + room1111.eleminated.length;
+          let maxPosition = 0;
+          room1111.preflopround.forEach((el) => {
+            if (el.position > maxPosition) maxPosition = el.position;
+          });
+          // let totalplayer =
+          //   room1111.preflopround.length + room1111.eleminated.length;
+
+          let totalplayer = maxPosition + room1111.eleminated.length;
+
+          console.log("maxPosition ==>", maxPosition);
 
           const checkIsPlaying = (d, type) => {
             if (typeof type === "number") {
@@ -765,11 +781,12 @@ export const preflopround = async (room, io) => {
               return d;
             }
 
-            if (d < totalplayer - 1) {
+            if (d <= totalplayer - 1) {
               d += 1;
             } else {
               d = 0;
             }
+            // console.log("position in check is playing ==>", d);
             return checkIsPlaying(d, type);
           };
 
@@ -783,6 +800,7 @@ export const preflopround = async (room, io) => {
           }
 
           dealerPosition = checkIsPlaying(dealerPosition);
+          console.log("dealer position ==>", dealerPosition);
 
           if (dealerPosition === totalplayer - 1) {
             smallBlindPosition = 0;
@@ -790,6 +808,7 @@ export const preflopround = async (room, io) => {
             smallBlindPosition = dealerPosition + 1;
           }
           smallBlindPosition = checkIsPlaying(smallBlindPosition);
+          console.log("small blind position ==>", smallBlindPosition);
 
           if (smallBlindPosition === totalplayer - 1) {
             bigBlindPosition = 0;
@@ -800,6 +819,7 @@ export const preflopround = async (room, io) => {
             bigBlindPosition,
             smallBlindPosition
           );
+          console.log("big blind position ==>", bigBlindPosition);
 
           let smallLoopTime = 0;
           const allinPlayer = room1111.allinPlayers;
@@ -2619,6 +2639,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
               let haveBuyin = buyin.filter(
                 (e) => e.userid.toString() === uid.toString() && !e.redeem
               );
+
               if (haveBuyin.length) {
                 haveBuyin.forEach((x) => {
                   buyinchips += parseInt(x.wallet);
@@ -2646,6 +2667,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                     (el) => el.toString() !== uid.toString()
                   );
                 }
+                console.log("havePlayer ===>", havePlayer);
               }
               const haveleave = leavereq.filter(
                 (el) => el.toString() === uid.toString()
@@ -2688,6 +2710,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 newHandPlayer,
                 roomData.players
               );
+              console.log("new hand players ==>", newHandPlayer);
               const upRoom = await roomModel.findOneAndUpdate(
                 {
                   _id: roomid,
@@ -3765,7 +3788,7 @@ export const doLeaveTable = async (data, io, socket) => {
         ) {
           console.log("entered in first if");
           await leaveApiCall(roomdata, userid);
-          io.in(tableId.toString()).emit("updateRoom", updatedData);
+          // io.in(tableId.toString()).emit("updateRoom", updatedData);
         } else {
           console.log("entered in else condition do leave");
           await doFinishGame(
