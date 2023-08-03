@@ -791,6 +791,7 @@ export const preflopround = async (room, io) => {
           }
 
           dealerPosition = checkIsPlaying(dealerPosition);
+          console.log("dealer position ==>", dealerPosition);
 
           if (dealerPosition === totalplayer - 1) {
             smallBlindPosition = 0;
@@ -798,6 +799,7 @@ export const preflopround = async (room, io) => {
             smallBlindPosition = dealerPosition + 1;
           }
           smallBlindPosition = checkIsPlaying(smallBlindPosition);
+          console.log("small blind position ==>", smallBlindPosition);
 
           if (smallBlindPosition === totalplayer - 1) {
             bigBlindPosition = 0;
@@ -808,6 +810,7 @@ export const preflopround = async (room, io) => {
             bigBlindPosition,
             smallBlindPosition
           );
+          console.log("big blind position ==>", bigBlindPosition);
 
           let smallLoopTime = 0;
           const allinPlayer = room1111.allinPlayers;
