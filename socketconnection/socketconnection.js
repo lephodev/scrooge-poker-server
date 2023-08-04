@@ -31,6 +31,7 @@ import {
   checkAlreadyInGame,
   doCalculateCardPair,
   spectateMultiTable,
+  setAvailability,
 } from "../functions/functions";
 import mongoose from "mongoose";
 import { refillWallet } from "../controller/pokerController";
@@ -346,6 +347,10 @@ let returnSocket = (io) => {
     });
     socket.on("spectateMultiTable", async (data) => {
       await spectateMultiTable(data, io, socket);
+    });
+
+    socket.on("setAvailability", async (data) => {
+      await setAvailability(data, io, socket);
     });
   });
 };
