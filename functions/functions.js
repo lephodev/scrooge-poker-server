@@ -2868,6 +2868,8 @@ export const elemination = async (roomData, io) => {
           hands: el.hands,
           meetingToken: el.meetingToken,
           playing: true,
+          away: el.away,
+          autoFoldCount: el.autoFoldCount,
         });
       } else {
         players = players.filter(
@@ -6205,7 +6207,17 @@ const reArrangementBeforeTournamentStart = async (
         allRooms = allRooms.map((r) => {
           if (r !== room && r.players.length < idealPlayerCount) {
             console.log("entered in cond", playersToMove);
-            r.players.push(...playersToMove);
+            const occupiedPositions = r.players.map((el) => el.position);
+
+            let blankPositions = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter(
+              (el) => occupiedPositions.indexOf(el) < 0
+            );
+            console.log("blank positions ====>", blankPositions);
+            const updatedPLayersWithPositions = playersToMove.map((p, i) => {
+              p.position = blankPositions[i];
+              return p;
+            });
+            r.players.push(...updatedPLayersWithPositions);
             userIds = playersToMove.map((player) => ({
               userId: player.userid,
               newRoomId: r._id,
@@ -8626,6 +8638,8 @@ const pushPlayerInRoom = async (
         initialCoinBeforeStart: parseFloat(checkTournament.buyIn),
         gameJoinedAt: new Date(),
         hands: [],
+        autoFoldCount: 0,
+        away: false,
       });
 
       const payload = {
@@ -8720,6 +8734,8 @@ const pushPlayerInRoom = async (
             initialCoinBeforeStart: parseFloat(checkTournament.buyIn),
             gameJoinedAt: new Date(),
             hands: [],
+            autoFoldCount: 0,
+            away: false,
           },
         ],
         tournament: tournamentId,
