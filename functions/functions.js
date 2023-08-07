@@ -3955,24 +3955,24 @@ export const doFold = async (roomData, playerid, io) => {
             }
           });
 
-          if (playingPlayer.length === 1) {
-            if (!updatedRoom.allinPlayers?.length) {
-              await roomModel.updateOne(
-                {
-                  _id: roomid,
-                },
-                {
-                  runninground: 5,
-                }
-              );
-              await winnerBeforeShowdown(
-                roomid,
-                playingPlayer[0].id,
-                roomData.runninground,
-                io
-              );
-              res = false;
-            }
+          if (playingPlayer.length <= 1) {
+            // if (!updatedRoom.allinPlayers?.length) {
+            await roomModel.updateOne(
+              {
+                _id: roomid,
+              },
+              {
+                runninground: 5,
+              }
+            );
+            await winnerBeforeShowdown(
+              roomid,
+              playingPlayer[0].id,
+              roomData.runninground,
+              io
+            );
+            res = false;
+            // }
           }
           return res;
         }
@@ -4019,25 +4019,25 @@ export const doFold = async (roomData, playerid, io) => {
               playingPlayer.push({ id: el.id, position: el.position });
             }
           });
-          if (playingPlayer.length === 1) {
-            if (!updatedRoom.allinPlayers?.length) {
-              await roomModel.updateOne(
-                {
-                  _id: roomid,
-                },
-                {
-                  runninground: 5,
-                }
-              );
+          if (playingPlayer.length <= 1) {
+            // if (!updatedRoom.allinPlayers?.length) {
+            await roomModel.updateOne(
+              {
+                _id: roomid,
+              },
+              {
+                runninground: 5,
+              }
+            );
 
-              await winnerBeforeShowdown(
-                roomid,
-                playingPlayer[0].id,
-                roomData.runninground,
-                io
-              );
-              res = false;
-            }
+            await winnerBeforeShowdown(
+              roomid,
+              playingPlayer[0].id,
+              roomData.runninground,
+              io
+            );
+            res = false;
+            // }
           }
           return res;
         }
@@ -4083,26 +4083,26 @@ export const doFold = async (roomData, playerid, io) => {
               playingPlayer.push({ id: el.id, position: el.position });
             }
           });
-          if (playingPlayer.length === 1) {
-            if (!updatedRoom.allinPlayers?.length) {
-              await roomModel.updateOne(
-                {
-                  _id: roomid,
-                },
-                {
-                  runninground: 5,
-                }
-              );
+          if (playingPlayer.length <= 1) {
+            // if (!updatedRoom.allinPlayers?.length) {
+            await roomModel.updateOne(
+              {
+                _id: roomid,
+              },
+              {
+                runninground: 5,
+              }
+            );
 
-              await winnerBeforeShowdown(
-                roomid,
-                playingPlayer[0].id,
-                roomData.runninground,
-                io
-              );
-              res = false;
-            }
+            await winnerBeforeShowdown(
+              roomid,
+              playingPlayer[0].id,
+              roomData.runninground,
+              io
+            );
+            res = false;
           }
+          // }
           return res;
         }
 
@@ -4149,24 +4149,24 @@ export const doFold = async (roomData, playerid, io) => {
               playingPlayer.push({ id: el.id, position: el.position });
             }
           });
-          if (playingPlayer.length === 1) {
-            if (!updatedRoom.allinPlayers?.length) {
-              await roomModel.updateOne(
-                {
-                  _id: roomid,
-                },
-                {
-                  runninground: 5,
-                }
-              );
+          if (playingPlayer.length <= 1) {
+            // if (!updatedRoom.allinPlayers?.length) {
+            await roomModel.updateOne(
+              {
+                _id: roomid,
+              },
+              {
+                runninground: 5,
+              }
+            );
 
-              await winnerBeforeShowdown(
-                roomid,
-                playingPlayer[0].id,
-                roomData.runninground,
-                io
-              );
-            }
+            await winnerBeforeShowdown(
+              roomid,
+              playingPlayer[0].id,
+              roomData.runninground,
+              io
+            );
+            // }
             res = false;
           }
           return res;
