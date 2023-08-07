@@ -654,6 +654,8 @@ export const preflopPlayerPush = async (players, roomid) => {
           meetingToken: player.meetingToken,
           items: player.items,
           chipsBeforeHandStart: player.chipsBeforeHandStart,
+          away: player.away,
+          autoFoldCount: player.autoFoldCount,
         });
       }
     });
@@ -1141,6 +1143,39 @@ export const prefloptimer = async (roomid, io) => {
                 } else {
                   let isContinue = false;
                   if (intervalPlayer[0]) {
+                    console.log("interval player =====>", intervalPlayer[0]);
+                    if (intervalPlayer[0].autoFoldCount === 2) {
+                      await roomModel.updateOne(
+                        {
+                          _id: data._id,
+                          "preflopround.id": intervalPlayer[0].id,
+                        },
+                        {
+                          "preflopround.$.away": true,
+                          "preflopround.$.autoFoldCount": 0,
+                        }
+                      );
+                    } else {
+                      console.log(
+                        "entred in else part of ==>",
+                        intervalPlayer[0]
+                      );
+                      const updateddata = await roomModel.findOneAndUpdate(
+                        {
+                          _id: data._id,
+                          "preflopround.id": intervalPlayer[0].id,
+                        },
+                        {
+                          $inc: {
+                            "preflopround.$.autoFoldCount": 1,
+                          },
+                        },
+                        {
+                          new: true,
+                        }
+                      );
+                      console.log("updateddata ==>", updateddata);
+                    }
                     isContinue = await doFold(data, intervalPlayer[0].id, io);
 
                     io.in(data?._id?.toString()).emit("automaticFold", {
@@ -1168,6 +1203,9 @@ export const prefloptimer = async (roomid, io) => {
                 timer(++i, maxPosition);
               } else {
                 j--;
+                if (intervalPlayer[0].away) {
+                  j = 0;
+                }
                 io.in(udata?._id?.toString()).emit("timer", {
                   id: intervalPlayer[0].id,
                   playerchance: j,
@@ -1304,6 +1342,8 @@ export const flopround = async (roomid, io) => {
             hands: e.hands,
             meetingToken: e.meetingToken,
             items: e.items,
+            away: e.away,
+            autoFoldCount: e.autoFoldCount,
           };
           totalPot += e.pot;
           totalPot += e.missedBilndAmt;
@@ -1432,6 +1472,7 @@ export const flopTimer = async (roomid, io) => {
                   let isContinue = false;
                   if (intervalPlayer[0]) {
                     isContinue = await doFold(data, intervalPlayer[0].id, io);
+
                     io.in(data?._id?.toString()).emit("automaticFold", {
                       msg: `${intervalPlayer[0].name} has automatically folded`,
                     });
@@ -1582,6 +1623,8 @@ export const turnround = async (roomid, io) => {
             hands: e.hands,
             meetingToken: e.meetingToken,
             items: e.items,
+            away: e.away,
+            autoFoldCount: e.autoFoldCount,
           };
           totalPot += e.pot;
 
@@ -1863,6 +1906,8 @@ export const riverround = async (roomid, io) => {
             hands: e.hands,
             meetingToken: e.meetingToken,
             items: e.items,
+            away: e.away,
+            autoFoldCount: e.autoFoldCount,
           };
           totalPot += e.pot;
 
@@ -2160,6 +2205,8 @@ export const showdown = async (roomid, io) => {
         hands: e.hands,
         meetingToken: e.meetingToken,
         items: e.items,
+        away: e.away,
+        autoFoldCount: e.autoFoldCount,
       };
       totalPot += e.pot;
       showDownPlayers.push(p);
@@ -2555,6 +2602,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
           .populate("tournament");
         let newHandPlayer = [];
         let buyin = roomData?.buyin;
+        let availablerequest = roomData?.availablerequest;
         const bigBlindAmt = roomData?.bigBlind;
         const smallBlindAmt = roomData?.smallBlind;
         let playerData = [];
@@ -2640,6 +2688,22 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 (e) => e.userid.toString() === uid.toString() && !e.redeem
               );
 
+              let availabilityRequest = availablerequest.filter(
+                (e) => e.userid.toString() === uid.toString()
+              );
+
+              let isAvailable = false;
+
+              if (availabilityRequest.length) {
+                isAvailable = true;
+              }
+
+              console.log(
+                "availabilityRequest ===>",
+                availabilityRequest,
+                isAvailable
+              );
+
               if (haveBuyin.length) {
                 haveBuyin.forEach((x) => {
                   buyinchips += parseInt(x.wallet);
@@ -2667,7 +2731,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                     (el) => el.toString() !== uid.toString()
                   );
                 }
-                console.log("havePlayer ===>", havePlayer);
+                console.log("havePlayer ===>", el);
               }
               const haveleave = leavereq.filter(
                 (el) => el.toString() === uid.toString()
@@ -2695,6 +2759,8 @@ export const updateRoomForNewHand = async (roomid, io) => {
                   hands: stripeBuy,
                   meetingToken: el.meetingToken,
                   items: el.items,
+                  away: isAvailable ? !isAvailable : el.away,
+                  autoFoldCount: isAvailable ? 0 : el.autoFoldCount,
                 });
               }
               next();
@@ -2750,6 +2816,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                   buyin: buyin,
                   sitin: sitin,
                   leavereq: leavereq,
+                  availablerequest: [],
                 },
                 {
                   new: true,
@@ -3858,6 +3925,8 @@ export const doFold = async (roomData, playerid, io) => {
               "preflopround.$.actionType": "fold",
               lastAction,
               "preflopround.$.tentativeAction": null,
+              // "preflopround.$.away": false,
+              // "preflopround.$.autoFoldCount": 0,
             },
             {
               new: true,
@@ -3884,24 +3953,24 @@ export const doFold = async (roomData, playerid, io) => {
             }
           });
 
-          if (playingPlayer.length === 1) {
-            if (!updatedRoom.allinPlayers?.length) {
-              await roomModel.updateOne(
-                {
-                  _id: roomid,
-                },
-                {
-                  runninground: 5,
-                }
-              );
-              await winnerBeforeShowdown(
-                roomid,
-                playingPlayer[0].id,
-                roomData.runninground,
-                io
-              );
-              res = false;
-            }
+          if (playingPlayer.length <= 1) {
+            // if (!updatedRoom.allinPlayers?.length) {
+            await roomModel.updateOne(
+              {
+                _id: roomid,
+              },
+              {
+                runninground: 5,
+              }
+            );
+            await winnerBeforeShowdown(
+              roomid,
+              playingPlayer[0].id,
+              roomData.runninground,
+              io
+            );
+            res = false;
+            // }
           }
           return res;
         }
@@ -3921,6 +3990,8 @@ export const doFold = async (roomData, playerid, io) => {
               "flopround.$.fold": true,
               "flopround.$.actionType": "fold",
               "flopround.$.tentativeAction": null,
+              "flopround.$.away": false,
+              "flopround.$.autoFoldCount": 0,
               lastAction,
             },
             {
@@ -3946,25 +4017,25 @@ export const doFold = async (roomData, playerid, io) => {
               playingPlayer.push({ id: el.id, position: el.position });
             }
           });
-          if (playingPlayer.length === 1) {
-            if (!updatedRoom.allinPlayers?.length) {
-              await roomModel.updateOne(
-                {
-                  _id: roomid,
-                },
-                {
-                  runninground: 5,
-                }
-              );
+          if (playingPlayer.length <= 1) {
+            // if (!updatedRoom.allinPlayers?.length) {
+            await roomModel.updateOne(
+              {
+                _id: roomid,
+              },
+              {
+                runninground: 5,
+              }
+            );
 
-              await winnerBeforeShowdown(
-                roomid,
-                playingPlayer[0].id,
-                roomData.runninground,
-                io
-              );
-              res = false;
-            }
+            await winnerBeforeShowdown(
+              roomid,
+              playingPlayer[0].id,
+              roomData.runninground,
+              io
+            );
+            res = false;
+            // }
           }
           return res;
         }
@@ -3983,6 +4054,8 @@ export const doFold = async (roomData, playerid, io) => {
               "turnround.$.fold": true,
               "turnround.$.actionType": "fold",
               "turnround.$.tentativeAction": null,
+              "turnround.$.away": false,
+              "turnround.$.autoFoldCount": 0,
               lastAction,
             },
             {
@@ -4008,26 +4081,26 @@ export const doFold = async (roomData, playerid, io) => {
               playingPlayer.push({ id: el.id, position: el.position });
             }
           });
-          if (playingPlayer.length === 1) {
-            if (!updatedRoom.allinPlayers?.length) {
-              await roomModel.updateOne(
-                {
-                  _id: roomid,
-                },
-                {
-                  runninground: 5,
-                }
-              );
+          if (playingPlayer.length <= 1) {
+            // if (!updatedRoom.allinPlayers?.length) {
+            await roomModel.updateOne(
+              {
+                _id: roomid,
+              },
+              {
+                runninground: 5,
+              }
+            );
 
-              await winnerBeforeShowdown(
-                roomid,
-                playingPlayer[0].id,
-                roomData.runninground,
-                io
-              );
-              res = false;
-            }
+            await winnerBeforeShowdown(
+              roomid,
+              playingPlayer[0].id,
+              roomData.runninground,
+              io
+            );
+            res = false;
           }
+          // }
           return res;
         }
 
@@ -4046,6 +4119,8 @@ export const doFold = async (roomData, playerid, io) => {
               "riverround.$.fold": true,
               "riverround.$.actionType": "fold",
               "riverround.$.tentativeAction": null,
+              "riverround.$.away": false,
+              "riverround.$.autoFoldCount": 0,
               lastAction,
             },
             {
@@ -4072,24 +4147,24 @@ export const doFold = async (roomData, playerid, io) => {
               playingPlayer.push({ id: el.id, position: el.position });
             }
           });
-          if (playingPlayer.length === 1) {
-            if (!updatedRoom.allinPlayers?.length) {
-              await roomModel.updateOne(
-                {
-                  _id: roomid,
-                },
-                {
-                  runninground: 5,
-                }
-              );
+          if (playingPlayer.length <= 1) {
+            // if (!updatedRoom.allinPlayers?.length) {
+            await roomModel.updateOne(
+              {
+                _id: roomid,
+              },
+              {
+                runninground: 5,
+              }
+            );
 
-              await winnerBeforeShowdown(
-                roomid,
-                playingPlayer[0].id,
-                roomData.runninground,
-                io
-              );
-            }
+            await winnerBeforeShowdown(
+              roomid,
+              playingPlayer[0].id,
+              roomData.runninground,
+              io
+            );
+            // }
             res = false;
           }
           return res;
@@ -4171,6 +4246,8 @@ export const doCall = async (roomData, playerid, io, amout) => {
             "preflopround.$.actionType": "call",
             lastAction: "call",
             "preflopround.$.tentativeAction": null,
+            "preflopround.$.away": false,
+            "preflopround.$.autoFoldCount": 0,
           },
           {
             new: true,
@@ -4208,6 +4285,8 @@ export const doCall = async (roomData, playerid, io, amout) => {
             "flopround.$.actionType": "call",
             lastAction: "call",
             "flopround.$.tentativeAction": null,
+            "flopround.$.away": false,
+            "flopround.$.autoFoldCount": 0,
           },
           {
             new: true,
@@ -4244,6 +4323,8 @@ export const doCall = async (roomData, playerid, io, amout) => {
             "turnround.$.actionType": "call",
             lastAction: "call",
             "turnround.$.tentativeAction": null,
+            "turnround.$.away": false,
+            "turnround.$.autoFoldCount": 0,
           },
           {
             new: true,
@@ -4281,6 +4362,8 @@ export const doCall = async (roomData, playerid, io, amout) => {
             "riverround.$.actionType": "call",
             lastAction: "call",
             "riverround.$.tentativeAction": null,
+            "riverround.$.away": false,
+            "riverround.$.autoFoldCount": 0,
           },
           {
             new: true,
@@ -4396,11 +4479,14 @@ export const doBet = async (roomData, playerid, io, amt) => {
               e.action = true;
               e.actionType = "bet";
               e.tentativeAction = null;
+              e.away = false;
+              e.autoFoldCount = 0;
             }
           });
           roomData.raisePlayerPosition = filterDta[0].position;
           roomData.raiseAmount = updatedRaiseAmt;
           roomData.lastAction = "bet";
+
           updatedRoom = await roomModel.findOneAndUpdate(
             {
               _id: roomid,
@@ -4458,6 +4544,8 @@ export const doBet = async (roomData, playerid, io, amt) => {
               e.action = true;
               e.actionType = "bet";
               e.tentativeAction = null;
+              e.away = false;
+              e.autoFoldCount = 0;
             }
           });
           roomData.raisePlayerPosition = filterDta[0].position;
@@ -4521,6 +4609,8 @@ export const doBet = async (roomData, playerid, io, amt) => {
               e.action = true;
               e.actionType = "bet";
               e.tentativeAction = null;
+              e.away = false;
+              e.autoFoldCount = 0;
             }
           });
           roomData.raisePlayerPosition = filterDta[0].position;
@@ -4649,6 +4739,8 @@ export const doRaise = async (roomData, playerid, io, amt) => {
               e.action = true;
               e.actionType = "raise";
               e.tentativeAction = null;
+              e.away = false;
+              e.autoFoldCount = 0;
             }
           });
           roomData.raisePlayerPosition = roundData[0].position;
@@ -4713,6 +4805,8 @@ export const doRaise = async (roomData, playerid, io, amt) => {
               e.action = true;
               e.actionType = "raise";
               e.tentativeAction = null;
+              e.away = false;
+              e.autoFoldCount = 0;
             }
           });
 
@@ -4779,6 +4873,8 @@ export const doRaise = async (roomData, playerid, io, amt) => {
               e.action = true;
               e.actionType = "raise";
               e.tentativeAction = null;
+              e.away = false;
+              e.autoFoldCount = 0;
             }
           });
           roomData.raisePlayerPosition = roundData[0].position;
@@ -4844,6 +4940,8 @@ export const doRaise = async (roomData, playerid, io, amt) => {
               e.action = true;
               e.actionType = "raise";
               e.tentativeAction = null;
+              e.away = false;
+              e.autoFoldCount = 0;
             }
           });
 
@@ -4947,6 +5045,8 @@ export const doCheck = async (roomData, playerid, io) => {
               el.action = true;
               el.tentativeAction = null;
               el.actionType = "check";
+              el.away = false;
+              el.autoFoldCount = 0;
             }
             return el;
           });
@@ -4983,6 +5083,8 @@ export const doCheck = async (roomData, playerid, io) => {
               el.action = true;
               el.tentativeAction = null;
               el.actionType = "check";
+              el.away = false;
+              el.autoFoldCount = 0;
             }
             return el;
           });
@@ -5021,6 +5123,8 @@ export const doCheck = async (roomData, playerid, io) => {
               el.action = true;
               el.tentativeAction = null;
               el.actionType = "check";
+              el.away = false;
+              el.autoFoldCount = 0;
             }
             return el;
           });
@@ -5059,6 +5163,8 @@ export const doCheck = async (roomData, playerid, io) => {
                 el.action = true;
                 el.tentativeAction = null;
                 el.actionType = "check";
+                el.away = false;
+                el.autoFoldCount = 0;
               }
               return el;
             });
@@ -5189,6 +5295,8 @@ export const doAllin = async (roomData, playerid, io) => {
               e.action = true;
               e.actionType = "all-in";
               e.tentativeAction = null;
+              e.away = false;
+              e.autoFoldCount = 0;
             }
           });
           roomData.raiseAmount = raiseAmount;
@@ -5269,6 +5377,8 @@ export const doAllin = async (roomData, playerid, io) => {
               e.action = true;
               e.actionType = "all-in";
               e.tentativeAction = null;
+              e.away = false;
+              e.autoFoldCount = 0;
             }
           });
 
@@ -5351,6 +5461,8 @@ export const doAllin = async (roomData, playerid, io) => {
               e.action = true;
               e.actionType = "all-in";
               e.tentativeAction = null;
+              e.away = false;
+              e.autoFoldCount = 0;
             }
           });
 
@@ -5432,6 +5544,8 @@ export const doAllin = async (roomData, playerid, io) => {
               e.action = true;
               e.actionType = "all-in";
               e.tentativeAction = null;
+              e.away = false;
+              e.autoFoldCount = 0;
             }
           });
           roomData.raisePlayerPosition = raisePlayerPosition;
@@ -5557,6 +5671,8 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         meetingToken: e.meetingToken,
         items: e.items,
         chipsBeforeHandStart: e.chipsBeforeHandStart,
+        away: e.away,
+        autoFoldCount: e.autoFoldCount,
       };
       showDownPlayers.push(p);
     });
@@ -8775,5 +8891,57 @@ export const spectateMultiTable = async (data, io, socket) => {
     }
   } catch (err) {
     console.log("error in spectateMultiTable", err);
+  }
+};
+
+export const setAvailability = async (data, io, socket) => {
+  try {
+    console.log("data ==>", data);
+    const { availability, userId, tableId } = data;
+    const roomData = await roomModel.findOne({
+      _id: tableId,
+    });
+    console.log("availablity hello ==>", data);
+    let updatedRoomData = [];
+    console.log("room data running round==>", roomData.runninground);
+    let availablerequest = roomData.availablerequest;
+    if (roomData.gamestart) {
+      availablerequest = availablerequest.filter(
+        (el) => !el.userid.toString() === userId
+      );
+      availablerequest.push({
+        userid: userId,
+      });
+      updatedRoomData = await roomModel.findOneAndUpdate(
+        {
+          _id: convertMongoId(tableId),
+        },
+        {
+          availablerequest,
+        },
+        {
+          new: true,
+        }
+      );
+    } else {
+      updatedRoomData = await roomModel.findOneAndUpdate(
+        {
+          _id: convertMongoId(tableId),
+          "players.id": convertMongoId(userId),
+        },
+        {
+          "players.$.away": availability,
+          "players.$.autoFoldCount": 0,
+        },
+        {
+          new: true,
+        }
+      );
+    }
+
+    socket.emit("availableinNextRound");
+    io.in(tableId.toString()).emit("updateGame", { game: updatedRoomData });
+  } catch (error) {
+    console.log("error in setAvailability", error);
   }
 };

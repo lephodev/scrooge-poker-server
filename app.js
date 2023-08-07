@@ -54,7 +54,7 @@ app.use((req, _, next) => {
   logger.info(`HEADERS ${req.headers} `);
   next();
 });
-returnCron(io);
+// returnCron(io);
 
 const whitelist = [
   "http://localhost:3000",
