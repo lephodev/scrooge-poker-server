@@ -111,8 +111,6 @@ export const createTable = async (req, res, io) => {
           initialCoinBeforeStart: sitInAmount,
           gameJoinedAt: new Date(),
           hands: [],
-          away: false,
-          autoFoldCount: 0,
         },
       ],
     });
