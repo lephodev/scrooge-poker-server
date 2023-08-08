@@ -1138,7 +1138,7 @@ export const prefloptimer = async (roomid, io) => {
                     data.lastAction === "check") &&
                   data.players.length !== 1
                 ) {
-                  await doCheck(roomid, intervalPlayer[0].id, io);
+                  await doCheck(roomid, intervalPlayer[0]?.id, io);
                   timer(++i, maxPosition);
                 } else {
                   let isContinue = false;
@@ -1148,7 +1148,7 @@ export const prefloptimer = async (roomid, io) => {
                       await roomModel.updateOne(
                         {
                           _id: data._id,
-                          "preflopround.id": intervalPlayer[0].id,
+                          "preflopround.id": intervalPlayer[0]?.id,
                         },
                         {
                           "preflopround.$.away": true,
@@ -1163,7 +1163,7 @@ export const prefloptimer = async (roomid, io) => {
                       const updateddata = await roomModel.findOneAndUpdate(
                         {
                           _id: data._id,
-                          "preflopround.id": intervalPlayer[0].id,
+                          "preflopround.id": intervalPlayer[0]?.id,
                         },
                         {
                           $inc: {
@@ -1176,7 +1176,7 @@ export const prefloptimer = async (roomid, io) => {
                       );
                       // console.log("updateddata ==>", updateddata);
                     }
-                    isContinue = await doFold(data, intervalPlayer[0].id, io);
+                    isContinue = await doFold(data, intervalPlayer[0]?.id, io);
 
                     io.in(data?._id?.toString()).emit("automaticFold", {
                       msg: `${intervalPlayer[0]?.name} has automatically folded`,
@@ -1203,11 +1203,11 @@ export const prefloptimer = async (roomid, io) => {
                 timer(++i, maxPosition);
               } else {
                 j--;
-                if (intervalPlayer[0].away) {
+                if (intervalPlayer[0]?.away) {
                   j = 0;
                 }
                 io.in(udata?._id?.toString()).emit("timer", {
-                  id: intervalPlayer[0].id,
+                  id: intervalPlayer[0]?.id,
                   playerchance: j,
                   timerPlayer: i,
                   runninground: 1,
@@ -1466,12 +1466,12 @@ export const flopTimer = async (roomid, io) => {
                     data?.lastAction === "check") &&
                   data?.players.length !== 1
                 ) {
-                  await doCheck(roomid, intervalPlayer[0].id, io);
+                  await doCheck(roomid, intervalPlayer[0]?.id, io);
                   timer(++i, maxPosition);
                 } else {
                   let isContinue = false;
                   if (intervalPlayer[0]) {
-                    isContinue = await doFold(data, intervalPlayer[0].id, io);
+                    isContinue = await doFold(data, intervalPlayer[0]?.id, io);
 
                     io.in(data?._id?.toString()).emit("automaticFold", {
                       msg: `${intervalPlayer[0].name} has automatically folded`,
@@ -1498,7 +1498,7 @@ export const flopTimer = async (roomid, io) => {
               } else {
                 j--;
                 io.in(data?._id?.toString()).emit("timer", {
-                  id: intervalPlayer[0].id,
+                  id: intervalPlayer[0]?.id,
                   playerchance: j,
                   timerPlayer: i,
                   runninground: 2,
@@ -1783,7 +1783,7 @@ export const turnTimer = async (roomid, io) => {
               } else {
                 j--;
                 io.in(data?._id?.toString()).emit("timer", {
-                  id: intervalPlayer[0].id,
+                  id: intervalPlayer[0]?.id,
                   playerchance: j,
                   timerPlayer: i,
                   runninground: 3,
@@ -2075,7 +2075,7 @@ export const riverTimer = async (roomid, io) => {
               } else {
                 j--;
                 io.in(data?._id?.toString()).emit("timer", {
-                  id: intervalPlayer[0].id,
+                  id: intervalPlayer[0]?.id,
                   playerchance: j,
                   timerPlayer: i,
                   runninground: 4,
@@ -8704,9 +8704,9 @@ const pushPlayerInRoom = async (
         {
           $inc: {
             havePlayers: 1,
+            totalJoinPlayer: 1,
             prizePool: checkTournament?.tournamentFee,
           },
-          totalJoinPlayer: players.length,
         },
         { new: true }
       );
