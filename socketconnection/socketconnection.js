@@ -34,10 +34,18 @@ import {
   setAvailability,
 } from "../functions/functions";
 import mongoose from "mongoose";
+import Queue from "better-queue";
 import { refillWallet } from "../controller/pokerController";
 import { connetToLanding, landingSocket } from "./landing_Connection";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
+
+var q = new Queue(function (task, cb) {
+  if (task.type === "joinTournament") {
+    JoinTournament(task.data, task.io, task.socket);
+  }
+  cb(null, 1);
+});
 
 let returnSocket = (io) => {
   const users = {};
@@ -340,6 +348,7 @@ let returnSocket = (io) => {
     });
 
     socket.on("joinTournament", async (data) => {
+      q.push({ data, io, socket, type: "joinTournament" });
       await JoinTournament(data, io, socket);
     });
     socket.on("calCulateCardPair", async (data) => {
