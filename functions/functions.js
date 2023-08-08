@@ -8704,9 +8704,9 @@ const pushPlayerInRoom = async (
         {
           $inc: {
             havePlayers: 1,
-            totalJoinPlayer: players.length,
             prizePool: checkTournament?.tournamentFee,
           },
+          totalJoinPlayer: players.length,
         },
         { new: true }
       );
