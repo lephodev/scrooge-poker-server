@@ -1143,7 +1143,7 @@ export const prefloptimer = async (roomid, io) => {
                 } else {
                   let isContinue = false;
                   if (intervalPlayer[0]) {
-                    console.log("interval player =====>", intervalPlayer[0]);
+                    // console.log("interval player =====>", intervalPlayer[0]);
                     if (intervalPlayer[0].autoFoldCount === 2) {
                       await roomModel.updateOne(
                         {
@@ -1156,10 +1156,10 @@ export const prefloptimer = async (roomid, io) => {
                         }
                       );
                     } else {
-                      console.log(
-                        "entred in else part of ==>",
-                        intervalPlayer[0]
-                      );
+                      // console.log(
+                      //   "entred in else part of ==>",
+                      //   intervalPlayer[0]
+                      // );
                       const updateddata = await roomModel.findOneAndUpdate(
                         {
                           _id: data._id,
@@ -1174,7 +1174,7 @@ export const prefloptimer = async (roomid, io) => {
                           new: true,
                         }
                       );
-                      console.log("updateddata ==>", updateddata);
+                      // console.log("updateddata ==>", updateddata);
                     }
                     isContinue = await doFold(data, intervalPlayer[0].id, io);
 
@@ -2852,7 +2852,7 @@ export const elemination = async (roomData, io) => {
     const bigBlindAmt = roomData.bigBlind;
     const smallBlindAmt = roomData.smallBlind;
     let players = roomData.players;
-    console.log("players =>", players, showDown);
+    // console.log("players =>", players, showDown);
     showDown.forEach((el) => {
       if (parseFloat(el.wallet) > 0) {
         newHandPlayer.push({
@@ -2868,6 +2868,8 @@ export const elemination = async (roomData, io) => {
           hands: el.hands,
           meetingToken: el.meetingToken,
           playing: true,
+          away: el.away,
+          autoFoldCount: el.autoFoldCount,
         });
       } else {
         players = players.filter(
@@ -2933,7 +2935,7 @@ export const elemination = async (roomData, io) => {
         }
       )
       .populate("tournament");
-    console.log("remainging player in showdown after game finish", upRoom);
+    // console.log("remainging player in showdown after game finish", upRoom);
     if (
       eleminated_players.length > 0 &&
       upRoom.tournament.havePlayers > 0 &&
@@ -6205,7 +6207,17 @@ const reArrangementBeforeTournamentStart = async (
         allRooms = allRooms.map((r) => {
           if (r !== room && r.players.length < idealPlayerCount) {
             console.log("entered in cond", playersToMove);
-            r.players.push(...playersToMove);
+            const occupiedPositions = r.players.map((el) => el.position);
+
+            let blankPositions = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter(
+              (el) => occupiedPositions.indexOf(el) < 0
+            );
+            console.log("blank positions ====>", blankPositions);
+            const updatedPLayersWithPositions = playersToMove.map((p, i) => {
+              p.position = blankPositions[i];
+              return p;
+            });
+            r.players.push(...updatedPLayersWithPositions);
             userIds = playersToMove.map((player) => ({
               userId: player.userid,
               newRoomId: r._id,
@@ -6440,7 +6452,50 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
       if (room.showdown.length > 1) {
         // console.log("UPdateeeeddddddd dataaaaaaa -->", updatedRoom);
         // io.in(room._id.toString()).emit("updateRoom", updatedRoom);
-        preflopround(room, io);
+        if (room.showdown.length < playerLimit) {
+          const stopedRoom = OtherRoom.filter(
+            (r) => !r.gamestart && r.players.length === 1
+          )[0];
+          if (stopedRoom) {
+            const occupiedPositions = room.players.map((p) => p.position);
+            const blankPositions = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter(
+              (el) => occupiedPositions.indexOf(el) < 0
+            );
+
+            room.players.push({
+              ...stopedRoom.players[0],
+              position: blankPositions[0],
+            });
+
+            io.in(stopedRoom._id.toString()).emit("roomchanged", {
+              userIds: [
+                {
+                  userId: stopedRoom.players[0]?.userid,
+                  newRoomId: room._id,
+                },
+              ],
+            });
+            await roomModel.updateOne(
+              {
+                _id: room._id,
+              },
+              {
+                players: room.players,
+              }
+            );
+
+            await tournamentModel.updateOne(
+              { _id: stopedRoom.tournament },
+              { $push: { destroyedRooms: stopedRoom._id } },
+              {
+                new: true,
+              }
+            );
+            await roomModel.deleteOne({ _id: stopedRoom._id });
+          }
+        }
+
+        await preflopround(room, io);
       } else {
         // console.log("wait for rearrange =====>", {showDown:room.showdown})
         console.log(
@@ -8626,6 +8681,8 @@ const pushPlayerInRoom = async (
         initialCoinBeforeStart: parseFloat(checkTournament.buyIn),
         gameJoinedAt: new Date(),
         hands: [],
+        autoFoldCount: 0,
+        away: false,
       });
 
       const payload = {
@@ -8720,6 +8777,8 @@ const pushPlayerInRoom = async (
             initialCoinBeforeStart: parseFloat(checkTournament.buyIn),
             gameJoinedAt: new Date(),
             hands: [],
+            autoFoldCount: 0,
+            away: false,
           },
         ],
         tournament: tournamentId,
