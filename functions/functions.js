@@ -8659,6 +8659,9 @@ const pushPlayerInRoom = async (
     let roomId;
     console.log("room ==>", room);
     if (room) {
+      room = await roomModel.findOne({
+        _id: room._id,
+      });
       roomId = room._id;
       let players = room.players;
       let leaveReq = room.leavereq;
@@ -8701,11 +8704,10 @@ const pushPlayerInRoom = async (
         {
           $inc: {
             havePlayers: 1,
-            totalJoinPlayer: 1,
             prizePool: checkTournament?.tournamentFee,
           },
+          totalJoinPlayer: players.length,
         },
-
         { new: true }
       );
       console.log("rooms ==>", tournament?.havePlayers, playerLimit);
