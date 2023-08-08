@@ -349,7 +349,7 @@ let returnSocket = (io) => {
 
     socket.on("joinTournament", async (data) => {
       q.push({ data, io, socket, type: "joinTournament" });
-      await JoinTournament(data, io, socket);
+      // await JoinTournament(data, io, socket);
     });
     socket.on("calCulateCardPair", async (data) => {
       await doCalculateCardPair(data, io, socket);

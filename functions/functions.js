@@ -8710,7 +8710,7 @@ const pushPlayerInRoom = async (
         },
         { new: true }
       );
-      console.log("rooms ==>", tournament?.havePlayers, playerLimit);
+      console.log("tournament ==== ==>", tournament);
       if (
         tournament?.tournamentType === "sit&go" &&
         tournament?.havePlayers === playerLimit &&
