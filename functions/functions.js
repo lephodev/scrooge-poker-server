@@ -8560,7 +8560,6 @@ const pushPlayerInRoom = async (
         payload,
         { new: true }
       );
-<<<<<<< HEAD
       const tournament = await tournamentModel
         .findOneAndUpdate(
           { _id: tournamentId },
@@ -8576,21 +8575,6 @@ const pushPlayerInRoom = async (
         .populate("rooms");
       console.log("tournament ==== ==>", tournament, rooms);
       console.log("rooms ==== ==>", tournament.rooms[0].players.length);
-=======
-      const tournament = await tournamentModel.findOneAndUpdate(
-        { _id: tournamentId },
-        {
-          $inc: {
-            havePlayers: 1,
-            totalJoinPlayer: 1,
-            prizePool: checkTournament?.tournamentFee,
-          },
-        },
-
-        { new: true }
-      );
-      console.log("rooms ==>", tournament?.havePlayers, playerLimit);
->>>>>>> 484106bb6e46788ab4ca191685eeccdf3c3b1368
       if (
         tournament?.tournamentType === "sit&go" &&
         tournament?.totalJoinPlayer === playerLimit &&
