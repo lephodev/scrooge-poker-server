@@ -20,7 +20,7 @@ import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
 
 let gameRestartSeconds = 3000;
-const playerLimit = 4;
+const playerLimit = 9;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
@@ -1144,7 +1144,7 @@ export const prefloptimer = async (roomid, io) => {
                   let isContinue = false;
                   if (intervalPlayer[0]) {
                     // console.log("interval player =====>", intervalPlayer[0]);
-                    if (intervalPlayer[0].autoFoldCount === 2) {
+                    if (intervalPlayer[0].autoFoldCount === 1) {
                       await roomModel.updateOne(
                         {
                           _id: data._id,
