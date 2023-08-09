@@ -9006,6 +9006,7 @@ export const setAvailability = async (data, io, socket) => {
     }
 
     socket.emit("availableinNextRound");
+
     io.in(tableId.toString()).emit("updateGame", { game: updatedRoomData });
   } catch (error) {
     console.log("error in setAvailability", error);
