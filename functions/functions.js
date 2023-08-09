@@ -2229,7 +2229,7 @@ export const showdown = async (roomid, io) => {
       await getSidePOt(updateRoom._id);
     }
     const updatedRoom = await roomModel.findOne({ _id: roomid });
-    console.log("Updated room-->", updatedRoom);
+    // console.log("Updated room-->", updatedRoom);
     const clcHand = (x) => {
       if (x.length) {
         x.forEach((e) => {
@@ -2270,7 +2270,7 @@ export const showdown = async (roomid, io) => {
     };
 
     clcHand(updatedRoom.sidePots);
-    console.log("hands ==mjsddbjdc", hands);
+    // console.log("hands ==mjsddbjdc", hands);
     let showdownData = updatedRoom.showdown;
     let winnerPlayers = [];
     let sidePots = [...updatedRoom.sidePots];
@@ -2400,12 +2400,12 @@ export const showdown = async (roomid, io) => {
 
     const handWinner = updatedRoom.handWinner;
     handWinner.push(winnerPlayers);
-    console.log("Hand winner -->", handWinner);
+    // console.log("Hand winner -->", handWinner);
     console.log("Winner players -->", winnerPlayers);
     const upRoomData = await roomModel.findOne({ _id: updatedRoom._id });
 
     upRoomData.showdown.forEach((player, i) => {
-      console.log("showdown player -->", player);
+      // console.log("showdown player -->", player);
       let action, amt;
       let betAmt = 0;
       if (player.playing) {
@@ -8699,22 +8699,25 @@ const pushPlayerInRoom = async (
         payload,
         { new: true }
       );
-      const tournament = await tournamentModel.findOneAndUpdate(
-        { _id: tournamentId },
-        {
-          $inc: {
-            havePlayers: 1,
-            totalJoinPlayer: 1,
-            prizePool: checkTournament?.tournamentFee,
+      const tournament = await tournamentModel
+        .findOneAndUpdate(
+          { _id: tournamentId },
+          {
+            $inc: {
+              havePlayers: 1,
+              totalJoinPlayer: 1,
+              prizePool: checkTournament?.tournamentFee,
+            },
           },
-        },
-        { new: true }
-      );
-      console.log("tournament ==== ==>", tournament);
+          { new: true }
+        )
+        .populate("rooms");
+      console.log("tournament ==== ==>", tournament, rooms);
+      console.log("rooms ==== ==>", tournament.rooms[0].players.length);
       if (
         tournament?.tournamentType === "sit&go" &&
-        tournament?.havePlayers === playerLimit &&
-        rooms.find((room) => room.players.length === playerLimit)
+        tournament?.totalJoinPlayer === playerLimit &&
+        tournament?.rooms.find((room) => room.players.length === playerLimit)
       ) {
         await tournamentModel.updateOne(
           { _id: tournamentId },
@@ -8728,7 +8731,9 @@ const pushPlayerInRoom = async (
           if (timer < 0) {
             clearInterval(interval);
             preflopround(
-              rooms.find((room) => room.players.length === playerLimit),
+              tournament?.rooms.find(
+                (room) => room.players.length === playerLimit
+              ),
               io
             );
             const date = new Date().toISOString().split("T")[0];
