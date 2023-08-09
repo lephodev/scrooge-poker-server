@@ -1138,17 +1138,17 @@ export const prefloptimer = async (roomid, io) => {
                     data.lastAction === "check") &&
                   data.players.length !== 1
                 ) {
-                  await doCheck(roomid, intervalPlayer[0].id, io);
+                  await doCheck(roomid, intervalPlayer[0]?.id, io);
                   timer(++i, maxPosition);
                 } else {
                   let isContinue = false;
                   if (intervalPlayer[0]) {
                     // console.log("interval player =====>", intervalPlayer[0]);
-                    if (intervalPlayer[0].autoFoldCount === 2) {
+                    if (intervalPlayer[0].autoFoldCount === 1) {
                       await roomModel.updateOne(
                         {
                           _id: data._id,
-                          "preflopround.id": intervalPlayer[0].id,
+                          "preflopround.id": intervalPlayer[0]?.id,
                         },
                         {
                           "preflopround.$.away": true,
@@ -1163,7 +1163,7 @@ export const prefloptimer = async (roomid, io) => {
                       const updateddata = await roomModel.findOneAndUpdate(
                         {
                           _id: data._id,
-                          "preflopround.id": intervalPlayer[0].id,
+                          "preflopround.id": intervalPlayer[0]?.id,
                         },
                         {
                           $inc: {
@@ -1176,7 +1176,7 @@ export const prefloptimer = async (roomid, io) => {
                       );
                       // console.log("updateddata ==>", updateddata);
                     }
-                    isContinue = await doFold(data, intervalPlayer[0].id, io);
+                    isContinue = await doFold(data, intervalPlayer[0]?.id, io);
 
                     io.in(data?._id?.toString()).emit("automaticFold", {
                       msg: `${intervalPlayer[0]?.name} has automatically folded`,
@@ -1203,11 +1203,11 @@ export const prefloptimer = async (roomid, io) => {
                 timer(++i, maxPosition);
               } else {
                 j--;
-                if (intervalPlayer[0].away) {
+                if (intervalPlayer[0]?.away) {
                   j = 0;
                 }
                 io.in(udata?._id?.toString()).emit("timer", {
-                  id: intervalPlayer[0].id,
+                  id: intervalPlayer[0]?.id,
                   playerchance: j,
                   timerPlayer: i,
                   runninground: 1,
@@ -1466,12 +1466,12 @@ export const flopTimer = async (roomid, io) => {
                     data?.lastAction === "check") &&
                   data?.players.length !== 1
                 ) {
-                  await doCheck(roomid, intervalPlayer[0].id, io);
+                  await doCheck(roomid, intervalPlayer[0]?.id, io);
                   timer(++i, maxPosition);
                 } else {
                   let isContinue = false;
                   if (intervalPlayer[0]) {
-                    isContinue = await doFold(data, intervalPlayer[0].id, io);
+                    isContinue = await doFold(data, intervalPlayer[0]?.id, io);
 
                     io.in(data?._id?.toString()).emit("automaticFold", {
                       msg: `${intervalPlayer[0].name} has automatically folded`,
@@ -1498,7 +1498,7 @@ export const flopTimer = async (roomid, io) => {
               } else {
                 j--;
                 io.in(data?._id?.toString()).emit("timer", {
-                  id: intervalPlayer[0].id,
+                  id: intervalPlayer[0]?.id,
                   playerchance: j,
                   timerPlayer: i,
                   runninground: 2,
@@ -1783,7 +1783,7 @@ export const turnTimer = async (roomid, io) => {
               } else {
                 j--;
                 io.in(data?._id?.toString()).emit("timer", {
-                  id: intervalPlayer[0].id,
+                  id: intervalPlayer[0]?.id,
                   playerchance: j,
                   timerPlayer: i,
                   runninground: 3,
@@ -2075,7 +2075,7 @@ export const riverTimer = async (roomid, io) => {
               } else {
                 j--;
                 io.in(data?._id?.toString()).emit("timer", {
-                  id: intervalPlayer[0].id,
+                  id: intervalPlayer[0]?.id,
                   playerchance: j,
                   timerPlayer: i,
                   runninground: 4,
@@ -2229,7 +2229,7 @@ export const showdown = async (roomid, io) => {
       await getSidePOt(updateRoom._id);
     }
     const updatedRoom = await roomModel.findOne({ _id: roomid });
-    console.log("Updated room-->", updatedRoom);
+    // console.log("Updated room-->", updatedRoom);
     const clcHand = (x) => {
       if (x.length) {
         x.forEach((e) => {
@@ -2270,7 +2270,7 @@ export const showdown = async (roomid, io) => {
     };
 
     clcHand(updatedRoom.sidePots);
-    console.log("hands ==mjsddbjdc", hands);
+    // console.log("hands ==mjsddbjdc", hands);
     let showdownData = updatedRoom.showdown;
     let winnerPlayers = [];
     let sidePots = [...updatedRoom.sidePots];
@@ -2400,12 +2400,12 @@ export const showdown = async (roomid, io) => {
 
     const handWinner = updatedRoom.handWinner;
     handWinner.push(winnerPlayers);
-    console.log("Hand winner -->", handWinner);
+    // console.log("Hand winner -->", handWinner);
     console.log("Winner players -->", winnerPlayers);
     const upRoomData = await roomModel.findOne({ _id: updatedRoom._id });
 
     upRoomData.showdown.forEach((player, i) => {
-      console.log("showdown player -->", player);
+      // console.log("showdown player -->", player);
       let action, amt;
       let betAmt = 0;
       if (player.playing) {
@@ -8699,22 +8699,25 @@ const pushPlayerInRoom = async (
         payload,
         { new: true }
       );
-      const tournament = await tournamentModel.findOneAndUpdate(
-        { _id: tournamentId },
-        {
-          $inc: {
-            havePlayers: 1,
-            prizePool: checkTournament?.tournamentFee,
+      const tournament = await tournamentModel
+        .findOneAndUpdate(
+          { _id: tournamentId },
+          {
+            $inc: {
+              havePlayers: 1,
+              totalJoinPlayer: 1,
+              prizePool: checkTournament?.tournamentFee,
+            },
           },
-          totalJoinPlayer: players.length,
-        },
-        { new: true }
-      );
-      console.log("rooms ==>", tournament?.havePlayers, playerLimit);
+          { new: true }
+        )
+        .populate("rooms");
+      console.log("tournament ==== ==>", tournament, rooms);
+      console.log("rooms ==== ==>", tournament.rooms[0].players.length);
       if (
         tournament?.tournamentType === "sit&go" &&
-        tournament?.havePlayers === playerLimit &&
-        rooms.find((room) => room.players.length === playerLimit)
+        tournament?.totalJoinPlayer === playerLimit &&
+        tournament?.rooms.find((room) => room.players.length === playerLimit)
       ) {
         await tournamentModel.updateOne(
           { _id: tournamentId },
@@ -8728,7 +8731,9 @@ const pushPlayerInRoom = async (
           if (timer < 0) {
             clearInterval(interval);
             preflopround(
-              rooms.find((room) => room.players.length === playerLimit),
+              tournament?.rooms.find(
+                (room) => room.players.length === playerLimit
+              ),
               io
             );
             const date = new Date().toISOString().split("T")[0];
