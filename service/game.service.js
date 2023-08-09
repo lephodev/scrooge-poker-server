@@ -80,8 +80,6 @@ const pushUserInRoom = async (game, userId, position, sitInAmount, type) => {
               initialCoinBeforeStart: sitInAmount,
               gameJoinedAt: new Date(),
               hands: [],
-              away: false,
-              autoFoldCount: 0,
             },
           },
           hostId,
@@ -104,7 +102,6 @@ const joinRoomByUserId = async (game, userId, sitInAmount, playerLimit) => {
   // if public table -
   // check empty slot for table else return slot full,
   // join user in game if there is empty slot
-  console.log("join room  by user id executed===>");
   if (game.public && game.players.length < playerLimit) {
     const availblePosition = await findAvailablePosition(game.players);
     if (!availblePosition.isFound) {
