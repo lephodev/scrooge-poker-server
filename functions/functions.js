@@ -3002,9 +3002,9 @@ export const elemination = async (roomData, io) => {
           hands: el.hands,
           meetingToken: el.meetingToken,
         });
-        let socket = io?.sockets?.connected[el.id];
-        console.log("socket elemination ==>", el.id, socket);
-        socket?.leave(roomData._id.toString());
+        // console.log("socket elemination ==>", io.sockets);
+        // let socket = io?.sockets?.connected[el.id];
+        // socket?.leave(roomData._id.toString());
       }
     });
 
