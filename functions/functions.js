@@ -35,6 +35,10 @@ const addUserInSocket = (io, socket, gameId, userId) => {
     ].map((el) => ({
       room: el,
       pretimer: false,
+      preflop: el.preflop || false,
+      flop: el.flop || false,
+      turn: el.turn || false,
+      river: el.river || false,
     }));
     // console.log("Socket room After ", io.room);
     // Add users
@@ -677,14 +681,23 @@ export const preflopround = async (room, io) => {
   try {
     console.log("preflop round executed");
     // console.log("io", io);
-    await updateRoomForNewHand(room._id, io);
-
-    // console.log("io", io);
     room = await roomModel.findOne(room._id).lean();
     // console.log("room players ==>", room);
     if (!room) {
       return;
     }
+    console.log("rooommss in IO ==>", io.room, room._id.toString());
+
+    if (
+      io.room.find((el) => el.room.toString() === room._id.toString()).preflop
+    ) {
+      console.log("preflop round already executed");
+      return;
+    }
+
+    await updateRoomForNewHand(room._id, io);
+
+    // console.log("io", io);
 
     let playingPlayer = room?.players?.filter(
       (el) => el.playing && el.wallet > 0
@@ -1043,12 +1056,14 @@ export const preflopround = async (room, io) => {
           };
           await deductBigBlind();
 
-          prefloptimer(room._id, io);
-          let updatedRoom = await roomModel.findOne({
-            _id: room._id,
-          });
-
-          io.in(room._id.toString()).emit("preflopround", updatedRoom);
+          if (!io.room.find((el) => el.room === room._id.toString()).preflop) {
+            prefloptimer(room._id, io);
+            let updatedRoom = await roomModel.findOne({
+              _id: room._id,
+            });
+            io.in(room._id.toString()).emit("preflopround", updatedRoom);
+            return;
+          }
         } else {
           io.in(room._id.toString()).emit("onlyOnePlayingPlayer", {
             msg: "Game finished, Only one player left",
@@ -1073,6 +1088,17 @@ export const preflopround = async (room, io) => {
 export const prefloptimer = async (roomid, io) => {
   try {
     console.log("prefloptimer Id------->", roomid);
+
+    io.room = io.room.map((el) => {
+      if (el.room.toString() === roomid.toString()) {
+        return {
+          ...el,
+          preflop: true,
+        };
+      }
+      return el;
+    });
+
     const roomData = await roomModel.findOne({ _id: roomid });
     // let totalPlayer = roomData.preflopround.length + roomData.eleminated.length;
     let totalPlayer = 0;
@@ -1293,6 +1319,12 @@ export const flopround = async (roomid, io) => {
     const roomData = await roomModel.findOne({ _id: roomid });
     // const tournamentConfig = await tournamentConfModel.findOne().sort({'_id': -1});
     // console.log("flop round executed ====>", roomData?.runninground);
+
+    if (io.room.find((el) => el.room === roomData._id.toString()).flop) {
+      console.log("flop round already executed");
+      return;
+    }
+
     if (roomData?.runninground === 1) {
       let distributedCards = [];
       let floproundPlayersData = [];
@@ -1384,12 +1416,20 @@ export const flopround = async (roomid, io) => {
       if (playingPlayer > 1) {
         setTimeout(() => {
           console.log("flop-timer called for room =>", roomid);
-          flopTimer(roomid, io);
+          if (
+            !io.room.find((el) => el.room === updatedRoom._id.toString()).flop
+          ) {
+            flopTimer(roomid, io);
+          }
         }, 50);
       } else {
         setTimeout(() => {
           console.log("turn-round called for room =>", roomid);
-          turnround(roomid, io);
+          if (
+            !io.room.find((el) => el.room === updatedRoom._id.toString()).turn
+          ) {
+            turnround(roomid, io);
+          }
         }, 100);
       }
     }
@@ -1401,6 +1441,16 @@ export const flopround = async (roomid, io) => {
 export const flopTimer = async (roomid, io) => {
   try {
     const roomData = await roomModel.findOne({ _id: roomid });
+
+    io.room = io.room.map((el) => {
+      if (el.room.toString() === roomid.toString()) {
+        return {
+          ...el,
+          flop: true,
+        };
+      }
+      return el;
+    });
 
     // let totalPlayer =
     //   roomData?.flopround?.length + roomData?.eleminated?.length;
@@ -1580,6 +1630,12 @@ export const turnround = async (roomid, io) => {
     console.log("turn round executed");
     const roomData = await roomModel.findOne({ _id: roomid });
     // const tournamentConfig = await tournamentConfModel.findOne().sort({'_id': -1});
+
+    if (io.room.find((el) => el.room === roomData._id.toString()).turn) {
+      console.log("turn round already executed");
+      return;
+    }
+
     let playingPlayer = 0;
 
     if (roomData?.runninground === 2) {
@@ -1672,12 +1728,18 @@ export const turnround = async (roomid, io) => {
       if (playingPlayer > 1) {
         setTimeout(() => {
           console.log("turn-timer called for room =>", roomid);
-          turnTimer(roomid, io);
+          if (!io.room.find((el) => el.room === roomData._id.toString()).turn) {
+            turnTimer(roomid, io);
+          }
         }, 50);
       } else {
         setTimeout(() => {
-          console.log("river-round called for room =>", roomid);
-          riverround(roomid, io);
+          console.log("river-round called for room ==>", roomid);
+          if (
+            !io.room.find((el) => el.room === roomData._id.toString()).river
+          ) {
+            riverround(roomid, io);
+          }
         }, 300);
       }
     }
@@ -1691,6 +1753,15 @@ export const turnTimer = async (roomid, io) => {
     const roomData = await roomModel.findOne({ _id: roomid });
     // let totalPlayer =
     //   roomData?.turnround?.length + roomData?.eleminated?.length;
+    io.room = io.room.map((el) => {
+      if (el.room.toString() === roomid.toString()) {
+        return {
+          ...el,
+          turn: true,
+        };
+      }
+      return el;
+    });
 
     let totalPlayer = 0;
     roomData.turnround.forEach((el) => {
@@ -1863,6 +1934,12 @@ export const riverround = async (roomid, io) => {
   try {
     console.log("river round executed");
     const roomData = await roomModel.findOne({ _id: roomid });
+
+    if (io.room.find((el) => el.room === roomData._id.toString()).river) {
+      console.log("turn round already executed");
+      return;
+    }
+
     let playingPlayer = 0;
 
     if (roomData?.runninground === 3) {
@@ -1960,7 +2037,13 @@ export const riverround = async (roomid, io) => {
       if (playingPlayer > 1) {
         setTimeout(() => {
           console.log("river-timer called for room =>", roomid);
-          riverTimer(roomid, io);
+          if (
+            !io.room.find((el) => el.room === roomData._id.toString()).river
+          ) {
+            console.log("turn round already executed");
+            riverTimer(roomid, io);
+            return;
+          }
         }, 50);
       } else {
         console.log("<<<-----show down first----->>>");
@@ -1980,6 +2063,16 @@ export const riverTimer = async (roomid, io) => {
     const roomData = await roomModel.findOne({ _id: roomid });
     // let totalPlayer =
     //   roomData?.riverround?.length + roomData?.eleminated?.length;
+
+    io.room = io.room.map((el) => {
+      if (el.room.toString() === roomid.toString()) {
+        return {
+          ...el,
+          river: true,
+        };
+      }
+      return el;
+    });
 
     let totalPlayer = 0;
     roomData.riverround.forEach((el) => {
@@ -2157,6 +2250,7 @@ export const riverTimer = async (roomid, io) => {
 export const showdown = async (roomid, io) => {
   try {
     console.log("----showdown-----");
+
     const roomData = await roomModel.findOne({ _id: roomid });
     if (!roomData.isGameRunning) return;
     let playersHand = [];
@@ -2165,6 +2259,18 @@ export const showdown = async (roomid, io) => {
     let totalPot = roomData.pot;
     let playerData = roomData.riverround;
     let playerWithWallets = [];
+    io.room = io.room.map((el) => {
+      if (el.room.toString() === roomData._id.toString()) {
+        return {
+          ...el,
+          preflop: false,
+          flop: false,
+          turn: false,
+          river: false,
+        };
+      }
+      return el;
+    });
     playerData.forEach((e) => {
       let actionType = null;
       if (e.fold === true) {
@@ -5626,6 +5732,19 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     let showDownPlayers = [];
     let playerData = null;
     let totalPot = roomData.pot;
+    io.room = io.room.map((el) => {
+      if (el.room.toString() === roomData._id.toString()) {
+        return {
+          ...el,
+          preflop: false,
+          flop: false,
+          turn: false,
+          river: false,
+        };
+      }
+      return el;
+    });
+
     switch (runninground) {
       case 1:
         playerData = roomData.preflopround;
@@ -8417,10 +8536,10 @@ export const playerTentativeAction = async (data, socket, io) => {
         playerAction
       );
       let updatedGame;
-      setTimeout(async () => {
-        updatedGame = await gameService.getGameById(gameId);
-        io.in(gameId).emit("updateGame", { game: updatedGame });
-      }, 500);
+      // setTimeout(async () => {
+      updatedGame = await gameService.getGameById(gameId);
+      io.in(gameId).emit("updateGame", { game: updatedGame });
+      // }, 500);
       //  = await gameService.getGameById(gameId);
       // console.log("updatedGameupdatedGame", updatedGame);
     } else {
