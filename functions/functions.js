@@ -698,6 +698,7 @@ export const preflopround = async (room, io) => {
     await updateRoomForNewHand(room._id, io);
 
     // console.log("io", io);
+    console.log("afetr update roomfor new hand");
 
     let playingPlayer = room?.players?.filter(
       (el) => el.playing && el.wallet > 0
@@ -741,8 +742,11 @@ export const preflopround = async (room, io) => {
 
     // console.log("playingPlayer =====> 2", playingPlayer);
     if (!room.finish) {
+      console.log("inside room found", room.runninground);
       if (room.runninground === 0) {
+        console.log("inside running round", playingPlayer.length);
         if (playingPlayer.length > 1) {
+          console.log("before preflopPlayerPush");
           await roomModel.updateOne(
             {
               _id: room._id,
@@ -756,6 +760,7 @@ export const preflopround = async (room, io) => {
           );
 
           await preflopPlayerPush(room.players, room._id);
+          console.log("afetr preflopPlayerPush");
           const room1111 = await roomModel
             .findOne({ _id: room._id })
             .populate("tournament");
