@@ -2623,6 +2623,7 @@ export const showdown = async (roomid, io) => {
         winnerPlayer: winnerPlayers,
         handWinner: handWinner,
         isShowdown: true,
+        runninground: 5,
       },
       {
         new: true,
@@ -2887,7 +2888,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 newHandPlayer,
                 roomData.players
               );
-              console.log("new hand players ==>", newHandPlayer);
+              // console.log("new hand players ==>", newHandPlayer);
               const upRoom = await roomModel.findOneAndUpdate(
                 {
                   _id: roomid,
