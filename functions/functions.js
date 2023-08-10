@@ -697,6 +697,8 @@ export const preflopround = async (room, io) => {
 
     await updateRoomForNewHand(room._id, io);
 
+    room = await roomModel.findOne(room._id).lean();
+
     // console.log("io", io);
     console.log("afetr update roomfor new hand");
 
