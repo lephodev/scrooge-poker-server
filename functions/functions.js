@@ -784,7 +784,7 @@ export const preflopround = async (room, io) => {
           // let totalplayer =
           //   room1111.preflopround.length + room1111.eleminated.length;
 
-          let totalplayer = maxPosition + room1111.eleminated.length;
+          let totalplayer = maxPosition + 1 + room1111.eleminated.length;
 
           console.log("maxPosition ==>", maxPosition);
 
