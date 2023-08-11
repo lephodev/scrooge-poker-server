@@ -1294,7 +1294,7 @@ export const prefloptimer = async (roomid, io) => {
         ) {
           setTimeout(() => {
             flopround(roomid, io);
-          }, 400);
+          }, 600);
         } else {
           if (udata?.isCircleCompleted) {
             if (udata?.raisePlayerPosition < i) {
@@ -1437,7 +1437,7 @@ export const flopround = async (roomid, io) => {
           ) {
             turnround(roomid, io);
           }
-        }, 400);
+        }, 600);
       }
     }
   } catch (error) {
@@ -1610,7 +1610,7 @@ export const flopTimer = async (roomid, io) => {
         ) {
           setTimeout(() => {
             turnround(roomid, io);
-          }, 400);
+          }, 600);
         } else {
           if (udata?.isCircleCompleted) {
             if (udata?.raisePlayerPosition < i) {
@@ -1747,7 +1747,7 @@ export const turnround = async (roomid, io) => {
           ) {
             riverround(roomid, io);
           }
-        }, 400);
+        }, 600);
       }
     }
   } catch (error) {
@@ -1915,7 +1915,7 @@ export const turnTimer = async (roomid, io) => {
         ) {
           setTimeout(() => {
             riverround(roomid, io);
-          }, 400);
+          }, 600);
         } else {
           if (udata?.isCircleCompleted) {
             if (udata?.raisePlayerPosition < i) {
