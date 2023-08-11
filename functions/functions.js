@@ -5400,7 +5400,11 @@ export const doAllin = async (roomData, playerid, io) => {
               e.tentativeAction &&
               e.tentativeAction === "check/fold"
             ) {
-              e.tentativeAction = "fold";
+              if (roundData[0].pot >= roundData[0].wallet + roundData[0].pot) {
+                e.tentativeAction = null;
+              } else {
+                e.tentativeAction = "fold";
+              }
             } else if (
               e.tentativeAction &&
               e.tentativeAction === "callAny" &&
@@ -5482,7 +5486,11 @@ export const doAllin = async (roomData, playerid, io) => {
               e.tentativeAction &&
               e.tentativeAction === "check/fold"
             ) {
-              e.tentativeAction = "fold";
+              if (roundData[0].pot >= roundData[0].wallet + roundData[0].pot) {
+                e.tentativeAction = null;
+              } else {
+                e.tentativeAction = "fold";
+              }
             } else if (
               e.tentativeAction &&
               e.tentativeAction === "callAny" &&
@@ -5566,7 +5574,11 @@ export const doAllin = async (roomData, playerid, io) => {
               e.tentativeAction &&
               e.tentativeAction === "check/fold"
             ) {
-              e.tentativeAction = "fold";
+              if (roundData[0].pot >= roundData[0].wallet + roundData[0].pot) {
+                e.tentativeAction = null;
+              } else {
+                e.tentativeAction = "fold";
+              }
             } else if (
               e.tentativeAction &&
               e.tentativeAction === "callAny" &&
@@ -5649,7 +5661,11 @@ export const doAllin = async (roomData, playerid, io) => {
               e.tentativeAction &&
               e.tentativeAction === "check/fold"
             ) {
-              e.tentativeAction = "fold";
+              if (roundData[0].pot >= roundData[0].wallet + roundData[0].pot) {
+                e.tentativeAction = null;
+              } else {
+                e.tentativeAction = "fold";
+              }
             } else if (
               e.tentativeAction &&
               e.tentativeAction === "callAny" &&
@@ -9057,6 +9073,7 @@ export const blindTimer = async (data, io) => {
     console.log("error in blindTimer", error);
   }
 };
+
 export const doCalculateCardPair = async (data, io, socket) => {
   let p = [];
   if (data?.roundData && data?.roundData?.length > 0) {
