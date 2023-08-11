@@ -1241,7 +1241,7 @@ export const prefloptimer = async (roomid, io) => {
                 }
                 io.in(udata?._id?.toString()).emit("timer", {
                   id: intervalPlayer[0]?.id,
-                  playerchance: j,
+                  playerchance: j - 1,
                   timerPlayer: i,
                   runninground: 1,
                   maxtimer: tx,
@@ -1556,7 +1556,7 @@ export const flopTimer = async (roomid, io) => {
                 j--;
                 io.in(data?._id?.toString()).emit("timer", {
                   id: intervalPlayer[0]?.id,
-                  playerchance: j,
+                  playerchance: j - 1,
                   timerPlayer: i,
                   runninground: 2,
                   maxtimer: tx,
@@ -1862,7 +1862,7 @@ export const turnTimer = async (roomid, io) => {
                 j--;
                 io.in(data?._id?.toString()).emit("timer", {
                   id: intervalPlayer[0]?.id,
-                  playerchance: j,
+                  playerchance: j - 1,
                   timerPlayer: i,
                   runninground: 3,
                   maxtimer: tx,
@@ -2176,7 +2176,7 @@ export const riverTimer = async (roomid, io) => {
                 j--;
                 io.in(data?._id?.toString()).emit("timer", {
                   id: intervalPlayer[0]?.id,
-                  playerchance: j,
+                  playerchance: j - 1,
                   timerPlayer: i,
                   runninground: 4,
                   maxtimer: tx,
@@ -8862,12 +8862,12 @@ const pushPlayerInRoom = async (
       console.log("rooms ==== ==>", tournament.rooms[0].players.length);
       if (
         tournament?.tournamentType === "sit&go" &&
-        tournament?.totalJoinPlayer === playerLimit &&
+        // tournament?.totalJoinPlayer === playerLimit &&
         tournament?.rooms.find((room) => room.players.length === playerLimit)
       ) {
         await tournamentModel.updateOne(
           { _id: tournamentId },
-          { isStart: true }
+          { isStart: true, totalJoinPlayer: 9 }
         );
         console.log("Tournament started");
         blindTimer(checkTournament, io);
