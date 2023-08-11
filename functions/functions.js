@@ -784,7 +784,7 @@ export const preflopround = async (room, io) => {
           // let totalplayer =
           //   room1111.preflopround.length + room1111.eleminated.length;
 
-          let totalplayer = maxPosition + room1111.eleminated.length;
+          let totalplayer = maxPosition + 1 + room1111.eleminated.length;
 
           console.log("maxPosition ==>", maxPosition);
 
@@ -1294,7 +1294,7 @@ export const prefloptimer = async (roomid, io) => {
         ) {
           setTimeout(() => {
             flopround(roomid, io);
-          }, 50);
+          }, 600);
         } else {
           if (udata?.isCircleCompleted) {
             if (udata?.raisePlayerPosition < i) {
@@ -1437,7 +1437,7 @@ export const flopround = async (roomid, io) => {
           ) {
             turnround(roomid, io);
           }
-        }, 100);
+        }, 600);
       }
     }
   } catch (error) {
@@ -1610,7 +1610,7 @@ export const flopTimer = async (roomid, io) => {
         ) {
           setTimeout(() => {
             turnround(roomid, io);
-          }, 50);
+          }, 600);
         } else {
           if (udata?.isCircleCompleted) {
             if (udata?.raisePlayerPosition < i) {
@@ -1747,7 +1747,7 @@ export const turnround = async (roomid, io) => {
           ) {
             riverround(roomid, io);
           }
-        }, 300);
+        }, 600);
       }
     }
   } catch (error) {
@@ -1915,7 +1915,7 @@ export const turnTimer = async (roomid, io) => {
         ) {
           setTimeout(() => {
             riverround(roomid, io);
-          }, 50);
+          }, 600);
         } else {
           if (udata?.isCircleCompleted) {
             if (udata?.raisePlayerPosition < i) {
@@ -5400,7 +5400,11 @@ export const doAllin = async (roomData, playerid, io) => {
               e.tentativeAction &&
               e.tentativeAction === "check/fold"
             ) {
-              e.tentativeAction = "fold";
+              if (roundData[0].pot >= roundData[0].wallet + roundData[0].pot) {
+                e.tentativeAction = null;
+              } else {
+                e.tentativeAction = "fold";
+              }
             } else if (
               e.tentativeAction &&
               e.tentativeAction === "callAny" &&
@@ -5482,7 +5486,11 @@ export const doAllin = async (roomData, playerid, io) => {
               e.tentativeAction &&
               e.tentativeAction === "check/fold"
             ) {
-              e.tentativeAction = "fold";
+              if (roundData[0].pot >= roundData[0].wallet + roundData[0].pot) {
+                e.tentativeAction = null;
+              } else {
+                e.tentativeAction = "fold";
+              }
             } else if (
               e.tentativeAction &&
               e.tentativeAction === "callAny" &&
@@ -5566,7 +5574,11 @@ export const doAllin = async (roomData, playerid, io) => {
               e.tentativeAction &&
               e.tentativeAction === "check/fold"
             ) {
-              e.tentativeAction = "fold";
+              if (roundData[0].pot >= roundData[0].wallet + roundData[0].pot) {
+                e.tentativeAction = null;
+              } else {
+                e.tentativeAction = "fold";
+              }
             } else if (
               e.tentativeAction &&
               e.tentativeAction === "callAny" &&
@@ -5649,7 +5661,11 @@ export const doAllin = async (roomData, playerid, io) => {
               e.tentativeAction &&
               e.tentativeAction === "check/fold"
             ) {
-              e.tentativeAction = "fold";
+              if (roundData[0].pot >= roundData[0].wallet + roundData[0].pot) {
+                e.tentativeAction = null;
+              } else {
+                e.tentativeAction = "fold";
+              }
             } else if (
               e.tentativeAction &&
               e.tentativeAction === "callAny" &&
@@ -9057,6 +9073,7 @@ export const blindTimer = async (data, io) => {
     console.log("error in blindTimer", error);
   }
 };
+
 export const doCalculateCardPair = async (data, io, socket) => {
   let p = [];
   if (data?.roundData && data?.roundData?.length > 0) {
