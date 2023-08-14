@@ -131,6 +131,34 @@ const pushUserInRoom = async (game, userId, position, sitInAmount, type) => {
     // ]);
 
     await setCachedGame(game)
+    roomModel.updateOne(
+          { _id: game._id },
+          {
+            $push: {
+              players: {
+                name: username,
+                userid: _id,
+                id: _id,
+                photoURI: avatar ? avatar : profile ? profile : img,
+                wallet: sitInAmount,
+                position,
+                missedSmallBlind: false,
+                missedBigBlind: false,
+                forceBigBlind: false,
+                playing: true,
+                initialCoinBeforeStart: sitInAmount,
+                gameJoinedAt: new Date(),
+                hands: [],
+                away: false,
+                autoFoldCount: 0,
+              },
+            },
+            hostId,
+            $pull: {
+              leavereq: converMongoId(userId),
+            },
+          }
+        )
 
     // const room = await getGameById(game._id);
     return game;

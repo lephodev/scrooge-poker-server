@@ -113,7 +113,7 @@ app.use(
   })
 );
 mongoConnect();
-export const redisClient = createClient(6379, '127.0.0.1');
+export const redisClient = createClient(process.env.REDIS_PORT || 6379, process.env.REDIS_HOST || '127.0.0.1');
 (async () => {
   redisClient
     .on('error', (error) => console.error(`Error in redis connect: ${error}`))
