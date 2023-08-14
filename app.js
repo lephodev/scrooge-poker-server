@@ -22,8 +22,10 @@ import auth from "./landing-server/middlewares/auth.js";
 import mongoose from "mongoose";
 import User from "./landing-server/models/user.model";
 import returnCron from "./cron/cron";
+import { createClient } from 'redis';
 import tournamentModel from "./models/tournament";
 import logger from "./landing-server/config/logger";
+import { getAllKeysAndValues, getCachedGame } from "./redis-cache";
 
 let app = express();
 dotenv.config();
@@ -72,7 +74,6 @@ const corsOptions = {
     }
   },
 };
-
 app.use(express.json());
 app.use(
   express.urlencoded({
@@ -112,6 +113,15 @@ app.use(
   })
 );
 mongoConnect();
+export const redisClient = createClient(6379, '127.0.0.1');
+(async () => {
+  redisClient
+    .on('error', (error) => console.error(`Error in redis connect: ${error}`))
+    .on('connect', async() => {
+      console.info('redis server connected');
+    });
+  await redisClient.connect();
+})();
 
 // Auth functions
 // jwt authentication
@@ -129,9 +139,7 @@ require("./socketconnection/socketconnection")(io);
 app.get("/checkTableExist/:tableId", async (req, res) => {
   try {
     const { tableId } = req.params;
-    const room = await roomModel.findOne({
-      _id: mongoose.Types.ObjectId(tableId),
-    });
+    const room = await getCachedGame(tableId)
     if (room) {
       res.status(200).send({
         success: true,
@@ -151,9 +159,7 @@ app.get("/checkTableExist/:tableId", async (req, res) => {
 app.get("/rescueTable/:tableId", async (req, res) => {
   try {
     const { tableId } = req.params;
-    const room = await roomModel.findOne({
-      _id: mongoose.Types.ObjectId(tableId),
-    });
+    const room = await getCachedGame(tableId)
     if (room) {
       let firstGameTime = new Date(room.firstGameTime);
       let now = new Date();
@@ -224,9 +230,7 @@ app.get("/rescueTable/:tableId", async (req, res) => {
 app.get("/deleteStuckTable/:tableId", async (req, res) => {
   try {
     const { tableId } = req.params;
-    const room = await roomModel.deleteOne({
-      _id: mongoose.Types.ObjectId(tableId),
-    });
+    const room = await getCachedGame(tableId)
     if (room) {
       res.status(200).send({
         success: true,
@@ -246,15 +250,11 @@ app.get("/deleteStuckTable/:tableId", async (req, res) => {
 app.get("/leaveGame/:tableId/:userId", async (req, res) => {
   try {
     let { tableId, userId } = req.params;
-    tableId = mongoose.Types.ObjectId(tableId);
-    let roomdata = await roomModel
-      .findOne({
-        _id: tableId,
-      })
-      .lean();
+  
+    let roomdata = await getCachedGame(tableId)
     if (
       roomdata &&
-      roomdata.players.find((el) => el.userid.toString() === userId?.toString())
+      roomdata.players.find((el) => el.id.toString() === userId?.toString())
     ) {
       const ress = await doLeaveTable({ tableId, userId }, io);
       return res.send({
@@ -269,7 +269,8 @@ app.get("/leaveGame/:tableId/:userId", async (req, res) => {
         success: true,
       });
     } else {
-      let roomdata = await roomModel.findOne({ tableId }).lean();
+
+      let roomdata = await getCachedGame(tableId)
       if (!roomdata?.players?.find((el) => el.id === userId)) {
         return res.send({
           success: true,
@@ -288,16 +289,8 @@ app.get("/leaveGame/:tableId/:userId", async (req, res) => {
 app.get("/checkUserInGame/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
-    const room = await roomModel.findOne({
-      $or: [
-        {
-          players: { $elemMatch: { userid: mongoose.Types.ObjectId(userId) } },
-        },
-        {
-          watchers: { $elemMatch: { userid: mongoose.Types.ObjectId(userId) } },
-        },
-      ],
-    });
+    const games = getAllKeysAndValues();
+    const room = games.find(el => el.players.find(pl => pl.id === userId) || el.watchers.find(wt => wt.userid === userId))
     if (
       room &&
       (room.players.find((el) => el.userid.toString() === userId?.toString()) ||
@@ -329,11 +322,7 @@ app.get("/getUserForInvite/:tableId", async (req, res) => {
     if (!req.params.tableId) {
       return res.status(400).send({ msg: "Table id not found." });
     }
-
-    const roomData = await roomModel.findOne({
-      _id: mongoose.Types.ObjectId(req.params.tableId),
-    });
-
+    const roomData = await getCachedGame(req.params.tableId);
     if (!roomData) {
       return res.status(403).send({ msg: "Table not found." });
     }

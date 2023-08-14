@@ -90,9 +90,9 @@ let returnSocket = (io) => {
     });
 
     socket.on("newBet", async (data) => {
-      process.nextTick(async () => {
+     
         await handleNewBet(data, socket, io);
-      });
+      
     });
 
     socket.on("acceptBet", async (data) => {
@@ -112,45 +112,45 @@ let returnSocket = (io) => {
     });
 
     socket.on("dofold", async (data) => {
-      process.nextTick(async () => {
+      
         await socketDoFold(data, io, socket);
-      });
+      
     });
 
     socket.on("docall", async (data) => {
-      process.nextTick(async () => {
+      
         await socketDoCall(data, io, socket);
-      });
+      
     });
 
     socket.on("dobet", async (data) => {
-      process.nextTick(async () => {
+      
         await socketDoBet(data, io, socket);
-      });
+      
     });
 
     socket.on("doraise", async (data) => {
-      process.nextTick(async () => {
+      
         await socketDoRaise(data, io, socket);
-      });
+      
     });
 
     socket.on("docheck", async (data) => {
-      process.nextTick(async () => {
+      
         await socketDoCheck(data, io, socket);
-      });
+      
     });
 
     socket.on("doallin", async (data) => {
-      process.nextTick(async () => {
+      
         await socketDoAllin(data, io, socket);
-      });
+      
     });
 
     socket.on("dopausegame", async (data) => {
-      process.nextTick(async () => {
+      
         await doPauseGame(data, io, socket);
-      });
+      
     });
 
     socket.on("refillWallet", async (data) => {
@@ -158,15 +158,15 @@ let returnSocket = (io) => {
     });
 
     socket.on("dofinishgame", async (data) => {
-      process.nextTick(async () => {
+      
         await doFinishGame(data, io, socket);
-      });
+      
     });
 
     socket.on("doresumegame", async (data) => {
-      process.nextTick(async () => {
+      
         await doResumeGame(data, io, socket);
-      });
+      
     });
 
     socket.on("dositout", async (data) => {
