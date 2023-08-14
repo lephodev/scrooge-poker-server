@@ -3008,7 +3008,7 @@ export const elemination = async (roomData, io) => {
       }
     });
 
-    // console.log("eleminated_players", eleminated_players);
+    console.log("eleminated_players =======>", eleminated_players);
     // console.log("newHandPlayer", newHandPlayer);
     const upRoom = await roomModel
       .findOneAndUpdate(
@@ -3053,10 +3053,20 @@ export const elemination = async (roomData, io) => {
       )
       .populate("tournament");
     // console.log("remainging player in showdown after game finish", upRoom);
+
+    console.log(
+      "is elemination ==>",
+      eleminated_players.length,
+      upRoom.tournament.havePlayers,
+      roomData?.eliminationCount,
+      upRoom?.eliminationCount
+    );
+
     if (
       eleminated_players.length > 0 &&
-      upRoom.tournament.havePlayers > 0 &&
-      roomData?.eliminationCount !== upRoom?.eliminationCount
+      noOfElemination > 0
+      // upRoom.tournament.havePlayers > 0 &&
+      // roomData?.eliminationCount !== upRoom?.eliminationCount
     ) {
       const availablePlayerCount =
         parseInt(upRoom.tournament.havePlayers) -
@@ -5400,7 +5410,7 @@ export const doAllin = async (roomData, playerid, io) => {
               e.tentativeAction &&
               e.tentativeAction === "check/fold"
             ) {
-              if (roundData[0].pot >= roundData[0].wallet + roundData[0].pot) {
+              if (e.pot >= roundData[0].wallet + roundData[0].pot) {
                 e.tentativeAction = null;
               } else {
                 e.tentativeAction = "fold";
@@ -5486,7 +5496,7 @@ export const doAllin = async (roomData, playerid, io) => {
               e.tentativeAction &&
               e.tentativeAction === "check/fold"
             ) {
-              if (roundData[0].pot >= roundData[0].wallet + roundData[0].pot) {
+              if (e.pot >= roundData[0].wallet + roundData[0].pot) {
                 e.tentativeAction = null;
               } else {
                 e.tentativeAction = "fold";
@@ -5574,7 +5584,7 @@ export const doAllin = async (roomData, playerid, io) => {
               e.tentativeAction &&
               e.tentativeAction === "check/fold"
             ) {
-              if (roundData[0].pot >= roundData[0].wallet + roundData[0].pot) {
+              if (e.pot >= roundData[0].wallet + roundData[0].pot) {
                 e.tentativeAction = null;
               } else {
                 e.tentativeAction = "fold";
@@ -5661,7 +5671,7 @@ export const doAllin = async (roomData, playerid, io) => {
               e.tentativeAction &&
               e.tentativeAction === "check/fold"
             ) {
-              if (roundData[0].pot >= roundData[0].wallet + roundData[0].pot) {
+              if (e.pot >= roundData[0].wallet + roundData[0].pot) {
                 e.tentativeAction = null;
               } else {
                 e.tentativeAction = "fold";
@@ -8584,7 +8594,7 @@ export const UpdateRoomChat = async (data, socket, io) => {
     if (room) {
       const user = await userModel.findOne({ _id: userId });
 
-      const { firstName, lastName, profile } = user || {};
+      const { firstName, lastName, profile, username } = user || {};
       await roomModel.findOneAndUpdate(
         { _id: tableId },
         {
@@ -8594,6 +8604,7 @@ export const UpdateRoomChat = async (data, socket, io) => {
               userId: userId,
               firstName: firstName,
               lastName: lastName,
+              username: username,
               profile,
               date: new Date().toLocaleTimeString(),
               seenBy: [],
