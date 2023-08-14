@@ -8,6 +8,17 @@ import moment from "moment";
 import Notification from "../models/notificationModal.js";
 import { verifyJwt } from "../functions/functions.js";
 import { decryptPass } from "../validation/poker.validation.js";
+import { getCachedGame, setCachedGame } from "../redis-cache/index.js";
+
+const gameState = {
+  0: "players",
+  1: "preflopround",
+  2: "flopround",
+  3: "turnround",
+  4: "riverround",
+  5: "showdown",
+};
+
 
 const converMongoId = (id) => mongoose.Types.ObjectId(id);
 const maxPlayer = 9;
@@ -15,8 +26,15 @@ const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
 
 const getGameById = async (id) => {
-  const game = await roomModel.findOne({ _id: converMongoId(id) }).lean();
-  if (game) return { ...game, id: game._id };
+  let game = await getCachedGame(id);
+  if(game){
+    return { ...game, id: game._id };
+  }
+  game = await roomModel.findOne({ _id: converMongoId(id) }).populate("tournament").lean();
+  if (game) {
+    await setCachedGame(game);
+    return { ...game, id: game._id };
+  }
   return null;
 };
 
@@ -57,17 +75,8 @@ const pushUserInRoom = async (game, userId, position, sitInAmount, type) => {
     } else {
       hostId = game?.hostId;
     }
-
-    console.log("hostId ========>", hostId);
-
-    await Promise.allSettled([
-      // userService.updateUserWallet(_id),
-      roomModel.updateOne(
-        { _id: game._id },
-        {
-          $push: {
-            players: {
-              name: username,
+    game.players.push({
+      name: username,
               userid: _id,
               id: _id,
               photoURI: avatar ? avatar : profile ? profile : img,
@@ -82,18 +91,49 @@ const pushUserInRoom = async (game, userId, position, sitInAmount, type) => {
               hands: [],
               away: false,
               autoFoldCount: 0,
-            },
-          },
-          hostId,
-          $pull: {
-            leavereq: converMongoId(userId),
-          },
-        }
-      ),
-    ]);
+    })
+    game.hostId =  hostId;
+    game.leavereq = game.leavereq.filter(el => el !== userId);
 
-    const room = await getGameById(game._id);
-    return room;
+
+    console.log("hostId ========>", hostId);
+
+    // await Promise.allSettled([
+    //   // userService.updateUserWallet(_id),
+    //   roomModel.updateOne(
+    //     { _id: game._id },
+    //     {
+    //       $push: {
+    //         players: {
+    //           name: username,
+    //           userid: _id,
+    //           id: _id,
+    //           photoURI: avatar ? avatar : profile ? profile : img,
+    //           wallet: sitInAmount,
+    //           position,
+    //           missedSmallBlind: false,
+    //           missedBigBlind: false,
+    //           forceBigBlind: false,
+    //           playing: true,
+    //           initialCoinBeforeStart: sitInAmount,
+    //           gameJoinedAt: new Date(),
+    //           hands: [],
+    //           away: false,
+    //           autoFoldCount: 0,
+    //         },
+    //       },
+    //       hostId,
+    //       $pull: {
+    //         leavereq: converMongoId(userId),
+    //       },
+    //     }
+    //   ),
+    // ]);
+
+    await setCachedGame(game)
+
+    // const room = await getGameById(game._id);
+    return game;
   } catch (error) {
     console.log(error);
     return null;
@@ -172,35 +212,12 @@ const checkIfUserInGame = async (userId, roomId = "", gameMode) => {
 const playerTentativeActionSelection = async (game, userId, actionType) => {
   try {
     const { runninground, id } = game;
-
-    switch (runninground) {
-      case 1:
-        await roomModel.updateOne(
-          { _id: id, "preflopround.id": mongoose.Types.ObjectId(userId) },
-          { "preflopround.$.tentativeAction": actionType }
-        );
-        break;
-      case 2:
-        await roomModel.updateOne(
-          { _id: id, "flopround.id": mongoose.Types.ObjectId(userId) },
-          { "flopround.$.tentativeAction": actionType }
-        );
-        break;
-      case 3:
-        await roomModel.updateOne(
-          { _id: id, "turnround.id": mongoose.Types.ObjectId(userId) },
-          { "turnround.$.tentativeAction": actionType }
-        );
-        break;
-      case 4:
-        await roomModel.updateOne(
-          { _id: id, "riverround.id": mongoose.Types.ObjectId(userId) },
-          { "riverround.$.tentativeAction": actionType }
-        );
-        break;
-      default:
-        return "";
-    }
+    game[gameState[runninground]].forEach(pl => {
+      if(pl.id === userId){
+        pl.tentativeAction = actionType
+      }
+    });
+    await setCachedGame(game);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.log("Error in playerTentativeActionSelection", error);
