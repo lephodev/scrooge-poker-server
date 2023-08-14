@@ -4980,12 +4980,13 @@ export const leaveApiCall = async (room, userId, io) => {
       room.players = room.players.filter((pl) =>
         pl.id ? pl.id : pl.userid !== userId
       );
-      room.watchers = room.watchers.filter((wt) => wt.userid !== userId);
+      room.watchers = room.watchers.filter((wt) => wt !== userId);
       room.handWinner = filterdHndWinnerData;
       await setCachedGame(room);
       const response = await Promise.allSettled([
         // Remove user from the room
         // Create transaction
+        roomModel.updateOne({_id: room._id}, { players: room.players, watchers: room.watchers}),
         transactionModel.insertMany(transactions),
         // Update user wallet
         ...updateTournament,
