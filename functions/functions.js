@@ -1033,7 +1033,7 @@ export const flopround = async (roomid, io) => {
           ) {
             turnround(roomid, io);
           }
-        }, 200);
+        }, 600);
       }
     }
   } catch (error) {
@@ -1272,7 +1272,7 @@ export const riverround = async (roomid, io) => {
         setTimeout(() => {
           console.log("showdown called for room =>", roomid);
           showdown(roomid, io);
-        }, 300);
+        }, 600);
       }
     }
   } catch (error) {
@@ -5474,12 +5474,13 @@ export const UpdateRoomChat = async (data, socket, io) => {
     if (room) {
       const user = await userModel.findOne({ _id: userId });
 
-      const { firstName, lastName, profile } = user || {};
+      const { firstName, lastName, profile, username } = user || {};
       room.chats.push({
         message: message,
         userId: userId,
         firstName: firstName,
         lastName: lastName,
+        username,
         profile,
         date: new Date().toLocaleTimeString(),
         seenBy: [],
@@ -5750,12 +5751,12 @@ const pushPlayerInRoom = async (
       console.log("rooms ==== ==>", tournament.rooms[0].players.length);
       if (
         tournament?.tournamentType === "sit&go" &&
-        tournament?.totalJoinPlayer === playerLimit &&
+        // tournament?.totalJoinPlayer === playerLimit &&
         tournament?.rooms.find((room) => room.players.length === playerLimit)
       ) {
         await tournamentModel.updateOne(
           { _id: tournamentId },
-          { isStart: true }
+          { isStart: true, totalJoinPlayer: 9 }
         );
         console.log("Tournament started");
         blindTimer(checkTournament, io);
@@ -5961,6 +5962,7 @@ export const blindTimer = async (data, io) => {
     console.log("error in blindTimer", error);
   }
 };
+
 export const doCalculateCardPair = async (data, io, socket) => {
   let p = [];
   if (data?.roundData && data?.roundData?.length > 0) {

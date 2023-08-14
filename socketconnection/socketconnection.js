@@ -284,16 +284,16 @@ let returnSocket = (io) => {
             tableId: socket.customRoom,
           };
 
-          setTimeout(async () => {
-            let dd = { ...data };
-            if (
-              io.users.find((ele) => ele?.toString() === dd?.userId?.toString())
-            ) {
-              return;
-            } else {
-              await doLeaveTable(dd, io, socket);
-            }
-          }, 120000);
+          // setTimeout(async () => {
+          //   let dd = { ...data };
+          //   if (
+          //     io.users.find((ele) => ele?.toString() === dd?.userId?.toString())
+          //   ) {
+          //     return;
+          //   } else {
+          //     await doLeaveTable(dd, io, socket);
+          //   }
+          // }, 120000);
         }
         const roomID = socketToRoom[socket.id];
         let room = users[roomID];

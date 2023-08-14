@@ -1,4 +1,6 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
+
+mongoose.set("useFindAndModify", false);
 
 export const mongoConnect = async () => {
   try {
@@ -7,7 +9,7 @@ export const mongoConnect = async () => {
       useUnifiedTopology: true,
       useFindAndModify: false,
     });
-    console.log('Connected to Mongo database');
+    console.log("Connected to Mongo database");
   } catch (e) {
     console.log(`Error connecting to mongo database ${e}`);
   }
