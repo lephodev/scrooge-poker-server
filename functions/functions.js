@@ -3053,6 +3053,15 @@ export const elemination = async (roomData, io) => {
       )
       .populate("tournament");
     // console.log("remainging player in showdown after game finish", upRoom);
+
+    console.log(
+      "is elemination ==>",
+      eleminated_players.length,
+      upRoom.tournament.havePlayers,
+      roomData?.eliminationCount,
+      upRoom?.eliminationCount
+    );
+
     if (
       eleminated_players.length > 0 &&
       upRoom.tournament.havePlayers > 0 &&
