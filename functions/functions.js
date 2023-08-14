@@ -3008,7 +3008,7 @@ export const elemination = async (roomData, io) => {
       }
     });
 
-    // console.log("eleminated_players", eleminated_players);
+    console.log("eleminated_players =======>", eleminated_players);
     // console.log("newHandPlayer", newHandPlayer);
     const upRoom = await roomModel
       .findOneAndUpdate(
