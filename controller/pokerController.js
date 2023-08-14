@@ -6,6 +6,7 @@ import gameService from "../service/game.service.js";
 import roomModel from "./../models/room.js";
 import userService from "../service/user.service.js";
 import { verifyJwt } from "../functions/functions.js";
+import { getCachedGame, setCachedGame } from "../redis-cache/index.js";
 // import { checkLimits } from "../functions/functions.js";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
@@ -335,15 +336,16 @@ export const refillWallet = async (data, io, socket) => {
           code: 400,
         });
       }
-
-      let room = await roomModel.findOne({
+      let room = await getCachedGame(tableId);
+      if(!room)
+       room = await roomModel.findOne({
         _id: tableId,
       });
 
       if (room != null) {
         const playerExist = room.players.filter(
           (el) =>
-            mongoose.Types.ObjectId(el.userid).toString() === userid.toString()
+            el.userid.toString() === userid.toString()
         );
 
         let totalHandsSpend = 0;
@@ -376,7 +378,14 @@ export const refillWallet = async (data, io, socket) => {
         // }
 
         if (!room.isGameRunning) {
-          await roomModel.updateOne(
+          room.players.forEach(pl => {
+            if(pl.id === userid){
+              pl.wallet += amount;
+              pl.initialCoinBeforeStart += amount;
+            }
+          })
+          await setCachedGame(room);
+          roomModel.updateOne(
             {
               $and: [
                 { _id: tableId },
@@ -395,16 +404,16 @@ export const refillWallet = async (data, io, socket) => {
             }
           );
 
-          const roomData = await roomModel.findOne({
-            $and: [
-              { _id: tableId },
-              {
-                players: {
-                  $elemMatch: { userid: mongoose.Types.ObjectId(userid) },
-                },
-              },
-            ],
-          });
+          // const roomData = await roomModel.findOne({
+          //   $and: [
+          //     { _id: tableId },
+          //     {
+          //       players: {
+          //         $elemMatch: { userid: mongoose.Types.ObjectId(userid) },
+          //       },
+          //     },
+          //   ],
+          // });
           let query;
           if (room.gameMode === "goldCoin") {
             query = { goldCoin: -amount };
@@ -415,12 +424,12 @@ export const refillWallet = async (data, io, socket) => {
             { _id: mongoose.Types.ObjectId(userid) },
             { $inc: query }
           );
-          if (roomData) {
-            socket.emit("updateRoom", roomData);
+          if (room) {
+            socket.emit("updateRoom", room);
           }
         }
         if (playerExist?.length && room.isGameRunning) {
-          let buyinrequest = room.buyinrequest;
+          let buyinrequest = room.buyin;
           let buyin = {
             userid: userid,
             name: username,
@@ -428,8 +437,9 @@ export const refillWallet = async (data, io, socket) => {
             redeem: 0,
           };
           buyinrequest.push(buyin);
-
-          await roomModel.findByIdAndUpdate(room._id, {
+          room.buyin = buyinrequest
+          await setCachedGame(room)
+          roomModel.findByIdAndUpdate(room._id, {
             buyin: buyinrequest,
           });
           let query;
