@@ -710,8 +710,7 @@ export const gameTurnTimer = async (roomid, io) => {
     let state = gameState[roomData.runninground];
     console.log(
       "game round",
-      state,
-      io.room.find((el) => el.room.toString() === roomid.toString())
+      state
     );
     io.room = io.room.map((el) => {
       if (el.room.toString() === roomid.toString()) {
@@ -726,10 +725,7 @@ export const gameTurnTimer = async (roomid, io) => {
       return el;
     });
 
-    console.log(
-      "after ioroom update =>",
-      io.room.find((el) => el.room.toString() === roomid.toString())
-    );
+   
 
     let totalPlayer = 0;
 
@@ -788,6 +784,7 @@ export const gameTurnTimer = async (roomid, io) => {
               (e) => e.position === i
             );
             if (j <= 0) {
+              console.log("interval goes to zero", intervalPlayer[0])
               clearInterval(playerinterval);
               if (
                 (data.raiseAmount === intervalPlayer[0]?.pot ||
@@ -1033,7 +1030,7 @@ export const flopround = async (roomid, io) => {
           ) {
             turnround(roomid, io);
           }
-        }, 600);
+        }, 900);
       }
     }
   } catch (error) {
@@ -1152,7 +1149,7 @@ export const turnround = async (roomid, io) => {
           ) {
             riverround(roomid, io);
           }
-        }, 300);
+        }, 900);
       }
     }
   } catch (error) {
@@ -1272,7 +1269,7 @@ export const riverround = async (roomid, io) => {
         setTimeout(() => {
           console.log("showdown called for room =>", roomid);
           showdown(roomid, io);
-        }, 600);
+        }, 900);
       }
     }
   } catch (error) {
@@ -4986,7 +4983,7 @@ export const leaveApiCall = async (room, userId, io) => {
       const response = await Promise.allSettled([
         // Remove user from the room
         // Create transaction
-        roomModel.updateOne({_id: room._id}, { players: room.players, watchers: room.watchers}),
+        roomModel.updateOne({_id: room._id}, { players: room.players, watchers: room.watchers, handWinner: filterdHndWinnerData,}),
         transactionModel.insertMany(transactions),
         // Update user wallet
         ...updateTournament,
