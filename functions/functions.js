@@ -5632,23 +5632,29 @@ export const JoinTournament = async (data, io, socket) => {
         code: 400,
       });
     }
-    const lockedProcess = new Lock();
-    try{
-      await lockedProcess.acquire('pushPlayerInRoom');
-      let roomWithSpace = rooms.find(
-        (room) => room.players.length < playerLimit && !room.gamestart
-      );
-      await pushPlayerInRoom(
-        tournament,
-        userData,
-        tournamentId,
-        roomWithSpace,
-        socket,
-        io
-      );
-    }finally{
-      await lockedProcess.release('pushPlayerInRoom');
-    }
+    const lockedProcess = new lock();
+    // try{
+      await lockedProcess.acquire('pushPlayerInRoom', async ()=>{
+        try{
+          let roomWithSpace = rooms.find(
+            (room) => room.players.length < playerLimit && !room.gamestart
+          );
+          await pushPlayerInRoom(
+            tournament,
+            userData,
+            tournamentId,
+            roomWithSpace,
+            socket,
+            io
+          );
+        }catch(err){
+          console.log("error in lock mechanism ", err)
+        }
+      });
+      
+    // }finally{
+    //   await lockedProcess.release('pushPlayerInRoom');
+    // }
     
     const updatedUser = await User.findOneAndUpdate(
       { _id: userId },
