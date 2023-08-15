@@ -3565,8 +3565,8 @@ const reArrangementBeforeTournamentStart = async (
             players: room.players,
           },
           { new: true }
-        );
-
+        ).populate("tournament");
+        await setCachedGame(udpatedRoom)
         console.log("udpatedRoom ==>", udpatedRoom?.players);
 
         // Emit the "roomchanged" event for the moved players
@@ -3584,8 +3584,8 @@ const reArrangementBeforeTournamentStart = async (
             players: room.players,
           },
           { new: true }
-        );
-
+        ).populate("tournament")
+        await setCachedGame(udpatedRoom)
         console.log("udpatedRoom ==>", udpatedRoom?.players);
       }
     }
@@ -5731,7 +5731,8 @@ const pushPlayerInRoom = async (
         { _id: roomId },
         payload,
         { new: true }
-      );
+      ).populate('tournament');
+      await setCachedGame(updatedRoom)
       const tournament = await tournamentModel
         .findOneAndUpdate(
           { _id: tournamentId },
@@ -5847,6 +5848,8 @@ const pushPlayerInRoom = async (
         },
         { upsert: true, new: true }
       );
+      const newRoom = await roomModel.findOne({ _id: roomId}).populate("tournament")
+      await setCachedGame(newRoom);
     }
     const getAllTournament = await tournamentModel.find({}).populate("rooms");
     io.emit("updatePlayerList", getAllTournament);
