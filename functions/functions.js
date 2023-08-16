@@ -18,7 +18,7 @@ import Notification from "../models/notificationModal";
 import User from "../landing-server/models/user.model";
 import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
-import { getCachedGame, setCachedGame } from "../redis-cache";
+import { getCachedGame, setCachedGame, deleteCachedGame } from "../redis-cache";
 import lock from "async-lock";
 
 const gameState = {
