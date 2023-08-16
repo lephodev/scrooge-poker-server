@@ -1996,8 +1996,9 @@ export const elemination = async (roomData, io) => {
     // console.log("remainging player in showdown after game finish", upRoom);
     if (
       eleminated_players.length > 0 &&
-      upRoom.tournament.havePlayers > 0 &&
-      roomData?.eliminationCount !== upRoom?.eliminationCount
+      noOfElemination > 0
+      // upRoom.tournament.havePlayers > 0 &&
+      // roomData?.eliminationCount !== upRoom?.eliminationCount
     ) {
       const availablePlayerCount =
         parseInt(upRoom.tournament.havePlayers) -
