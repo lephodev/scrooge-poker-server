@@ -329,15 +329,15 @@ let returnSocket = (io) => {
     });
 
     socket.on("joinTournament", async (data) => {
-      // q.push({ data, io, socket, type: "joinTournament" });
-      const lockedProcess = new lock();
-      await lockedProcess.acquire("joinTournament", async () => {
-        try {
-          await JoinTournament(data, io, socket);
-        } catch (err) {
-          console.log("err in join tournament socket", err);
-        }
-      });
+       q.push({ data, io, socket, type: "joinTournament" });
+      // const lockedProcess = new lock();
+      // await lockedProcess.acquire("joinTournament", async () => {
+      //   try {
+      //     await JoinTournament(data, io, socket);
+      //   } catch (err) {
+      //     console.log("err in join tournament socket", err);
+      //   }
+      // });
     });
 
     socket.on("calCulateCardPair", async (data) => {
