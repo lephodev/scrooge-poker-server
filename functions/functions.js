@@ -4819,6 +4819,7 @@ export const leaveApiCall = async (room, userId, io) => {
     }
 
     let allUsers = player.concat(room.watchers).concat(room.sitOut);
+    console.log("all players",allUsers)
 
     if (userId) {
       allUsers = allUsers.filter((ele) => {
@@ -4863,6 +4864,7 @@ export const leaveApiCall = async (room, userId, io) => {
       });
     });
 
+
     let updateTournament = [];
     // let returnUser
     if (room.tournament) {
@@ -4880,6 +4882,7 @@ export const leaveApiCall = async (room, userId, io) => {
         )
       );
     }
+    console.log("all users =>", users)
 
     const [transactions, rankModelUpdate] =
       await createTransactionFromUsersArray(room._id, users, room.tournament);
@@ -4992,7 +4995,7 @@ export const leaveApiCall = async (room, userId, io) => {
     console.log("userId ======>", userId);
     if (userId) {
       room.players = room.players.filter((pl) =>
-        pl.id ? pl.id : pl.userid !== userId
+        pl.id !== userId
       );
       console.log("pleayer after remvoe", room.players)
       room.watchers = room.watchers.filter((wt) => wt !== userId);
