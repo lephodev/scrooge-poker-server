@@ -4,6 +4,7 @@ import roomModel from "../models/room.js";
 import mongoose from "mongoose";
 import { JoinTournament } from "../functions/functions.js";
 import payout from "../config/payout.json";
+import { getCachedGame } from "../redis-cache/index.js";
 
 var cron = require("node-cron");
 const img =
@@ -26,7 +27,6 @@ export const getTournamentById = async (req, res) => {
     if (tournamentId) {
       const tournament = await tournamentModel
         .findOne({ _id: tournamentId })
-        .populate("rooms")
         .populate({
           path: "winPlayer.first.userId",
           model: "User",
@@ -49,6 +49,11 @@ export const getTournamentById = async (req, res) => {
         });
 
       if (tournament) {
+        let rooms = []
+        for await (let r of tournament.rooms){
+          rooms.push(await getCachedGame(r));
+        }
+        tournament.rooms = rooms
         if (tournament.prizeType !== "Fixed") {
           payoutStructure = await getRequiredPaytout(tournament, payout);
         }
