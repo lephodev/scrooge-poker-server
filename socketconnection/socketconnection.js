@@ -41,9 +41,9 @@ import lock from "async-lock";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
-let q = new Queue(function (task, cb) {
+var q = new Queue(async function (task, cb) {
   if (task.type === "joinTournament") {
-    JoinTournament(task.data, task.io, task.socket);
+   await JoinTournament(task.data, task.io, task.socket);
   }
   cb(null, 1);
 });
