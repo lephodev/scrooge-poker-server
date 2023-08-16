@@ -4994,6 +4994,7 @@ export const leaveApiCall = async (room, userId, io) => {
       room.players = room.players.filter((pl) =>
         pl.id ? pl.id : pl.userid !== userId
       );
+      console.log("pleayer after remvoe", room.players)
       room.watchers = room.watchers.filter((wt) => wt !== userId);
       room.handWinner = filterdHndWinnerData;
       let rrr = await getCachedGame(room._id);
@@ -5010,7 +5011,6 @@ export const leaveApiCall = async (room, userId, io) => {
           { _id: room._id },
           {
             players: room.players,
-            watchers: room.watchers,
             handWinner: filterdHndWinnerData,
           }
         ),
