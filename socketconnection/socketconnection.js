@@ -37,6 +37,7 @@ import mongoose from "mongoose";
 import Queue from "better-queue";
 import { refillWallet } from "../controller/pokerController";
 import { connetToLanding, landingSocket } from "./landing_Connection";
+import lock from "async-lock";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
@@ -90,9 +91,7 @@ let returnSocket = (io) => {
     });
 
     socket.on("newBet", async (data) => {
-     
-        await handleNewBet(data, socket, io);
-      
+      await handleNewBet(data, socket, io);
     });
 
     socket.on("acceptBet", async (data) => {
@@ -112,45 +111,31 @@ let returnSocket = (io) => {
     });
 
     socket.on("dofold", async (data) => {
-      
-        await socketDoFold(data, io, socket);
-      
+      await socketDoFold(data, io, socket);
     });
 
     socket.on("docall", async (data) => {
-      
-        await socketDoCall(data, io, socket);
-      
+      await socketDoCall(data, io, socket);
     });
 
     socket.on("dobet", async (data) => {
-      
-        await socketDoBet(data, io, socket);
-      
+      await socketDoBet(data, io, socket);
     });
 
     socket.on("doraise", async (data) => {
-      
-        await socketDoRaise(data, io, socket);
-      
+      await socketDoRaise(data, io, socket);
     });
 
     socket.on("docheck", async (data) => {
-      
-        await socketDoCheck(data, io, socket);
-      
+      await socketDoCheck(data, io, socket);
     });
 
     socket.on("doallin", async (data) => {
-      
-        await socketDoAllin(data, io, socket);
-      
+      await socketDoAllin(data, io, socket);
     });
 
     socket.on("dopausegame", async (data) => {
-      
-        await doPauseGame(data, io, socket);
-      
+      await doPauseGame(data, io, socket);
     });
 
     socket.on("refillWallet", async (data) => {
@@ -158,15 +143,11 @@ let returnSocket = (io) => {
     });
 
     socket.on("dofinishgame", async (data) => {
-      
-        await doFinishGame(data, io, socket);
-      
+      await doFinishGame(data, io, socket);
     });
 
     socket.on("doresumegame", async (data) => {
-      
-        await doResumeGame(data, io, socket);
-      
+      await doResumeGame(data, io, socket);
     });
 
     socket.on("dositout", async (data) => {
@@ -348,12 +329,21 @@ let returnSocket = (io) => {
     });
 
     socket.on("joinTournament", async (data) => {
-      q.push({ data, io, socket, type: "joinTournament" });
-      // await JoinTournament(data, io, socket);
+      // q.push({ data, io, socket, type: "joinTournament" });
+      const lockedProcess = new lock();
+      await lockedProcess.acquire("joinTournament", async () => {
+        try {
+          await JoinTournament(data, io, socket);
+        } catch (err) {
+          console.log("err in join tournament socket", err);
+        }
+      });
     });
+
     socket.on("calCulateCardPair", async (data) => {
       await doCalculateCardPair(data, io, socket);
     });
+
     socket.on("spectateMultiTable", async (data) => {
       await spectateMultiTable(data, io, socket);
     });
