@@ -2517,11 +2517,13 @@ export const doSitOut = async (data, io, socket) => {
         });
         roomData[gameState[roomData.runninground]] = players;
         roomData.sitin = sitin;
+        await setCachedGame({ ...roomData});
         players.forEach((el) => {
           if (!el.fold && el.wallet > 0 && el.playing) {
             playingPlayer.push({ id: el.id, position: el.position });
           }
         });
+        
         if (
           roomData.runninground > 0 &&
           roomData.runninground < 5 &&
