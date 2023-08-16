@@ -5039,7 +5039,8 @@ const joinAsWatcher = async (data, socket, io) => {
     const { gameId, userId } = data;
     const game = await getCachedGame(gameId);
     game.watchers.push(userId);
-    roomModel.findOneAndUpdate(
+    await setCachedGame(game);
+    roomModel.updateOne(
       {
         _id: gameId,
       },
@@ -5560,22 +5561,24 @@ export const JoinTournament = async (data, io, socket) => {
       .findOne({
         _id: tournamentId,
       })
-      .populate("rooms");
 
     if (!tournament) {
       socket.emit("NoTournamentFound", {
         message: "No tournament found",
       });
     }
-
+    let rooms = []
     const {
-      rooms = [],
+      rooms: tournamentRooms = [],
       isStart,
       isFinished,
       joinTime,
       startDate,
       startTime,
     } = tournament;
+    for await (let r of tournamentRooms ){
+       rooms.push(await getCachedGame(r))
+    }
     // console.log("tournamenttournament",tournament);
     console.log("joinTimejoinTime", joinTime);
     let endDate = new Date(startDate + " " + startTime);
@@ -5595,7 +5598,7 @@ export const JoinTournament = async (data, io, socket) => {
     }
     if (tournament.isStart && tournament.tournamentType === "sit&go") {
       await joinAsWatcher(
-        { gameId: tournament.rooms[0]._id, userId: userId },
+        { gameId: tournament.rooms[0], userId: userId },
         socket,
         io
       );
@@ -5721,12 +5724,13 @@ const pushPlayerInRoom = async (
     const tournament = await tournamentModel
       .findOne({
         _id: tournamentId,
-      })
-      .populate("rooms");
+      });
     checkTournament = tournament
     const { username, _id, avatar, profile } = userData;
-    const { rooms = [] } = checkTournament;
-
+    let rooms = []
+      for await(let r of checkTournament.rooms){
+        rooms.push(await getCachedGame(r))
+      }
     let roomWithSpace = rooms.find(
       (room) => room.players.length < playerLimit && !room.gamestart
     );
@@ -5736,13 +5740,10 @@ const pushPlayerInRoom = async (
     let roomId;
     console.log("room ==>", room);
     if (room) {
-      room = await roomModel.findOne({
-        _id: room._id,
-      });
+      room = await getCachedGame(room._id)
       roomId = room._id;
       let players = room.players;
       let leaveReq = room.leavereq;
-
       leaveReq = leaveReq.filter((uid) => _id.toString() !== uid.toString());
       console.log("leaveReq ==>", leaveReq);
       let position = await findAvailablePosition(players);
@@ -5766,7 +5767,8 @@ const pushPlayerInRoom = async (
       });
 
       const payload = {
-        players: players,
+        ...room,
+        players,
         tournament: tournamentId,
         leavereq: leaveReq,
       };
