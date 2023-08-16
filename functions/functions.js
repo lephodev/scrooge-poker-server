@@ -19,6 +19,7 @@ import User from "../landing-server/models/user.model";
 import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
 import { deleteCachedGame, getCachedGame, setCachedGame } from "../redis-cache";
+import lock from 'async-lock'
 
 const gameState = {
   0: "players",
@@ -5637,9 +5638,7 @@ export const JoinTournament = async (data, io, socket) => {
       });
     }
 
-    let roomWithSpace = rooms.find(
-      (room) => room.players.length < playerLimit && !room.gamestart
-    );
+    
     const userData = await User.findById(userId).lean();
     if (userData?.wallet < fees) {
       return socket.emit("notEnoughAmount", {
@@ -5647,14 +5646,30 @@ export const JoinTournament = async (data, io, socket) => {
         code: 400,
       });
     }
-    await pushPlayerInRoom(
-      tournament,
-      userData,
-      tournamentId,
-      roomWithSpace,
-      socket,
-      io
-    );
+    const lockedProcess = new lock();
+    // try{
+      await lockedProcess.acquire('pushPlayerInRoom', async ()=>{
+        try{
+          let roomWithSpace = rooms.find(
+            (room) => room.players.length < playerLimit && !room.gamestart
+          );
+          await pushPlayerInRoom(
+            tournament,
+            userData,
+            tournamentId,
+            roomWithSpace,
+            socket,
+            io
+          );
+        }catch(err){
+          console.log("error in lock mechanism ", err)
+        }
+      });
+      
+    // }finally{
+    //   await lockedProcess.release('pushPlayerInRoom');
+    // }
+    
     const updatedUser = await User.findOneAndUpdate(
       { _id: userId },
       { $inc: { wallet: -parseFloat(fees) } },
@@ -5701,8 +5716,21 @@ const pushPlayerInRoom = async (
   io
 ) => {
   try {
+    const tournament = await tournamentModel
+      .findOne({
+        _id: tournamentId,
+      })
+      .populate("rooms");
+    checkTournament = tournament
     const { username, _id, avatar, profile } = userData;
     const { rooms = [] } = checkTournament;
+
+    let roomWithSpace = rooms.find(
+      (room) => room.players.length < playerLimit && !room.gamestart
+    );
+     
+    room = roomWithSpace;
+
     let roomId;
     console.log("room ==>", room);
     if (room) {
