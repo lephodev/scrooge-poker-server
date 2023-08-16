@@ -18,7 +18,7 @@ import Notification from "../models/notificationModal";
 import User from "../landing-server/models/user.model";
 import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
-import { getCachedGame, setCachedGame } from "../redis-cache";
+import { getCachedGame, setCachedGame, deleteCachedGame } from "../redis-cache";
 import lock from "async-lock";
 
 const gameState = {
@@ -470,7 +470,7 @@ export const preflopround = async (room, io) => {
           }
 
           dealerPosition = checkIsPlaying(dealerPosition);
-          console.log("dealer position ==>", dealerPosition);
+         
 
           if (dealerPosition === totalplayer - 1) {
             smallBlindPosition = 0;
@@ -478,7 +478,7 @@ export const preflopround = async (room, io) => {
             smallBlindPosition = dealerPosition + 1;
           }
           smallBlindPosition = checkIsPlaying(smallBlindPosition);
-          console.log("small blind position ==>", smallBlindPosition);
+        
 
           if (smallBlindPosition === totalplayer - 1) {
             bigBlindPosition = 0;
@@ -489,7 +489,7 @@ export const preflopround = async (room, io) => {
             bigBlindPosition,
             smallBlindPosition
           );
-          console.log("big blind position ==>", bigBlindPosition);
+          console.log("blind position ==>", dealerPosition, smallBlindPosition, bigBlindPosition);
 
           let smallLoopTime = 0;
           const allinPlayer = room1111.allinPlayers;
@@ -2511,6 +2511,7 @@ export const doSitOut = async (data, io, socket) => {
         });
         roomData[gameState[roomData.runninground]] = players;
         roomData.sitin = sitin;
+        roomData.sitOut = sitOut
         await setCachedGame({ ...roomData });
         players.forEach((el) => {
           if (!el.fold && el.wallet > 0 && el.playing) {
@@ -2564,7 +2565,7 @@ export const doSitIn = async (data, io, socket) => {
       let sitin = roomdata.sitin;
       sitin.push(userid);
       let sitOut = roomdata.sitOut.filter((el) =>
-        el.id ? el.id : el.userid !== userid
+        el.id !== userid
       );
       let updatedData;
       if (roomdata.runninground === 0) {
@@ -2663,7 +2664,7 @@ export const doLeaveTable = async (data, io, socket) => {
         let playerdata = roomdata.players.filter(
           (el) => el.userid.toString() === userid.toString()
         );
-        if (roomdata)
+        if (roomdata && playerdata?.length)
           io.in(roomdata._id.toString()).emit("playerleft", {
             msg: `${playerdata[0].name} has left the game`,
             userId: userid,
@@ -4819,7 +4820,8 @@ export const leaveApiCall = async (room, userId, io) => {
       player = room.players;
     }
 
-    let allUsers = player.concat(room.watchers).concat(room.sitOut);
+    let allUsers = player.concat(room.watchers);
+    console.log("all players",allUsers)
 
     if (userId) {
       allUsers = allUsers.filter((ele) => {
@@ -4864,6 +4866,7 @@ export const leaveApiCall = async (room, userId, io) => {
       });
     });
 
+
     let updateTournament = [];
     // let returnUser
     if (room.tournament) {
@@ -4881,6 +4884,7 @@ export const leaveApiCall = async (room, userId, io) => {
         )
       );
     }
+    console.log("all users =>", users)
 
     const [transactions, rankModelUpdate] =
       await createTransactionFromUsersArray(room._id, users, room.tournament);
@@ -4950,8 +4954,16 @@ export const leaveApiCall = async (room, userId, io) => {
 
           const { _id, username, email, firstName, lastName, profile } =
             updateData;
-
-          transactionModel.create({
+            try {
+              io?.emit("leaveTournament", {
+               message: "You leave the game.",
+               code: 200,
+               user: updateData || {},
+             });
+           } catch (error) {
+             console.log("error", error);
+           }
+          return transactionModel.create({
             userId: {
               _id,
               username,
@@ -4970,15 +4982,7 @@ export const leaveApiCall = async (room, userId, io) => {
             updatedGoldCoin: parseFloat(updateData?.goldCoin),
             transactionType: "poker tournament",
           });
-          try {
-            return io.emit("leaveTournament", {
-              message: "You leave the game.",
-              code: 200,
-              user: updateData || {},
-            });
-          } catch (error) {
-            console.log("error", error);
-          }
+         
         }
       }
     });
@@ -4993,8 +4997,9 @@ export const leaveApiCall = async (room, userId, io) => {
     console.log("userId ======>", userId);
     if (userId) {
       room.players = room.players.filter((pl) =>
-        pl.id ? pl.id : pl.userid !== userId
+        pl.id !== userId
       );
+      console.log("pleayer after remvoe", room.players)
       room.watchers = room.watchers.filter((wt) => wt !== userId);
       room.handWinner = filterdHndWinnerData;
       let rrr = await getCachedGame(room._id);
@@ -5011,7 +5016,6 @@ export const leaveApiCall = async (room, userId, io) => {
           { _id: room._id },
           {
             players: room.players,
-            watchers: room.watchers,
             handWinner: filterdHndWinnerData,
           }
         ),
@@ -5053,7 +5057,8 @@ const joinAsWatcher = async (data, socket, io) => {
     const { gameId, userId } = data;
     const game = await getCachedGame(gameId);
     game.watchers.push(userId);
-    roomModel.findOneAndUpdate(
+    await setCachedGame(game);
+    roomModel.updateOne(
       {
         _id: gameId,
       },
@@ -5574,22 +5579,24 @@ export const JoinTournament = async (data, io, socket) => {
       .findOne({
         _id: tournamentId,
       })
-      .populate("rooms");
 
     if (!tournament) {
       socket.emit("NoTournamentFound", {
         message: "No tournament found",
       });
     }
-
+    let rooms = []
     const {
-      rooms = [],
+      rooms: tournamentRooms = [],
       isStart,
       isFinished,
       joinTime,
       startDate,
       startTime,
     } = tournament;
+    for await (let r of tournamentRooms ){
+       rooms.push(await getCachedGame(r))
+    }
     // console.log("tournamenttournament",tournament);
     console.log("joinTimejoinTime", joinTime);
     let endDate = new Date(startDate + " " + startTime);
@@ -5609,7 +5616,7 @@ export const JoinTournament = async (data, io, socket) => {
     }
     if (tournament.isStart && tournament.tournamentType === "sit&go") {
       await joinAsWatcher(
-        { gameId: tournament.rooms[0]._id, userId: userId },
+        { gameId: tournament.rooms[0], userId: userId },
         socket,
         io
       );
@@ -5736,12 +5743,13 @@ const pushPlayerInRoom = async (
     const tournament = await tournamentModel
       .findOne({
         _id: tournamentId,
-      })
-      .populate("rooms");
-    checkTournament = tournament;
+      });
+    checkTournament = tournament
     const { username, _id, avatar, profile } = userData;
-    const { rooms = [] } = checkTournament;
-
+    let rooms = []
+      for await(let r of checkTournament.rooms){
+        rooms.push(await getCachedGame(r))
+      }
     let roomWithSpace = rooms.find(
       (room) => room.players.length < playerLimit && !room.gamestart
     );
@@ -5751,13 +5759,10 @@ const pushPlayerInRoom = async (
     let roomId;
     console.log("room ==>", room);
     if (room) {
-      room = await roomModel.findOne({
-        _id: room._id,
-      });
+      room = await getCachedGame(room._id)
       roomId = room._id;
       let players = room.players;
       let leaveReq = room.leavereq;
-
       leaveReq = leaveReq.filter((uid) => _id.toString() !== uid.toString());
       console.log("leaveReq ==>", leaveReq);
       let position = await findAvailablePosition(players);
@@ -5781,7 +5786,8 @@ const pushPlayerInRoom = async (
       });
 
       const payload = {
-        players: players,
+        ...room,
+        players,
         tournament: tournamentId,
         leavereq: leaveReq,
       };
