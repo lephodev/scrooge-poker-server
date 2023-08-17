@@ -79,8 +79,8 @@ const pushUserInRoom = async (game, userId, position, sitInAmount, type) => {
     }
     game.players.push({
       name: username,
-      userid: convertMongoId(_id),
-      id: convertMongoId(_id),
+      userid: _id,
+      id: _id,
       photoURI: avatar ? avatar : profile ? profile : img,
       wallet: sitInAmount,
       position,
@@ -138,8 +138,8 @@ const pushUserInRoom = async (game, userId, position, sitInAmount, type) => {
         $push: {
           players: {
             name: username,
-            userid: convertMongoId(_id),
-            id: convertMongoId(_id),
+            userid: _id,
+            id: _id,
             photoURI: avatar ? avatar : profile ? profile : img,
             wallet: sitInAmount,
             position,
