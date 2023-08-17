@@ -6088,7 +6088,7 @@ export const setAvailability = async (data, io, socket) => {
       });
       roomData.availablerequest = availablerequest;
       await setCachedGame(roomData);
-      roomModel.findOneAndUpdate(
+      await roomModel.findOneAndUpdate(
         {
           _id: convertMongoId(tableId),
         },
@@ -6107,7 +6107,7 @@ export const setAvailability = async (data, io, socket) => {
         }
       });
       await setCachedGame(roomData);
-      roomModel.findOneAndUpdate(
+      await roomModel.findOneAndUpdate(
         {
           _id: convertMongoId(tableId),
           "players.id": convertMongoId(userId),
