@@ -3440,6 +3440,7 @@ export const reArrangeTables = async (tournamentId, io, roomId) => {
       .lean();
     let rooms = [];
     for await (const room of tournamentData.rooms) {
+      if(!tournamentData.destroyedRooms.includes(room))
       rooms.push(await getCachedGame(room));
     }
     tournamentData.rooms = rooms;
