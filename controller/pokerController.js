@@ -100,8 +100,8 @@ export const createTable = async (req, res, io) => {
       players: [
         {
           name: username,
-          userid: _id,
-          id: _id,
+          userid: convertMongoId(_id),
+          id: convertMongoId(_id),
           photoURI: avatar ? avatar : profile ? profile : img,
           wallet: sitInAmount,
           position: 0,
@@ -337,15 +337,14 @@ export const refillWallet = async (data, io, socket) => {
         });
       }
       let room = await getCachedGame(tableId);
-      if(!room)
-       room = await roomModel.findOne({
-        _id: tableId,
-      });
+      if (!room)
+        room = await roomModel.findOne({
+          _id: tableId,
+        });
 
       if (room != null) {
         const playerExist = room.players.filter(
-          (el) =>
-            el.userid.toString() === userid.toString()
+          (el) => el.userid.toString() === userid.toString()
         );
 
         let totalHandsSpend = 0;
@@ -378,12 +377,12 @@ export const refillWallet = async (data, io, socket) => {
         // }
 
         if (!room.isGameRunning) {
-          room.players.forEach(pl => {
-            if(pl.id === userid){
+          room.players.forEach((pl) => {
+            if (pl.id === userid) {
               pl.wallet += amount;
               pl.initialCoinBeforeStart += amount;
             }
-          })
+          });
           await setCachedGame(room);
           roomModel.updateOne(
             {
@@ -437,8 +436,8 @@ export const refillWallet = async (data, io, socket) => {
             redeem: 0,
           };
           buyinrequest.push(buyin);
-          room.buyin = buyinrequest
-          await setCachedGame(room)
+          room.buyin = buyinrequest;
+          await setCachedGame(room);
           roomModel.findByIdAndUpdate(room._id, {
             buyin: buyinrequest,
           });
