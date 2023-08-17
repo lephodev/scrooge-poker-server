@@ -2660,14 +2660,18 @@ export const doLeaveTable = async (data, io, socket) => {
         roomdata = await getCachedGame(roomdata._id);
         roomdata.leavereq = leavereq;
         await setCachedGame(roomdata);
-        console.log("room", roomdata.leavereq);
+        // console.log("room", userid, roomdata.players);
 
         let playerdata = roomdata.players.filter(
           (el) => el.userid.toString() === userid.toString()
         );
-        if (roomdata && playerdata?.length)
+        // console.log("player data  ===>", playerdata);
+        //  && playerdata?.length
+        const user = await User.findOne({ _id: userid });
+
+        if (getRoomsUpdatedData)
           io.in(roomdata._id.toString()).emit("playerleft", {
-            msg: `${playerdata[0].name} has left the game`,
+            msg: `${user.username} has left the game`,
             userId: userid,
           });
 
