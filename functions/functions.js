@@ -3443,6 +3443,7 @@ export const reArrangeTables = async (tournamentId, io, roomId) => {
       rooms.push(await getCachedGame(room));
     }
     tournamentData.rooms = rooms;
+    console.log("tournament rooms", rooms, tournamentData.rooms)
     console.log("reArrange Called");
     if (tournamentData) {
       const notDestroyedYet = tournamentData.rooms.filter((el) => {
