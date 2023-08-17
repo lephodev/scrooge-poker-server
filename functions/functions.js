@@ -681,7 +681,7 @@ export const preflopround = async (room, io) => {
           };
           await deductBigBlind();
           await setCachedGame(room1111);
-          if (!io.room.find((el) => el.room === room._id.toString()).preflop) {
+          if (!io.room.find((el) => el.room === room._id.toString())?.preflop) {
             gameTurnTimer(room._id, io);
             let updatedRoom = await getCachedGame(room._id);
             io.in(room._id.toString()).emit("preflopround", updatedRoom);
