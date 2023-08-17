@@ -2884,7 +2884,7 @@ export const doBet = async (roomData, playerid, io, amt) => {
         } else if (
           pl.tentativeAction &&
           pl.tentativeAction === "callAny" &&
-          amt >= e.wallet
+          amt >= pl.wallet
         ) {
           pl.tentativeAction = "allin";
         }

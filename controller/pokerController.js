@@ -100,8 +100,8 @@ export const createTable = async (req, res, io) => {
       players: [
         {
           name: username,
-          userid: _id,
-          id: _id,
+          userid: _id.toString(),
+          id: _id.toString(),
           photoURI: avatar ? avatar : profile ? profile : img,
           wallet: sitInAmount,
           position: 0,
