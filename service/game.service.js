@@ -19,18 +19,20 @@ const gameState = {
   5: "showdown",
 };
 
-
-const converMongoId = (id) => mongoose.Types.ObjectId(id);
+const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const maxPlayer = 9;
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
 
 const getGameById = async (id) => {
   let game = await getCachedGame(id);
-  if(game){
+  if (game) {
     return { ...game, id: game._id };
   }
-  game = await roomModel.findOne({ _id: converMongoId(id) }).populate("tournament").lean();
+  game = await roomModel
+    .findOne({ _id: convertMongoId(id) })
+    .populate("tournament")
+    .lean();
   if (game) {
     await setCachedGame(game);
     return { ...game, id: game._id };
@@ -77,24 +79,23 @@ const pushUserInRoom = async (game, userId, position, sitInAmount, type) => {
     }
     game.players.push({
       name: username,
-              userid: _id,
-              id: _id,
-              photoURI: avatar ? avatar : profile ? profile : img,
-              wallet: sitInAmount,
-              position,
-              missedSmallBlind: false,
-              missedBigBlind: false,
-              forceBigBlind: false,
-              playing: true,
-              initialCoinBeforeStart: sitInAmount,
-              gameJoinedAt: new Date(),
-              hands: [],
-              away: false,
-              autoFoldCount: 0,
-    })
-    game.hostId =  hostId;
-    game.leavereq = game.leavereq.filter(el => el !== userId);
-
+      userid: _id,
+      id: _id,
+      photoURI: avatar ? avatar : profile ? profile : img,
+      wallet: sitInAmount,
+      position,
+      missedSmallBlind: false,
+      missedBigBlind: false,
+      forceBigBlind: false,
+      playing: true,
+      initialCoinBeforeStart: sitInAmount,
+      gameJoinedAt: new Date(),
+      hands: [],
+      away: false,
+      autoFoldCount: 0,
+    });
+    game.hostId = hostId;
+    game.leavereq = game.leavereq.filter((el) => el !== userId);
 
     console.log("hostId ========>", hostId);
 
@@ -124,41 +125,41 @@ const pushUserInRoom = async (game, userId, position, sitInAmount, type) => {
     //       },
     //       hostId,
     //       $pull: {
-    //         leavereq: converMongoId(userId),
+    //         leavereq: convertMongoId(userId),
     //       },
     //     }
     //   ),
     // ]);
 
-    await setCachedGame(game)
-    roomModel.updateOne(
-          { _id: game._id },
-          {
-            $push: {
-              players: {
-                name: username,
-                userid: _id,
-                id: _id,
-                photoURI: avatar ? avatar : profile ? profile : img,
-                wallet: sitInAmount,
-                position,
-                missedSmallBlind: false,
-                missedBigBlind: false,
-                forceBigBlind: false,
-                playing: true,
-                initialCoinBeforeStart: sitInAmount,
-                gameJoinedAt: new Date(),
-                hands: [],
-                away: false,
-                autoFoldCount: 0,
-              },
-            },
-            hostId,
-            $pull: {
-              leavereq: converMongoId(userId),
-            },
-          }
-        )
+    await setCachedGame(game);
+    await roomModel.updateOne(
+      { _id: game._id },
+      {
+        $push: {
+          players: {
+            name: username,
+            userid: _id,
+            id: _id,
+            photoURI: avatar ? avatar : profile ? profile : img,
+            wallet: sitInAmount,
+            position,
+            missedSmallBlind: false,
+            missedBigBlind: false,
+            forceBigBlind: false,
+            playing: true,
+            initialCoinBeforeStart: sitInAmount,
+            gameJoinedAt: new Date(),
+            hands: [],
+            away: false,
+            autoFoldCount: 0,
+          },
+        },
+        hostId,
+        $pull: {
+          leavereq: convertMongoId(userId),
+        },
+      }
+    );
 
     // const room = await getGameById(game._id);
     return game;
@@ -221,10 +222,10 @@ const checkIfUserInGame = async (userId, roomId = "", gameMode) => {
     let query = {
       gameType: "poker",
       gameMode: gameMode,
-      "players.userid": converMongoId(userId),
+      "players.userid": convertMongoId(userId),
     };
     if (roomId) {
-      query["_id"] = { $ne: converMongoId(roomId) };
+      query["_id"] = { $ne: convertMongoId(roomId) };
     }
     const checkRoom = await roomModel.findOne(query);
     if (checkRoom) {
@@ -240,9 +241,9 @@ const checkIfUserInGame = async (userId, roomId = "", gameMode) => {
 const playerTentativeActionSelection = async (game, userId, actionType) => {
   try {
     const { runninground, id } = game;
-    game[gameState[runninground]].forEach(pl => {
-      if(pl.id === userId){
-        pl.tentativeAction = actionType
+    game[gameState[runninground]].forEach((pl) => {
+      if (pl.id === userId) {
+        pl.tentativeAction = actionType;
       }
     });
     await setCachedGame(game);
@@ -361,7 +362,7 @@ const checkJoinTimeExceeded = async (io) => {
         if (crrTime > endTime) {
           await tournamentModel.updateOne(
             {
-              _id: converMongoId(tournament._id),
+              _id: convertMongoId(tournament._id),
             },
             {
               joinTimeExceeded: true,
