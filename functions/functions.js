@@ -3439,25 +3439,24 @@ export const reArrangeTables = async (tournamentId, io, roomId) => {
       )
       .lean();
     let rooms = [];
-    for await (const room of tournamentData.rooms) {
-      if(!tournamentData.destroyedRooms.includes(room))
-      rooms.push(await getCachedGame(room));
-    }
-    tournamentData.rooms = rooms;
-    console.log("tournament rooms", rooms, tournamentData.rooms)
     console.log("reArrange Called");
     if (tournamentData) {
       const notDestroyedYet = tournamentData.rooms.filter((el) => {
         let r = true;
         const have = tournamentData.destroyedRooms.filter(
-          (e) => e.toString() === el._id.toString()
+          (e) => e.toString() === el.toString()
         );
         if (have.length) {
           r = false;
         }
         return r;
       });
-      const allRooms = notDestroyedYet.sort((a, b) => {
+      for await (const room of notDestroyedYet) {
+        rooms.push(await getCachedGame(room));
+      }
+      
+      console.log("tournament rooms", rooms)
+      const allRooms = rooms.sort((a, b) => {
         // ASC  -> a.length - b.length
         // DESC -> b.length - a.length
         return a.players.length - b.players.length;
