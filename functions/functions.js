@@ -395,6 +395,7 @@ export const preflopround = async (room, io) => {
 
           let smallLoopTime = 0;
           const allinPlayer = room1111.allinPlayers;
+          console.log("blind positions", {smallBlindPosition, bigBlindPosition})
 
           const deductSmallBlind = async () => {
             const playerAvilable = room1111.players.filter(
@@ -521,7 +522,7 @@ export const preflopround = async (room, io) => {
                   round: 1,
                 });
                 room1111.preflopround.forEach((pl) => {
-                  if (pl.position === playerAvilable[0].id) {
+                  if (pl.position === bigBlindPosition) {
                     pl.pot += pl.wallet;
                     pl.wallet = 0;
                     pl.action = true;
