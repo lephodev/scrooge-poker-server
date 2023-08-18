@@ -1864,7 +1864,39 @@ export const elemination = async (roomData, io) => {
         }
       )
       .populate("tournament");
-    await setCachedGame({...upRoom, chats: roomData.chats});
+    await setCachedGame({
+      ...roomData,
+      players,
+      showdown: newHandPlayer,
+      eleminated: eleminated_players?.filter(
+        (item, index) => eleminated_players?.indexOf(item) === index
+      ),
+      preflopround: [],
+      flopround: [],
+      turnround: [],
+      riverround: [],
+      pot: 0,
+      communityCard: [],
+      gamestart: roomData.autoNextHand,
+      isGameRunning: false,
+      smallBlind: smallBlindAmt,
+      bigBlind: bigBlindAmt,
+      smallBlindPosition: roomData.smallBlindPosition,
+      bigBlindPosition: roomData.bigBlindPosition,
+      dealerPosition: roomData.dealerPosition,
+      raisePlayerPosition: null,
+      raiseAmount: 0,
+      timerPlayer: null,
+      lastAction: null,
+      winnerPlayer: [],
+      sidePots: [],
+      isShowdown: false,
+      isCircleCompleted: false,
+      allinPlayers: [],
+      tournament: roomData.tournament,
+      eliminationCount: eleminated_players?.length,
+      autoNextHand: true,
+    },);
     if (eleminated_players.length > 0 && noOfElemination > 0) {
       const availablePlayerCount =
         parseInt(upRoom.tournament.havePlayers) -
