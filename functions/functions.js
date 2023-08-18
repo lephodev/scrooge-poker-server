@@ -2305,7 +2305,7 @@ export const doResumeGame = async (data, io, socket) => {
         pause: updatedData.pause,
       });
       await setCachedGame(updatedData);
-      roomModel.updateOne({ _id: roomid }, { pause: false });
+      await roomModel.updateOne({ _id: roomid }, { pause: false });
     } else {
       socket.emit("actionError", { code: 400, msg: "Bad request" });
     }
@@ -3288,9 +3288,9 @@ export const reArrangeTables = async (tournamentId, io, roomId) => {
         { rooms: 1, destroyedRooms: 1, havePlayers: 1 }
       )
       .lean();
-    if (tournamentData.tournamentType !== "Multi-Table") {
-      return;
-    }
+    // if (tournamentData.tournamentType !== "Multi-Table") {
+    //   return;
+    // }
     let rooms = [];
     console.log("reArrange Called");
     if (tournamentData) {
@@ -5043,7 +5043,7 @@ export const UpdateRoomChat = async (data, socket, io) => {
         seenBy: [],
       });
       await setCachedGame(room);
-      roomModel.updateOne(
+      await roomModel.updateOne(
         { _id: tableId },
         {
           chats: room.chats,
@@ -5072,7 +5072,10 @@ export const updateSeenBy = async (data, socket, io) => {
     // console.log(filterdChats);
     room.chats = filterdChats;
     await setCachedGame(room);
-    roomModel.updateOne({ _id: tableId }, { $set: { chats: filterdChats } });
+    await roomModel.updateOne(
+      { _id: tableId },
+      { $set: { chats: filterdChats } }
+    );
   } catch (err) {
     console.log("error in updateChatIsRead", err);
   }
