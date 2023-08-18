@@ -22,7 +22,7 @@ import auth from "./landing-server/middlewares/auth.js";
 import mongoose from "mongoose";
 import User from "./landing-server/models/user.model";
 import returnCron from "./cron/cron";
-import { createClient } from 'redis';
+import { createClient } from "redis";
 import tournamentModel from "./models/tournament";
 import logger from "./landing-server/config/logger";
 import { getAllKeysAndValues, getCachedGame } from "./redis-cache";
@@ -112,14 +112,17 @@ app.use(
     credentials: true,
   })
 );
-// '52.14.190.186' || 
+// '52.14.190.186' ||
 mongoConnect();
-export const redisClient = createClient(process.env.REDIS_PORT || 6379, process.env.REDIS_HOST || '127.0.0.1');
+export const redisClient = createClient(
+  process.env.REDIS_PORT || 6379,
+  process.env.REDIS_HOST || "127.0.0.1"
+);
 (async () => {
   redisClient
-    .on('error', (error) => console.error(`Error in redis connect: ${error}`))
-    .on('connect', async() => {
-      console.info('redis server connected');
+    .on("error", (error) => console.error(`Error in redis connect: ${error}`))
+    .on("connect", async () => {
+      console.info("redis server connected");
     });
   await redisClient.connect();
 })();
@@ -140,7 +143,7 @@ require("./socketconnection/socketconnection")(io);
 app.get("/checkTableExist/:tableId", async (req, res) => {
   try {
     const { tableId } = req.params;
-    const room = await getCachedGame(tableId)
+    const room = await getCachedGame(tableId);
     if (room) {
       res.status(200).send({
         success: true,
@@ -160,7 +163,7 @@ app.get("/checkTableExist/:tableId", async (req, res) => {
 app.get("/rescueTable/:tableId", async (req, res) => {
   try {
     const { tableId } = req.params;
-    const room = await getCachedGame(tableId)
+    const room = await getCachedGame(tableId);
     if (room) {
       let firstGameTime = new Date(room.firstGameTime);
       let now = new Date();
@@ -231,7 +234,7 @@ app.get("/rescueTable/:tableId", async (req, res) => {
 app.get("/deleteStuckTable/:tableId", async (req, res) => {
   try {
     const { tableId } = req.params;
-    const room = await getCachedGame(tableId)
+    const room = await getCachedGame(tableId);
     if (room) {
       res.status(200).send({
         success: true,
@@ -251,8 +254,8 @@ app.get("/deleteStuckTable/:tableId", async (req, res) => {
 app.get("/leaveGame/:tableId/:userId", async (req, res) => {
   try {
     let { tableId, userId } = req.params;
-  
-    let roomdata = await getCachedGame(tableId)
+
+    let roomdata = await getCachedGame(tableId);
     if (
       roomdata &&
       roomdata.players.find((el) => el.id.toString() === userId?.toString())
@@ -270,8 +273,7 @@ app.get("/leaveGame/:tableId/:userId", async (req, res) => {
         success: true,
       });
     } else {
-
-      let roomdata = await getCachedGame(tableId)
+      let roomdata = await getCachedGame(tableId);
       if (!roomdata?.players?.find((el) => el.id === userId)) {
         return res.send({
           success: true,
@@ -291,7 +293,11 @@ app.get("/checkUserInGame/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
     const games = getAllKeysAndValues();
-    const room = games.find(el => el.players.find(pl => pl.id === userId) || el.watchers.find(wt => wt.userid === userId))
+    const room = games.find(
+      (el) =>
+        el.players.find((pl) => pl.id === userId) ||
+        el.watchers.find((wt) => wt.userid === userId)
+    );
     if (
       room &&
       (room.players.find((el) => el.userid.toString() === userId?.toString()) ||

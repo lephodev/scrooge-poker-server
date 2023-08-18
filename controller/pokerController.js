@@ -5,7 +5,6 @@ import Notification from "../models/notificationModal.js";
 import gameService from "../service/game.service.js";
 import roomModel from "./../models/room.js";
 import userService from "../service/user.service.js";
-import { verifyJwt } from "../functions/functions.js";
 import { getCachedGame, setCachedGame } from "../redis-cache/index.js";
 // import { checkLimits } from "../functions/functions.js";
 
