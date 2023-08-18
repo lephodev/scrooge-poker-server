@@ -3265,9 +3265,9 @@ export const reArrangeTables = async (tournamentId, io, roomId) => {
         { rooms: 1, destroyedRooms: 1, havePlayers: 1 }
       )
       .lean();
-    if (tournamentData.tournamentType !== "Multi-Table") {
-      return;
-    }
+    // if (tournamentData.tournamentType !== "Multi-Table") {
+    //   return;
+    // }
     let rooms = [];
     console.log("reArrange Called");
     if (tournamentData) {
