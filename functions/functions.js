@@ -1716,7 +1716,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
             //Success callback
             try {
               newHandPlayer = await anyNewPlayer(newHandPlayer, roomData);
-              // console.log("new hand playersssssss ===>", newHandPlayer);
+              console.log("new hand playersssssss ===>", newHandPlayer);
               roomData = {
                 ...roomData,
                 players: newHandPlayer,
@@ -2306,7 +2306,7 @@ export const doResumeGame = async (data, io, socket) => {
         pause: updatedData.pause,
       });
       await setCachedGame(updatedData);
-      roomModel.updateOne({ _id: roomid }, { pause: false });
+      await roomModel.updateOne({ _id: roomid }, { pause: false });
     } else {
       socket.emit("actionError", { code: 400, msg: "Bad request" });
     }
@@ -5020,7 +5020,7 @@ export const UpdateRoomChat = async (data, socket, io) => {
         seenBy: [],
       });
       await setCachedGame(room);
-      roomModel.updateOne(
+      await roomModel.updateOne(
         { _id: tableId },
         {
           chats: room.chats,
@@ -5049,7 +5049,10 @@ export const updateSeenBy = async (data, socket, io) => {
     // console.log(filterdChats);
     room.chats = filterdChats;
     await setCachedGame(room);
-    roomModel.updateOne({ _id: tableId }, { $set: { chats: filterdChats } });
+    await roomModel.updateOne(
+      { _id: tableId },
+      { $set: { chats: filterdChats } }
+    );
   } catch (err) {
     console.log("error in updateChatIsRead", err);
   }
