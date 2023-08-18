@@ -3144,7 +3144,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
 if (roomData.sidePots.length || roomData.allinPlayers.length) {
       await getSidePOt(roomData._id);
       roomData = await getCachedGame(roomid);
-      winnerAmount = roomData.sidePots.reduce((acc, el) => acc.pot + el.pot)
+      winnerAmount = roomData.sidePots.p.reduce((acc=0,el) => {  return acc.pot + el.pot})
     }
    
 
