@@ -3265,6 +3265,9 @@ export const reArrangeTables = async (tournamentId, io, roomId) => {
         { rooms: 1, destroyedRooms: 1, havePlayers: 1 }
       )
       .lean();
+    if (tournamentData.tournamentType !== "Multi-Table") {
+      return;
+    }
     let rooms = [];
     console.log("reArrange Called");
     if (tournamentData) {
@@ -4583,7 +4586,7 @@ const joinAsWatcher = async (data, socket, io) => {
     const game = await getCachedGame(gameId);
     game.watchers.push(userId);
     await setCachedGame(game);
-    roomModel.updateOne(
+    await roomModel.updateOne(
       {
         _id: gameId,
       },
@@ -5527,11 +5530,16 @@ export const doCalculateCardPair = async (data, io, socket) => {
 export const spectateMultiTable = async (data, io, socket) => {
   try {
     const { roomId, userId } = data;
+    console.log("roomId ===>", roomId);
     const room = await getCachedGame(roomId);
 
-    console.log("tournament rooomm ===>", room);
-    if (room.players.find((el) => (el.id ? el.id : el.userid === userId))) {
-      return io.in(gameId).emit("updateGame", { game: game });
+    if (
+      room.players.find((el) =>
+        el.id ? el.id === userId : el.userid === userId
+      )
+    ) {
+      // console.log("entered in first if", room);
+      return io.in(roomId.toString()).emit("updateGame", { game: room });
     }
     if (room) {
       await joinAsWatcher({ gameId: roomId, userId }, socket, io);
