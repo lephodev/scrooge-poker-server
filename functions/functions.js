@@ -1489,7 +1489,8 @@ export const showdown = async (roomid, io) => {
     };
     await setCachedGame(upRoom);
     await roomModel.updateOne({ _id: upRoom._id }, { ...upRoom });
-
+    console.log("player after showdwon wiiner", upRoom.showdown);
+    console.log("game finished")
     setTimeout(async () => {
       if (upRoom.tournament) {
         await elemination(upRoom, io);
@@ -1585,7 +1586,6 @@ export const updateRoomForNewHand = async (roomid, io) => {
 
           for await (let x of plrs) {
             try {
-              console.log("x *** ==>", x);
               if (!x) return;
               if (
                 room.leavereq.includes(x?.userid) ||
@@ -1602,10 +1602,9 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 console.log("entred in eleminated players");
                 continue;
               }
-              console.log("entred in eleminated players", room.runninground);
+              
               if (room.runninground > 0) {
                 const playerexist = data.find((el) => el.userid === x.userid);
-                console.log("playerexist =====", playerexist);
                 if (!playerexist) {
                   data.push({ ...x, chipsBeforeHandStart: x.wallet });
                 }
@@ -1716,7 +1715,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
             //Success callback
             try {
               newHandPlayer = await anyNewPlayer(newHandPlayer, roomData);
-              // console.log("new hand playersssssss ===>", newHandPlayer);
+              console.log("new hand playersssssss ===>", newHandPlayer);
               roomData = {
                 ...roomData,
                 players: newHandPlayer,
@@ -1865,7 +1864,7 @@ export const elemination = async (roomData, io) => {
         }
       )
       .populate("tournament");
-    await setCachedGame(upRoom);
+    await setCachedGame({...upRoom, chats: roomData.chats});
     if (eleminated_players.length > 0 && noOfElemination > 0) {
       const availablePlayerCount =
         parseInt(upRoom.tournament.havePlayers) -
@@ -3037,7 +3036,7 @@ export const socketDoAllin = async (dta, io, socket) => {
 
 const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
   try {
-    const roomData = await getCachedGame(roomid);
+    let roomData = await getCachedGame(roomid);
     let winnerAmount = 0;
     let showDownPlayers = [];
     let playerData = null;
@@ -3057,7 +3056,14 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
 
     playerData = roomData[gameState[runninground]];
     playerData.forEach((e) => {
-      winnerAmount += e.pot;
+      let actionType = null;
+      if (e.fold === true) {
+        actionType = "fold";
+      }
+      if (e.actionType === "all-in") {
+        actionType = "all-in";
+      }
+      totalPot += e.pot;
       let p = {
         cards: e.cards,
         id: e.id,
@@ -3088,8 +3094,28 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         autoFoldCount: e.autoFoldCount,
       };
       showDownPlayers.push(p);
+      winnerAmount +=e.pot;
     });
     winnerAmount += roomData.pot;
+
+ roomData = {
+      ...roomData,
+      showdown: showDownPlayers,
+      runninground: 5,
+      timerPlayer: null,
+      pot: totalPot,
+    };
+
+    await setCachedGame(roomData);
+
+
+if (roomData.sidePots.length || roomData.allinPlayers.length) {
+      await getSidePOt(roomData._id);
+      roomData = await getCachedGame(roomid);
+      winnerAmount = roomData.sidePots.reduce((acc, el) => acc.pot + el.pot)
+    }
+   
+
 
     let winnerPlayerData = showDownPlayers.filter(
       (el) => el.id.toString() === playerid.toString()
@@ -3141,17 +3167,14 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     io.in(roomData._id.toString()).emit("winner", { updatedRoom: roomData });
     await setCachedGame(roomData);
     console.log("winner decieded");
+    console.log("showdown players after winner", roomData.showdown)
 
     const updatedRoom = await roomModel.findOneAndUpdate(
       {
         _id: roomid,
       },
       {
-        isGameRunning: false,
-        showdown: showDownPlayers,
-        pot: 0,
-        winnerPlayer: winnerPlayer,
-        handWinner: handWinner,
+        ...roomData
       },
       {
         new: true,
@@ -3159,10 +3182,10 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     );
 
     gameRestartSeconds = 5000;
-
+      console.log("game finished")
     setTimeout(async () => {
       if (updatedRoom?.tournament) {
-        await elemination(updatedRoom, io);
+        await elemination(roomData, io);
         await reArrangeTables(updatedRoom.tournament, io, updatedRoom._id);
       } else {
         await updateRoomForNewHand(roomid, io);
