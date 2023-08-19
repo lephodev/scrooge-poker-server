@@ -685,6 +685,7 @@ export const gameTurnTimer = async (roomid, io) => {
                 data.players.length !== 1
               ) {
                 await doCheck(roomid, intervalPlayer[0]?.id, io);
+                console.log("auto do Check completed")
                 timer(++i, maxPosition);
               } else {
                 let isContinue = false;
@@ -705,7 +706,7 @@ export const gameTurnTimer = async (roomid, io) => {
                   }
                   await setCachedGame(data);
                   isContinue = await doFold(data, intervalPlayer[0]?.id, io);
-
+                  console.log("automatic do Fold completed");
                   io.in(data?._id?.toString()).emit("automaticFold", {
                     msg: `${intervalPlayer[0]?.name} has automatically folded`,
                   });
@@ -1575,8 +1576,8 @@ export const updateRoomForNewHand = async (roomid, io) => {
         let newHandPlayer = [];
         let buyin = roomData?.buyin;
         let availablerequest = roomData?.availablerequest;
-        const bigBlindAmt = roomData?.bigBlind;
-        const smallBlindAmt = roomData?.smallBlind;
+        const bigBlindAmt = roomData?.tournament?.levels?.bigBlind?.amount || roomData?.bigBlind;
+        const smallBlindAmt = roomData?.tournament?.levels?.smallBlind?.amount || roomData?.smallBlind;
         let playerData = roomData[gameState[roomData.runninground]];
         console.log("running round =================>", roomData?.runninground);
 
@@ -1860,7 +1861,6 @@ export const elemination = async (roomData, io) => {
           isShowdown: false,
           isCircleCompleted: false,
           allinPlayers: [],
-          tournament: roomData.tournament,
           eliminationCount: eleminated_players?.length,
           autoNextHand: true,
         },
@@ -1886,9 +1886,6 @@ export const elemination = async (roomData, io) => {
       isGameRunning: false,
       smallBlind: smallBlindAmt,
       bigBlind: bigBlindAmt,
-      smallBlindPosition: roomData.smallBlindPosition,
-      bigBlindPosition: roomData.bigBlindPosition,
-      dealerPosition: roomData.dealerPosition,
       raisePlayerPosition: null,
       raiseAmount: 0,
       timerPlayer: null,
@@ -1898,10 +1895,9 @@ export const elemination = async (roomData, io) => {
       isShowdown: false,
       isCircleCompleted: false,
       allinPlayers: [],
-      tournament: roomData.tournament,
       eliminationCount: eleminated_players?.length,
       autoNextHand: true,
-    },);
+    });
     if (eleminated_players.length > 0 && noOfElemination > 0) {
       const availablePlayerCount =
         parseInt(upRoom.tournament.havePlayers) -
@@ -2570,11 +2566,11 @@ export const doFold = async (roomData, playerid, io, isAuto = true) => {
       if (players.find((pl) => pl.id === playerid)?.action) {
         return;
       }
-      roomData.lastAction = lastAction;
       players.forEach((pl) => {
         if (pl.id === playerid) {
           pl.fold = true;
-          pl.actionType = "fold";
+          pl.actionType = lastAction;
+          pl.action=true;
           pl.tentativeAction = null;
           if (!isAuto) {
             pl.away = false;
@@ -2583,6 +2579,9 @@ export const doFold = async (roomData, playerid, io, isAuto = true) => {
         }
       });
       roomData.lastAction = lastAction;
+
+      roomData[gameState[roomData.runninground]] = players;
+      await setCachedGame({ ...roomData });
 
       io.in(roomData._id.toString()).emit("actionperformed", {
         id: playerid,
@@ -2604,8 +2603,6 @@ export const doFold = async (roomData, playerid, io, isAuto = true) => {
           playingPlayer.push({ id: el.id, position: el.position });
         }
       });
-      roomData[gameState[roomData.runninground]] = players;
-      await setCachedGame({ ...roomData });
 
       if (playingPlayer.length <= 1) {
         await setCachedGame({ ...roomData, runninground: 5 });
@@ -2639,6 +2636,7 @@ export const socketDoFold = async (dta, io, socket) => {
       const data = await getCachedGame(roomid);
       if (data !== null) {
         await doFold(data, playerid, io, false);
+        console.log("manual do fold completed")
       } else {
         socket.emit("actionError", { code: 400, msg: "Data not found" });
       }
@@ -2958,6 +2956,7 @@ export const socketDoCheck = async (dta, io, socket) => {
       const data = await getCachedGame(roomid);
       if (data !== null) {
         await doCheck(data, playerid, io);
+        console.log("manual do check complete")
       } else {
         socket.emit("actionError", { code: 404, msg: "Data not found" });
       }
@@ -3448,7 +3447,7 @@ const reArrangementBeforeTournamentStart = async (
             { new: true }
           )
           .populate("tournament");
-        await setCachedGame(udpatedRoom);
+        await setCachedGame(room);
         console.log(
           "udpatedRoom changed players for room ==>",
           udpatedRoom._id,
@@ -3459,6 +3458,7 @@ const reArrangementBeforeTournamentStart = async (
 
         io.in(room._id.toString()).emit("roomchanged", { userIds });
       } else {
+        
         const udpatedRoom = await roomModel
           .findOneAndUpdate(
             { _id: room._id },
@@ -3468,7 +3468,7 @@ const reArrangementBeforeTournamentStart = async (
             { new: true }
           )
           .populate("tournament");
-        await setCachedGame(udpatedRoom);
+        await setCachedGame(room);
         console.log("udpatedRoom ==>", udpatedRoom?.players);
       }
     }
