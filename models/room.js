@@ -48,6 +48,7 @@ const roomSchema = new Schema({
   maxchips: { type: Number, default: 0 },
   hostId: { type: String, default: null },
   buyinrequest: [],
+  availablerequest:[],
   buyin: [],
   handWinner: [],
   createdAt: { type: String, default: new Date().toUTCString() },
