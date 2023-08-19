@@ -25,7 +25,7 @@ export const getTournamentById = async (req, res) => {
     const { tournamentId } = req.query;
     let payoutStructure = {};
     if (tournamentId) {
-      const tournament = await tournamentModel
+      let tournament = await tournamentModel
         .findOne({ _id: tournamentId })
         .populate({
           path: "winPlayer.first.userId",
@@ -49,11 +49,14 @@ export const getTournamentById = async (req, res) => {
         });
 
       if (tournament) {
-        let rooms = []
-        for await (let r of tournament.rooms){
+        let rooms = [];
+        for await (let r of tournament.rooms) {
           rooms.push(await getCachedGame(r));
         }
-        tournament.rooms = rooms
+        tournament = {
+          ...tournament,
+          rooms: rooms,
+        };
         if (tournament.prizeType !== "Fixed") {
           payoutStructure = await getRequiredPaytout(tournament, payout);
         }
@@ -82,7 +85,7 @@ const getRequiredPaytout = async (tournamentData, payouts) => {
   let values =
     (await payouts[prizeDistribution]) &&
     Object.values(payouts[prizeDistribution]);
-  
+
   let reqPayout = values?.find(
     (el) => el.min <= totalJoinPlayer && el.max >= totalJoinPlayer
   );
