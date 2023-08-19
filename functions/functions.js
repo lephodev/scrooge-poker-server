@@ -1575,6 +1575,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
       try {
         let roomData = await getCachedGame(roomid);
         if(roomData?.tournament){
+          console.log("id populate", roomData.tournament)
           roomData.tournament = await tournamentModel.findOne({_id: roomData.tournament._id}).lean();
         }
         let newHandPlayer = [];
@@ -1583,7 +1584,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
         const bigBlindAmt = roomData?.tournament?.levels?.bigBlind?.amount || roomData?.bigBlind;
         const smallBlindAmt = roomData?.tournament?.levels?.smallBlind?.amount || roomData?.smallBlind;
         let playerData = roomData[gameState[roomData.runninground]];
-        console.log("running round =================>", roomData?.runninground);
+        console.log("running round =================>", roomData?.runninground, roomData.tournament);
 
         if (!playerData.length) {
           return;
@@ -1917,7 +1918,7 @@ export const elemination = async (roomData, io) => {
         { _id: upRoom.tournament._id },
         {
           havePlayers: parseInt(availablePlayerCount),
-          eleminatedPlayers,
+          eleminatedPlayers : eleminatedPlayers || [],
         }
       );
     }
@@ -2046,7 +2047,7 @@ export const distributeTournamentPrize = async (
         winPlayer: winPlayer,
         isFinished: true,
         isStart: false,
-        eleminatedPlayers: elem,
+        eleminatedPlayers: elem || [],
       },
       { new: true }
     );
@@ -2072,6 +2073,7 @@ export const distributeTournamentPrize = async (
               lastName,
               profile,
             },
+            eleminatedPlayers:[],
             amount: player.amount,
             transactionDetails: {},
             prevTicket: parseFloat(user?.ticket),
@@ -2107,6 +2109,7 @@ export const distributeTournamentPrize = async (
                   profile,
                 },
                 amount: player.amount,
+                eleminatedPlayers:[],
                 transactionDetails: {},
                 prevTicket: parseFloat(user?.ticket),
                 updatedTicket: parseFloat(user?.ticket),
@@ -2141,6 +2144,7 @@ export const distributeTournamentPrize = async (
                 },
                 amount: player.amount,
                 transactionDetails: {},
+                eleminatedPlayers:[],
                 prevTicket: parseFloat(user?.ticket),
                 updatedTicket: parseFloat(user?.ticket),
                 prevWallet: parseFloat(user?.wallet),
@@ -4577,6 +4581,7 @@ export const leaveApiCall = async (room, userId, io) => {
               lastName,
               profile,
             },
+            eleminatedPlayers:[],
             amount: parseFloat(tournament.tournamentFee),
             transactionDetails: {},
             prevWallet: parseFloat(updateData?.wallet),
@@ -5264,6 +5269,7 @@ export const JoinTournament = async (data, io, socket) => {
       },
       amount: -parseFloat(fees),
       transactionDetails: {},
+      eleminatedPlayers: [],
       prevWallet: parseFloat(userData?.wallet),
       updatedWallet: updatedUser?.wallet,
       prevTicket: parseFloat(userData?.ticket),
