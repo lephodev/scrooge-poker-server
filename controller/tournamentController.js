@@ -46,17 +46,15 @@ export const getTournamentById = async (req, res) => {
         .populate({
           path: "winPlayer.11-25.userIds",
           model: "User",
-        });
+        })
+        .lean();
 
       if (tournament) {
         let rooms = [];
         for await (let r of tournament.rooms) {
           rooms.push(await getCachedGame(r));
         }
-        tournament = {
-          ...tournament,
-          rooms: rooms,
-        };
+        tournament.rooms = rooms;
         if (tournament.prizeType !== "Fixed") {
           payoutStructure = await getRequiredPaytout(tournament, payout);
         }
