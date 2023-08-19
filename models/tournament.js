@@ -26,7 +26,7 @@ const tournamentSchema = new Schema(
     winPlayer: { type: Object },
     buyIn: { type: Number, required: true },
     isStart: { type: Boolean, default: false },
-    eleminatedPlayers: [],
+    eleminatedPlayers: {type: Array, default: []},
     totalJoinPlayer: { type: Number, default: 0 },
     prizeType: { type: String, required: true },
     tournamentType: { type: String, required: true },
