@@ -651,7 +651,8 @@ export const gameTurnTimer = async (roomid, io) => {
             cPlayer[0].wallet <= 0 ||
             cPlayer[0].fold ||
             !cPlayer[0].playing ||
-            (cPlayer[0].pot >= udata.raiseAmount && cPlayer[0].action)
+            (cPlayer[0].pot >= udata.raiseAmount && cPlayer[0].action) || 
+            (cPlayer[0].actionType === "check" && udata.lastAction ==="check")
           ) {
             i += 1;
             return timer(i, maxPosition);
@@ -684,7 +685,7 @@ export const gameTurnTimer = async (roomid, io) => {
                   data.lastAction === "check") &&
                 data.players.length !== 1
               ) {
-                await doCheck(roomid, intervalPlayer[0]?.id, io);
+                await doCheck(data, intervalPlayer[0]?.id, io);
                 console.log("auto do Check completed")
                 timer(++i, maxPosition);
               } else {
@@ -1573,6 +1574,9 @@ export const updateRoomForNewHand = async (roomid, io) => {
     return new Promise(async (resolve, reject) => {
       try {
         let roomData = await getCachedGame(roomid);
+        if(roomData?.tournament){
+          roomData.tournament = await tournamentModel.findOne({_id: roomData.tournament._id}).lean();
+        }
         let newHandPlayer = [];
         let buyin = roomData?.buyin;
         let availablerequest = roomData?.availablerequest;
@@ -2939,7 +2943,7 @@ export const doCheck = async (roomData, playerid, io) => {
       io.in(roomData._id.toString()).emit("check", { updatedRoom: roomData });
     }
   } catch (error) {
-    console.log("errorerrorerrordd", error);
+    console.log("Error in do Check", error);
   }
 };
 
