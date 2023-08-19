@@ -1918,7 +1918,7 @@ export const elemination = async (roomData, io) => {
         { _id: upRoom.tournament._id },
         {
           havePlayers: parseInt(availablePlayerCount),
-          eleminatedPlayers,
+          eleminatedPlayers : eleminatedPlayers || [],
         }
       );
     }
@@ -2047,7 +2047,7 @@ export const distributeTournamentPrize = async (
         winPlayer: winPlayer,
         isFinished: true,
         isStart: false,
-        eleminatedPlayers: elem,
+        eleminatedPlayers: elem || [],
       },
       { new: true }
     );
