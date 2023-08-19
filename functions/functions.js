@@ -798,12 +798,17 @@ export const gameTurnTimer = async (roomid, io) => {
         }
       }
     };
+    
     let i = 0;
+    if(roomData.runninground===1){
     if (roomData?.bigBlindPosition === totalPlayer - 1) {
       i = 0;
     } else {
       i = roomData?.bigBlindPosition + 1;
     }
+  }else{
+     i = roomData.smallBlindPosition;
+  }
 
     timer(i, totalPlayer);
   } catch (error) {
@@ -3107,7 +3112,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         timebank: e.timebank,
         playing: e.playing,
         action: null,
-        actionType: null,
+        actionType,
         prevPot: e.prevPot + e.pot,
         pot: 0,
         position: e.position,
@@ -3129,6 +3134,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
       winnerAmount +=e.pot;
     });
     winnerAmount += roomData.pot;
+    console.log("total pot", {winnerAmount, totalPot})
 
  roomData = {
       ...roomData,
@@ -3142,9 +3148,15 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
 
 
 if (roomData.sidePots.length || roomData.allinPlayers.length) {
+  console.log("all folded and allin")
       await getSidePOt(roomData._id);
       roomData = await getCachedGame(roomid);
-      winnerAmount = roomData.sidePots.reduce((acc,el) => acc + el.pot, 0)
+      let sidePotTotal = roomData.sidePots.reduce((acc,el) => acc + el.pot, 0)
+      if(sidePotTotal){
+        winnerAmount = sidePotTotal;
+        console.log("winnet amount", winnerAmount)
+      }
+     
     }
    
 
