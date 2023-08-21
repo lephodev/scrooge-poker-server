@@ -5211,9 +5211,11 @@ export const JoinTournament = async (data, io, socket) => {
       });
     }
 
+    console.log("rooms ==>", rooms);
+
     if (
       rooms.find((room) =>
-        room.players.find(
+        room.players?.find(
           (pl) =>
             pl.userid.toString() === userId.toString() ||
             pl.id.toString() === userId.toString()
