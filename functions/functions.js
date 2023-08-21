@@ -5177,6 +5177,7 @@ export const JoinTournament = async (data, io, socket) => {
     for await (let r of tournamentRooms) {
       rooms.push(await getCachedGame(r));
     }
+    rooms = rooms.filter((room) => room);
     // console.log("tournamenttournament",tournament);
 
     let endDate = new Date(startDate + " " + startTime);
