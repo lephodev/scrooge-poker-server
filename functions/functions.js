@@ -3572,7 +3572,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
       }
     });
     // room.showdown.length
-    connsole.log("blank spot ==>", blankSpot);
+    console.log("blank spot ==>", blankSpot);
     if (blankSpot >= totalPlayers) {
       let playersWaitingztoPlay = room.players.filter((el) => {
         let isWaiting = true;
@@ -3584,7 +3584,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         return isWaiting;
       });
       let playersToMove = [...room.showdown, ...playersWaitingztoPlay];
-      connsole.log("playersToMove ==>", playersToMove);
+      console.log("playersToMove ==>", playersToMove);
       let userIds = [];
       for await (const r of OtherRoom) {
         if (playersToMove.length === 0 || blankSpot === 0) {
