@@ -3364,6 +3364,8 @@ export const reArrangeTables = async (tournamentId, io, roomId) => {
         rooms.push(await getCachedGame(room));
       }
 
+      rooms = rooms.filter((room) => room);
+
       console.log("not destoryed rooms", rooms);
       const allRooms = rooms.sort((a, b) => {
         // ASC  -> a.length - b.length
@@ -5316,6 +5318,7 @@ const pushPlayerInRoom = async (
     for await (let r of checkTournament.rooms) {
       rooms.push(await getCachedGame(r));
     }
+    rooms = rooms.filter((room) => room);
     let roomWithSpace = rooms.find(
       (room) => room.players.length < playerLimit && !room.gamestart
     );
@@ -5519,10 +5522,11 @@ export const activateTournament = async (io) => {
         if (checkTournament?.rooms?.length > 0) {
           console.log("Tournament started");
 
-          const allRooms = [];
+          let allRooms = [];
           for await (const r of checkTournament.rooms) {
             allRooms.push(await getCachedGame(r));
           }
+          allRooms = allRooms.filter((room) => room);
           const updatedRooms = await reArrangementBeforeTournamentStart(
             allRooms,
             io,
