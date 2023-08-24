@@ -3538,9 +3538,10 @@ const reArrangementBeforeTournamentStart = async (
       // More than one room still underfilled, continue the redistribution process
       console.log("Continue redistributing players");
     }
+
     return await roomModel.find({
       tournament: tournamentId,
-    });
+    }).populate("tournament").lean();
   } catch (error) {
     console.log("error in reArragnement before start function =>", error);
   }
@@ -5721,6 +5722,7 @@ export const activateTournament = async (io) => {
             checkTournament._id
           );
           for (let room of updatedRooms) {
+            console.log("room with tournament inactivate tournament", room.tournament);
             preflopround(room, io);
           }
         }
