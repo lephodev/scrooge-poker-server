@@ -3488,9 +3488,9 @@ const reArrangementBeforeTournamentStart = async (
             },
             { new: true }
           )
-          .populate("tournament");
+          .populate("tournament").lean();
         console.log("udpatedRoom =====>", udpatedRoom);
-        await setCachedGame(room);
+        await setCachedGame({...room, tournament: udpatedRoom.tournament});
         console.log(
           "udpatedRoom changed players for room ==>",
           udpatedRoom._id,
@@ -3511,7 +3511,7 @@ const reArrangementBeforeTournamentStart = async (
           )
           .populate("tournament");
         console.log("udpatedRoom =====>", udpatedRoom, room.tournament);
-        await setCachedGame(room);
+        await setCachedGame({...room, tournament: udpatedRoom.tournament});
         console.log("udpatedRoom ==>", udpatedRoom?.players);
       }
     }
