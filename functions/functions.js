@@ -3488,9 +3488,10 @@ const reArrangementBeforeTournamentStart = async (
             },
             { new: true }
           )
-          .populate("tournament").lean();
+          .populate("tournament")
+          .lean();
         console.log("udpatedRoom =====>", udpatedRoom);
-        await setCachedGame({...room, tournament: udpatedRoom.tournament});
+        await setCachedGame({ ...room, tournament: udpatedRoom.tournament });
         console.log(
           "udpatedRoom changed players for room ==>",
           udpatedRoom._id,
@@ -3511,7 +3512,7 @@ const reArrangementBeforeTournamentStart = async (
           )
           .populate("tournament");
         console.log("udpatedRoom =====>", udpatedRoom, room.tournament);
-        await setCachedGame({...room, tournament: udpatedRoom.tournament});
+        await setCachedGame({ ...room, tournament: udpatedRoom.tournament });
         console.log("udpatedRoom ==>", udpatedRoom?.players);
       }
     }
@@ -3539,9 +3540,12 @@ const reArrangementBeforeTournamentStart = async (
       console.log("Continue redistributing players");
     }
 
-    return await roomModel.find({
-      tournament: tournamentId,
-    }).populate("tournament").lean();
+    return await roomModel
+      .find({
+        tournament: tournamentId,
+      })
+      .populate("tournament")
+      .lean();
   } catch (error) {
     console.log("error in reArragnement before start function =>", error);
   }
@@ -4678,6 +4682,8 @@ export const leaveApiCall = async (room, userId, io) => {
         tournamentModel.updateOne(
           {
             _id: room.tournament,
+            havePlayers: { $gt: 0 }, // Ensure havePlayers is greater than 0
+            totalJoinPlayer: { $gt: 0 }, // Ensure totalJoinPlayer is greater than 0
           },
           {
             $inc: {
@@ -5722,7 +5728,10 @@ export const activateTournament = async (io) => {
             checkTournament._id
           );
           for (let room of updatedRooms) {
-            console.log("room with tournament inactivate tournament", room.tournament);
+            console.log(
+              "room with tournament inactivate tournament",
+              room.tournament
+            );
             preflopround(room, io);
           }
         }
