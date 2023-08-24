@@ -1169,6 +1169,7 @@ export const showdown = async (roomid, io) => {
     console.log("----showdown-----");
 
     let roomData = await getCachedGame(roomid);
+    console.log("tournament in showdown", roomData.tournament);
     if (!roomData.isGameRunning) return;
     let playersHand = [];
     let hands = [];
@@ -1394,8 +1395,6 @@ export const showdown = async (roomid, io) => {
     };
     await findWinner();
 
-    console.log("playerWithWallets ===>", playerWithWallets);
-
     const handWinner = updatedRoom.handWinner;
     handWinner.push(winnerPlayers);
     const upRoomData = await getCachedGame(roomid);
@@ -1495,7 +1494,16 @@ export const showdown = async (roomid, io) => {
       runninground: 5,
     };
     await setCachedGame(upRoom);
-    await roomModel.updateOne({ _id: upRoom._id }, { ...upRoom });
+    await roomModel.updateOne(
+      { _id: upRoom._id },
+      {
+        showdown: upRoomData.showdown,
+        winnerPlayer: winnerPlayers,
+        handWinner,
+        isShowdown: true,
+        runninground: 5,
+      }
+    );
     console.log("player after showdwon winner", upRoom.showdown);
     // console.log("game finished");
     setTimeout(async () => {
@@ -3102,6 +3110,7 @@ export const socketDoAllin = async (dta, io, socket) => {
 const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
   try {
     let roomData = await getCachedGame(roomid);
+    console.log("tournament in winnerBefore Show", roomData.tournament);
     let winnerAmount = 0;
     let showDownPlayers = [];
     let playerData = null;
@@ -3242,7 +3251,11 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
         _id: roomid,
       },
       {
-        ...roomData,
+        isGameRunning: false,
+        showdown: showDownPlayers,
+        pot: 0,
+        winnerPlayer,
+        handWinner,
       },
       {
         new: true,
@@ -3495,7 +3508,7 @@ const reArrangementBeforeTournamentStart = async (
             { new: true }
           )
           .populate("tournament");
-        console.log("udpatedRoom =====>", udpatedRoom);
+        console.log("udpatedRoom =====>", udpatedRoom, room.tournament);
         await setCachedGame(room);
         console.log("udpatedRoom ==>", udpatedRoom?.players);
       }
@@ -3603,7 +3616,8 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
       let noOfPlayersToMove = totalPlayersInRoom.length - idealPlayerCount;
       let playersToMove = room.players.splice(0, noOfPlayersToMove);
 
-      for await (const newRoom of OtherRoom) {
+      for await (let newRoom of OtherRoom) {
+        newRoom = await getCachedGame(newRoom._id);
         if (noOfPlayersToMove) {
           let playersWaitingtoPlayInNewRoom = newRoom.players.filter((el) => {
             let isWaiting = true;
@@ -3667,6 +3681,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
       let blankSpotFound = false;
 
       for await (const newRoom of OtherRoom) {
+        newRoom = await getCachedGame(newRoom._id);
         let playersWaitingtoPlayInNewRoom = newRoom.players.filter((el) => {
           let isWaiting = true;
           room.showdown.forEach((el2) => {
