@@ -290,11 +290,13 @@ export const preflopround = async (room, io) => {
       console.log("preflop round already executed");
       return;
     }
-    console.log("preflop round execution start");
+    console.log("preflop round before update room for new hand", room);
 
     await updateRoomForNewHand(room._id, io);
 
     room = await getCachedGame(room._id);
+
+    console.log("preflop round after update room for new hand", room);
     // console.log("io", io);
     // console.log("afetr update roomfor new hand", room.players);
 
@@ -4788,7 +4790,7 @@ export const leaveApiCall = async (room, userId, io) => {
 
     if (userId) {
       room.players = room.players.filter((pl) => pl.id !== userId);
-      console.log("pleayer after remvoe in leaveApiCall", room.players);
+      // console.log("pleayer after remvoe in leaveApiCall", room.players);
       room.watchers = room.watchers.filter((wt) => wt !== userId);
       room.handWinner = filterdHndWinnerData;
       let rrr = await getCachedGame(room._id);
