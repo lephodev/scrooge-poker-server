@@ -2002,6 +2002,57 @@ export const calculateTournamentPrize = async (tournamentId, eleminated) => {
   }
 };
 
+const fixedPrizeDistribution = (tournamentdata, elem) => {
+  try {
+    let { winPlayer, winTotalPlayer, totalJoinPlayer } = tournamentdata;
+    let winners = elem.slice(
+      elem.length - tournamentdata.winTotalPlayer,
+      elem.length
+    );
+    console.log("winners ====>", winners);
+
+    if (totalJoinPlayer === 2 && winners.length === 2) {
+      winners.shift();
+    }
+
+    winners.forEach((ele) => {
+      if (
+        winTotalPlayer === 25 &&
+        winPlayer["11-25"] &&
+        winPlayer["11-25"].userIds.length < winPlayer["11-25"].playerCount &&
+        winners.length > 10
+      ) {
+        winPlayer["11-25"].userIds.push(ele.id || ele.userid);
+        return;
+      }
+      if (
+        winTotalPlayer === 10 &&
+        winPlayer["4-10"] &&
+        winPlayer["4-10"].userIds.length <= winPlayer["4-10"].playerCount &&
+        winners.length > 3
+      ) {
+        winPlayer["4-10"].userIds.push(ele.id || ele.userid);
+        return;
+      }
+      if (!winPlayer.third.userId && winners.length > 2) {
+        winPlayer.third.userId = ele.id || ele.userid;
+        return;
+      }
+      if (!winPlayer.second.userId && winners.length > 1) {
+        winPlayer.second.userId = ele.id || ele.userid;
+        return;
+      }
+      if (!winPlayer.first.userId) {
+        winPlayer.first.userId = ele.id || ele.userid;
+        return;
+      }
+    });
+    return winPlayer;
+  } catch (error) {
+    console.log("error in fixedPrizeDistribution", error);
+  }
+};
+
 // const fixedPrizeDistribution = (tournamentdata, elem) => {
 //   try {
 //     let { winPlayer, winTotalPlayer, totalJoinPlayer } = tournamentdata;
@@ -2052,57 +2103,6 @@ export const calculateTournamentPrize = async (tournamentId, eleminated) => {
 //     console.log("error in fixedPrizeDistribution", error);
 //   }
 // };
-
-const fixedPrizeDistribution = (tournamentdata, elem) => {
-  try {
-    let { winPlayer, winTotalPlayer, totalJoinPlayer } = tournamentdata;
-    let winners = elem.slice(
-      elem.length - tournamentdata.winTotalPlayer,
-      elem.length
-    );
-    console.log("winners ====>", winners);
-
-    if (totalJoinPlayer === 2 && winners.length === 2) {
-      winners.shift();
-    }
-
-    winners.reverse().forEach((ele) => {
-      if (
-        winTotalPlayer === 25 &&
-        winPlayer["11-25"] &&
-        winPlayer["11-25"].userIds.length < winPlayer["11-25"].playerCount &&
-        winners.length > 25
-      ) {
-        winPlayer["11-25"].userIds.push(ele.id || ele.userid);
-        return;
-      }
-      if (
-        winTotalPlayer === 10 &&
-        winPlayer["4-10"] &&
-        winPlayer["4-10"].userIds.length <= winPlayer["4-10"].playerCount &&
-        winners.length > 10
-      ) {
-        winPlayer["4-10"].userIds.push(ele.id || ele.userid);
-        return;
-      }
-      if (!winPlayer.third.userId && winners.length > 2) {
-        winPlayer.third.userId = ele.id || ele.userid;
-        return;
-      }
-      if (!winPlayer.second.userId && winners.length > 1) {
-        winPlayer.second.userId = ele.id || ele.userid;
-        return;
-      }
-      if (!winPlayer.first.userId) {
-        winPlayer.first.userId = ele.id || ele.userid;
-        return;
-      }
-    });
-    return winPlayer;
-  } catch (error) {
-    console.log("error in fixedPrizeDistribution", error);
-  }
-};
 
 export const distributeTournamentPrize = async (
   tournamentId,
