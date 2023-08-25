@@ -296,7 +296,7 @@ export const preflopround = async (room, io) => {
 
     room = await getCachedGame(room._id);
 
-    console.log("preflop round after update room for new hand", room);
+    // console.log("preflop round after update room for new hand", room);
     // console.log("io", io);
     // console.log("afetr update roomfor new hand", room.players);
 
@@ -633,7 +633,7 @@ export const gameTurnTimer = async (roomid, io) => {
 
     totalPlayer++;
 
-    console.log("totalPlayer =======>", totalPlayer);
+    // console.log("totalPlayer =======>", totalPlayer);
 
     const timer = async (i, maxPosition) => {
       let j = roomData.timer;
@@ -1748,7 +1748,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
               newHandPlayer = await anyNewPlayer(newHandPlayer, roomData);
               // console.log("new hand playersssssss ===>", newHandPlayer);
 
-              console.log("tournamnettttt +====>", roomData.tournament);
+              // console.log("tournamnettttt +====>", roomData.tournament);
 
               roomData = {
                 ...roomData,
@@ -1812,7 +1812,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
 
 export const elemination = async (roomData, io) => {
   try {
-    console.log("elemination runs for ===>", roomData._id);
+    // console.log("elemination runs for ===>", roomData._id);
     let eleminated_players = roomData.eleminated;
     let noOfElemination = 0;
     let newHandPlayer = [];
@@ -1858,11 +1858,11 @@ export const elemination = async (roomData, io) => {
       }
     });
 
-    console.log(
-      "eleminated playersssss ===>",
-      noOfElemination,
-      eleminated_players
-    );
+    // console.log(
+    //   "eleminated playersssss ===>",
+    //   noOfElemination,
+    //   eleminated_players
+    // );
 
     const upRoom = await roomModel
       .findOneAndUpdate(
@@ -1943,7 +1943,7 @@ export const elemination = async (roomData, io) => {
           (a, b) => a.chipsBeforeHandStart - b.chipsBeforeHandStart
         )
       );
-      console.log("eleminated players length", eleminatedPlayers);
+      // console.log("eleminated players length", eleminatedPlayers);
 
       await tournamentModel.updateOne(
         { _id: upRoom.tournament._id },
@@ -3640,7 +3640,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         return;
       }
     }
-    const room = await getCachedGame(roomId);
+    let room = await getCachedGame(roomId);
     const OtherRoom = allRooms.filter(
       (r) => r._id.toString() !== roomId.toString()
     );
@@ -3670,16 +3670,28 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
 
     const totalPlayersInRoom = [...room.showdown, ...playersWaitingztoPlay];
 
+    console.log(
+      "ideal count condition ==>",
+      totalPlayersInRoom.length,
+      idealPlayerCount
+    );
+    // console.log("totalPlayersInRoom ==>", totalPlayersInRoom);
+
     if (totalPlayersInRoom.length > idealPlayerCount) {
       let noOfPlayersToMove = totalPlayersInRoom.length - idealPlayerCount;
+      console.log("no of players to move ", noOfPlayersToMove);
       let playersToMove = room.players.splice(0, noOfPlayersToMove);
+
+      // console.log("playersToMove ==>", playersToMove);
+
+      // console.log("OtherRooms ===>", OtherRoom);
 
       for await (let newRoom of OtherRoom) {
         newRoom = await getCachedGame(newRoom._id);
         if (noOfPlayersToMove) {
           let playersWaitingtoPlayInNewRoom = newRoom.players.filter((el) => {
             let isWaiting = true;
-            room.showdown.forEach((el2) => {
+            newRoom.showdown.forEach((el2) => {
               if (el2.userid.toString() === el.userid.toString()) {
                 isWaiting = false;
               }
@@ -3689,22 +3701,44 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
           const totalPlayersInNewRoom =
             playersWaitingtoPlayInNewRoom.length + newRoom.showdown.length;
 
+          console.log("cached room ==>", playersWaitingtoPlayInNewRoom);
+
+          console.log(
+            "totalPlayersInNewRoom ===>",
+            totalPlayersInNewRoom,
+            idealPlayerCount
+          );
+
           if (totalPlayersInNewRoom < idealPlayerCount) {
             const NoOfPlayersReqInNewRoom =
               idealPlayerCount - totalPlayersInNewRoom;
 
-            const player = playersToMove.splice(0, NoOfPlayersReqInNewRoom);
+            let player = playersToMove.splice(0, NoOfPlayersReqInNewRoom);
 
-            player.forEach((el) => {
+            // console.log("player who s going to another table ==>", player);
+
+            const occupiedPositions = newRoom.players.map((el) => el.position);
+
+            let blankPositions = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter(
+              (el) => occupiedPositions.indexOf(el) < 0
+            );
+
+            player = player.map((el, i) => {
               userIds.push({
                 userId: el.id,
                 newRoomId: newRoom._id,
               });
+              return {
+                ...el,
+                position: blankPositions[i],
+              };
             });
 
             const updatedPlayersInNewRoom = [...newRoom.players, ...player];
+            // console.log("now updated player ==>", updatedPlayersInNewRoom);
+
             newRoom.players = [...updatedPlayersInNewRoom];
-            await setCachedGame(newRoom);
+            await setCachedGame({ ...newRoom, tournament: tournamentId });
             const updatedNewRoom = await roomModel.findOneAndUpdate(
               {
                 _id: newRoom._id,
@@ -3713,32 +3747,58 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
                 players: newRoom.players,
               }
             );
+
             if (!updatedNewRoom.gamestart) {
               await preflopround(newRoom, io);
             }
           }
         }
       }
+
+      // console.log("user ids to  move ==>", userIds);
+
       if (userIds.length) {
         io.in(room._id.toString()).emit("roomchanged", {
           userIds,
         });
+
+        console.log("now currnt room players", { ...room.players });
+
+        console.log("remaining players ==>", { ...playersToMove });
+
         room.players = [...room.players, ...playersToMove];
-        await setCachedGame(room);
-        await roomModel.updateOne(
+
+        const updatedRoom = {
+          ...room,
+          players: [...room.players, ...playersToMove],
+          showdown: [...room.players, ...playersToMove],
+        };
+
+        room = updatedRoom;
+
+        await setCachedGame({ ...updatedRoom, tournament: tournamentId });
+        await roomModel.findOneAndUpdate(
           {
             _id: room._id,
           },
           {
-            players: room.players,
-          }
+            players: updatedRoom.players,
+            showdown: updatedRoom.players,
+          },
+          { new: true }
         );
+        console.log("updatedTable ==>", { room: room.players });
+        io.in(room._id.toString()).emit("updateGame", { game: updatedRoom });
+        await preflopround(updatedRoom, io);
+        return;
+      } else {
+        console.log("updatedTable1 ==>", { room: room.players });
+        await preflopround(room, io);
       }
-      await preflopround(room, io);
     } else if (totalPlayersInRoom.length === 1) {
       let blankSpotFound = false;
 
-      for await (const newRoom of OtherRoom) {
+      for await (let newRoom of OtherRoom) {
         newRoom = await getCachedGame(newRoom._id);
         let playersWaitingtoPlayInNewRoom = newRoom.players.filter((el) => {
           let isWaiting = true;
@@ -3752,8 +3812,16 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         const totalPlayersInNewRoom =
           playersWaitingtoPlayInNewRoom.length + newRoom.showdown.length;
         if (totalPlayersInNewRoom < playerLimit) {
+          const occupiedPositions = newRoom.players.map((el) => el.position);
+
+          let blankPositions = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter(
+            (el) => occupiedPositions.indexOf(el) < 0
+          );
+
+          totalPlayersInRoom[0].position = blankPositions[0];
+
           newRoom.players = [...newRoom.players, ...totalPlayersInRoom];
-          await setCachedGame(newRoom);
+          await setCachedGame({ ...newRoom, tournament: tournamentId });
           await roomModel.updateOne(
             {
               _id: newRoom._id,
@@ -3770,6 +3838,10 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
           io.in(room._id.toString()).emit("roomchanged", {
             userIds,
           });
+          if (!newRoom.gamestart) {
+            await preflopround(newRoom, io);
+          }
+
           break;
         }
       }
@@ -3778,6 +3850,30 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         io.in(room._id.toString()).emit("waitForReArrange", {
           userIds: room.showdown.map((p) => p.id || p.userid),
         });
+
+        await setCachedGame({
+          ...room,
+          players: room.showdown,
+          runninground: 0,
+          gamestart: false,
+          communityCard: [],
+          tournament: tournamentId,
+        });
+
+        const updatedRoom = await roomModel.findOneAndUpdate(
+          {
+            _id: convertMongoId(room._id),
+          },
+          {
+            players: room.showdown,
+            runninground: 0,
+            gamestart: false,
+            communityCard: [],
+          },
+          { new: true }
+        );
+
+        io.in(room._id.toString()).emit("updateGame", { game: updatedRoom });
       } else {
         await tournamentModel.updateOne(
           { _id: room.tournament },
