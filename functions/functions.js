@@ -3738,7 +3738,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
             // console.log("now updated player ==>", updatedPlayersInNewRoom);
 
             newRoom.players = [...updatedPlayersInNewRoom];
-            await setCachedGame(newRoom);
+            await setCachedGame({ ...newRoom, tournament: tournamentId });
             const updatedNewRoom = await roomModel.findOneAndUpdate(
               {
                 _id: newRoom._id,
@@ -3776,8 +3776,8 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
 
         room = updatedRoom;
 
-        await setCachedGame(updatedRoom);
-        const updatedTable = await roomModel.findOneAndUpdate(
+        await setCachedGame({ ...updatedRoom, tournament: tournamentId });
+        await roomModel.findOneAndUpdate(
           {
             _id: room._id,
           },
@@ -3821,7 +3821,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
           totalPlayersInRoom[0].position = blankPositions[0];
 
           newRoom.players = [...newRoom.players, ...totalPlayersInRoom];
-          await setCachedGame(newRoom);
+          await setCachedGame({ ...newRoom, tournament: tournamentId });
           await roomModel.updateOne(
             {
               _id: newRoom._id,
@@ -3857,6 +3857,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
           runninground: 0,
           gamestart: false,
           communityCard: [],
+          tournament: tournamentId,
         });
 
         const updatedRoom = await roomModel.findOneAndUpdate(
