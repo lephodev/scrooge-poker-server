@@ -1021,7 +1021,7 @@ export const turnround = async (roomid, io) => {
         lastAction: "check",
         isCircleCompleted: false,
       };
-      await setCachedGame({...roomData, tournament: roomdata.tournament});
+      await setCachedGame({...roomData, tournament: roomData.tournament});
       await getSidePOt(roomid);
       const updatedRoom = await getCachedGame(roomid);
       io.in(updatedRoom?._id?.toString()).emit("turnround", updatedRoom);
