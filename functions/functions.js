@@ -27,7 +27,7 @@ const gameState = {
 };
 
 let gameRestartSeconds = 3000;
-const playerLimit = 9;
+const playerLimit = 4;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
