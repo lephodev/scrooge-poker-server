@@ -208,7 +208,7 @@ export const getSidePOt = async (roomId) => {
     updatedRoomData[state] = playerData;
     updatedRoomData.pot = 0;
   }
-  await setCachedGame(updatedRoomData);
+  await setCachedGame({...updatedRoomData, tournament: updatedRoomData.tournament});
 };
 
 export const preflopPlayerPush = async (players, room) => {
@@ -272,7 +272,7 @@ export const preflopPlayerPush = async (players, room) => {
     });
 
     roomData.preflopround = newP;
-    await setCachedGame(roomData);
+    await setCachedGame({...roomData, tournament: roomData.tournament});
   } catch (error) {
     console.log("error in preflopplayer push function =>", error);
   }
@@ -577,7 +577,7 @@ export const preflopround = async (room, io) => {
             }
           };
           await deductBigBlind();
-          await setCachedGame(room1111);
+          await setCachedGame({...room1111, tournament: room1111.tournament});
           if (!io.room.find((el) => el.room === room._id.toString())?.preflop) {
             gameTurnTimer(room._id, io);
             let updatedRoom = await getCachedGame(room._id);
@@ -672,7 +672,7 @@ export const gameTurnTimer = async (roomid, io) => {
             }
           });
           udata.timerPlayer = cp;
-          await setCachedGame(udata);
+          await setCachedGame({...udata, tournamentData: udata.tournament});
 
           let playerinterval = setInterval(async () => {
             const data = await getCachedGame(roomid);
@@ -707,7 +707,7 @@ export const gameTurnTimer = async (roomid, io) => {
                       }
                     });
                   }
-                  await setCachedGame(data);
+                  await setCachedGame({...data, tournament: data.tournament});
                   isContinue = await doFold(data, intervalPlayer[0]?.id, io);
                   console.log("automatic do Fold completed");
                   io.in(data?._id?.toString()).emit("automaticFold", {
@@ -759,7 +759,7 @@ export const gameTurnTimer = async (roomid, io) => {
         ) {
           newPosition = 0;
           udata.isCircleCompleted = true;
-          await setCachedGame(udata);
+          await setCachedGame({...udata, tournament: udata.tournament});
         } else {
           if (
             udata?.raisePlayerPosition !== null &&
@@ -769,7 +769,7 @@ export const gameTurnTimer = async (roomid, io) => {
           } else {
             newPosition = udata?.bigBlindPosition + 1;
             udata.isCircleCompleted = true;
-            await setCachedGame(udata);
+            await setCachedGame({...udata, tournament: udata.tournament});
           }
         }
         timer(0, newPosition);
@@ -902,7 +902,7 @@ export const flopround = async (roomid, io) => {
         lastAction: "check",
         isCircleCompleted: false,
       };
-      await setCachedGame(roomData);
+      await setCachedGame({...roomData, tournament: roomData.tournament});
       await getSidePOt(roomid);
       const updatedRoom = await getCachedGame(roomid);
       io.in(updatedRoom?._id?.toString()).emit("flopround", updatedRoom);
@@ -1021,7 +1021,7 @@ export const turnround = async (roomid, io) => {
         lastAction: "check",
         isCircleCompleted: false,
       };
-      await setCachedGame(roomData);
+      await setCachedGame({...roomData, tournament: roomdata.tournament});
       await getSidePOt(roomid);
       const updatedRoom = await getCachedGame(roomid);
       io.in(updatedRoom?._id?.toString()).emit("turnround", updatedRoom);
@@ -1138,7 +1138,7 @@ export const riverround = async (roomid, io) => {
         lastAction: "check",
         isCircleCompleted: false,
       };
-      await setCachedGame(roomData);
+      await setCachedGame({...roomData, tournament: roomData.tournament});
       await getSidePOt(roomid);
       const updatedRoom = await getCachedGame(roomid);
 
@@ -1246,7 +1246,7 @@ export const showdown = async (roomid, io) => {
       pot: totalPot,
     };
 
-    await setCachedGame(roomData);
+    await setCachedGame({...roomData, tournament: roomData.tournament});
 
     if (roomData.sidePots.length || roomData.allinPlayers.length) {
       await getSidePOt(roomData._id);
@@ -1495,7 +1495,7 @@ export const showdown = async (roomid, io) => {
       isShowdown: true,
       runninground: 5,
     };
-    await setCachedGame(upRoom);
+    await setCachedGame({...upRoom, tournament: upRoom.tournament});
     await roomModel.updateOne(
       { _id: upRoom._id },
       {
@@ -1556,7 +1556,7 @@ export const showdown = async (roomid, io) => {
           }
         } else {
           updatedRoomPlayers.gamestart = false;
-          await setCachedGame(updatedRoomPlayers);
+          await setCachedGame({...updatedRoomPlayers, tournament: updatedRoomPlayers.tournament });
 
           io.in(upRoom._id.toString()).emit("tablestopped", {
             msg: "Table stopped by host",
@@ -1788,7 +1788,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 leavereq: leavereq,
                 availablerequest: [],
               };
-              await setCachedGame(roomData);
+              await setCachedGame({...roomData, tournament: roomData.tournament});
               io.in(roomData._id.toString()).emit("newhand", {
                 updatedRoom: roomData,
               });
@@ -1933,6 +1933,7 @@ export const elemination = async (roomData, io) => {
       allinPlayers: [],
       eliminationCount: eleminated_players?.length,
       autoNextHand: true,
+      tournament: roomData.tournament
     });
     if (eleminated_players.length > 0 && noOfElemination > 0) {
       const availablePlayerCount =
@@ -2671,7 +2672,7 @@ export const doFold = async (roomData, playerid, io, isAuto = true) => {
       roomData.lastAction = lastAction;
 
       roomData[gameState[roomData.runninground]] = players;
-      await setCachedGame({ ...roomData });
+      await setCachedGame({ ...roomData, tournament: roomData.tournament });
 
       io.in(roomData._id.toString()).emit("actionperformed", {
         id: playerid,
@@ -3232,6 +3233,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
       runninground: 5,
       timerPlayer: null,
       pot: totalPot,
+      tournament: roomData.tournament
     };
 
     await setCachedGame(roomData);
@@ -3295,7 +3297,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     roomData.handWinner = handWinner;
 
     io.in(roomData._id.toString()).emit("winner", { updatedRoom: roomData });
-    await setCachedGame(roomData);
+    await setCachedGame({...roomData, tournament: roomData.tournament});
     console.log("winner decieded");
     // console.log("showdown players after winner", roomData.showdown);
 
