@@ -3794,10 +3794,6 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
       // console.log("user ids to  move ==>", userIds);
 
       if (userIds.length) {
-        io.in(room._id.toString()).emit("roomchanged", {
-          userIds,
-        });
-
         console.log("now currnt room players", { ...room.players });
 
         console.log("remaining players ==>", { ...playersToMove });
@@ -3825,6 +3821,9 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         );
         console.log("updatedTable ==>", { room: room.players });
         io.in(room._id.toString()).emit("updateGame", { game: updatedRoom });
+        io.in(room._id.toString()).emit("roomchanged", {
+          userIds,
+        });
         await preflopround(updatedRoom, io);
         return;
       } else {
