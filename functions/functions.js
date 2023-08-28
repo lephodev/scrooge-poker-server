@@ -3469,7 +3469,7 @@ export const reArrangeTables = async (tournamentId, io, roomId) => {
     //   return;
     // }
     let rooms = [];
-    console.log("reArrange Called");
+    console.log("reArrange Called for room -", roomId);
     if (tournamentData) {
       const notDestroyedYet = tournamentData.rooms.filter((el) => {
         let r = true;
@@ -3647,7 +3647,7 @@ const reArrangementBeforeTournamentStart = async (
 
 const fillSpot = async (allRooms, io, tournamentId, roomId) => {
   try {
-    console.log("fill spot called");
+    console.log("fill spot called", roomId);
     console.log("tournament in do fillSPot ==>", tournamentId._id);
     if (allRooms.length === 1) {
       if (allRooms[0].showdown.length > 1) {
@@ -3734,17 +3734,8 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         newRoom = await getCachedGame(newRoom._id);
         console.log("new room ==>", newRoom);
         if (noOfPlayersToMove) {
-          let playersWaitingtoPlayInNewRoom = newRoom.players.filter((el) => {
-            let isWaiting = true;
-            newRoom.showdown.forEach((el2) => {
-              if (el2.userid.toString() === el.userid.toString()) {
-                isWaiting = false;
-              }
-            });
-            return isWaiting;
-          });
-          const totalPlayersInNewRoom =
-            playersWaitingtoPlayInNewRoom.length + newRoom.showdown.length;
+          let playersWaitingtoPlayInNewRoom = newRoom.players;
+          const totalPlayersInNewRoom = newRoom.players.length;
 
           console.log("cached room ==>", playersWaitingtoPlayInNewRoom);
 
@@ -3841,6 +3832,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         await preflopround(room, io);
       }
     } else if (totalPlayersInRoom.length === 1) {
+      console.log("only one player in room");
       let blankSpotFound = false;
 
       for await (let newRoom of OtherRoom) {
@@ -5569,14 +5561,14 @@ export const JoinTournament = async (data, io, socket) => {
     let endTime = endDate.getTime();
     let crrTime = new Date().getTime();
 
-    if (crrTime > endTime && tournament.tournamentType !== "sit&go") {
-      socket.emit("tournamentAlreadyStarted", {
-        message: "Joining time has been exceeded",
-        code: 400,
-      });
+    // if (crrTime > endTime && tournament.tournamentType !== "sit&go") {
+    //   socket.emit("tournamentAlreadyStarted", {
+    //     message: "Joining time has been exceeded",
+    //     code: 400,
+    //   });
 
-      return;
-    }
+    //   return;
+    // }
     if (tournament.isStart && tournament.tournamentType === "sit&go") {
       await joinAsWatcher(
         { gameId: tournament.rooms[0], userId: userId },
