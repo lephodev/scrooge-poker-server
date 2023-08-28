@@ -323,7 +323,6 @@ export const preflopround = async (room, io) => {
           await preflopPlayerPush(room.players, room);
 
           let room1111 = await getCachedGame(room._id);
-          console.log("room111 tournament ==>", room1111.tournament);
 
           const bigBlindAmt = room1111.tournament
             ? room1111.tournament.levels.bigBlind.amount
@@ -696,7 +695,7 @@ export const gameTurnTimer = async (roomid, io) => {
                 data.players.length !== 1
               ) {
                 await doCheck(data, intervalPlayer[0]?.id, io);
-                console.log("auto do Check completed");
+                // console.log("auto do Check completed");
                 timer(++i, maxPosition);
               } else {
                 let isContinue = false;
@@ -910,11 +909,11 @@ export const flopround = async (roomid, io) => {
         lastAction: "check",
         isCircleCompleted: false,
       };
-      console.log("flop round tourrnament before", roomData.tournament);
+      // console.log("flop round tourrnament before", roomData.tournament);
       await setCachedGame({ ...roomData, tournament: roomData.tournament });
       await getSidePOt(roomid);
       const updatedRoom = await getCachedGame(roomid);
-      console.log("turn round tourrnament value after", roomData.tournament);
+      // console.log("turn round tourrnament value after", roomData.tournament);
       io.in(updatedRoom?._id?.toString()).emit("flopround", updatedRoom);
       if (playingPlayer > 1) {
         setTimeout(() => {
@@ -1031,11 +1030,11 @@ export const turnround = async (roomid, io) => {
         lastAction: "check",
         isCircleCompleted: false,
       };
-      console.log("turn round tourrnament value before", roomData.tournament);
+      // console.log("turn round tourrnament value before", roomData.tournament);
       await setCachedGame({ ...roomData, tournament: roomData.tournament });
       await getSidePOt(roomid);
       const updatedRoom = await getCachedGame(roomid);
-      console.log("river round tourrnament value after", roomData.tournament);
+      // console.log("river round tourrnament value after", roomData.tournament);
       io.in(updatedRoom?._id?.toString()).emit("turnround", updatedRoom);
       if (playingPlayer > 1) {
         setTimeout(() => {
@@ -1150,11 +1149,11 @@ export const riverround = async (roomid, io) => {
         lastAction: "check",
         isCircleCompleted: false,
       };
-      console.log("river round tourrnament value before", roomData.tournament);
+      // console.log("river round tourrnament value before", roomData.tournament);
       await setCachedGame({ ...roomData, tournament: roomData.tournament });
       await getSidePOt(roomid);
       const updatedRoom = await getCachedGame(roomid);
-      console.log("river round tourrnament value after", roomData.tournament);
+      // console.log("river round tourrnament value after", roomData.tournament);
 
       io.in(updatedRoom?._id?.toString()).emit("riverround", updatedRoom);
       if (playingPlayer > 1) {
@@ -1185,7 +1184,7 @@ export const showdown = async (roomid, io) => {
     console.log("----showdown-----");
 
     let roomData = await getCachedGame(roomid);
-    console.log("tournament in showdown", roomData.tournament);
+    console.log("tournament in showdown", roomid, roomData.tournament);
     if (!roomData.isGameRunning) return;
     let playersHand = [];
     let hands = [];
@@ -1843,7 +1842,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
 
 export const elemination = async (roomData, io) => {
   try {
-    console.log("elemination runs for at starting ===>", roomData.tournament);
+    // console.log("elemination runs for at starting ===>", roomData.tournament);
     let eleminated_players = roomData.eleminated;
     let noOfElemination = 0;
     let newHandPlayer = [];
@@ -1937,7 +1936,7 @@ export const elemination = async (roomData, io) => {
       )
       .populate("tournament");
 
-    console.log("elemination runs for at starting ===>", upRoom.tournament);
+    // console.log("elemination runs for at starting ===>", upRoom.tournament);
 
     await setCachedGame({
       ...roomData,
@@ -2796,7 +2795,7 @@ export const doCall = async (roomData, playerid, io, amout) => {
     });
     roomData[gameState[roomData.runninground]] = players;
     roomData.lastAction = "call";
-    console.log("tournament in do call ==>", roomData.tournament);
+    // console.log("tournament in do call ==>", roomData.tournament);
     await setCachedGame(roomData);
     io.in(roomData._id.toString()).emit("actionperformed", {
       id: playerid,
@@ -2892,7 +2891,7 @@ export const doBet = async (roomData, playerid, io, amt) => {
       roomData.raisePlayerPosition = currentPlayer.position;
       roomData.raiseAmount = updatedRaiseAmt;
       roomData.lastAction = "bet";
-      console.log("tournament in do bet ==>", roomData.tournament);
+      // console.log("tournament in do bet ==>", roomData.tournament);
       await setCachedGame(roomData);
       io.in(roomData._id.toString()).emit("actionperformed", {
         id: playerid,
@@ -2988,7 +2987,7 @@ export const doRaise = async (roomData, playerid, io, amt) => {
       roomData.raiseAmount = unpdatedRaisdAmt;
       roomData.lastAction = "raise";
       await setCachedGame(roomData);
-      console.log("tournament in do raise ==>", roomData.tournament);
+      // console.log("tournament in do raise ==>", roomData.tournament);
       io.in(roomData._id.toString()).emit("actionperformed", {
         id: playerid,
         action: "raise",
@@ -3061,7 +3060,7 @@ export const doCheck = async (roomData, playerid, io) => {
       roomData[gameState[roomData.runninground]] = players;
       roomData.lastAction = "check";
       await setCachedGame(roomData);
-      console.log("tournament in do check ==>", roomData.tournament);
+      // console.log("tournament in do check ==>", roomData.tournament);
       io.in(roomData._id.toString()).emit("actionperformed", {
         id: playerid,
         action: "check",
@@ -3103,7 +3102,7 @@ export const doAllin = async (roomData, playerid, io) => {
   try {
     let { raiseAmount, raisePlayerPosition, allinPlayers, runninground } =
       roomData;
-    console.log("tournament in do allIn ==>", roomData.tournament);
+    // console.log("tournament in do allIn ==>", roomData.tournament);
     if (roomData?.timerPlayer?.toString() === playerid?.toString()) {
       let players = roomData[gameState[runninground]];
       let currentPlayer = players.find((pl) => pl.id === playerid);
@@ -3165,7 +3164,7 @@ export const doAllin = async (roomData, playerid, io) => {
       roomData.allinPlayers = allinPlayers;
       roomData[gameState[runninground]] = players;
       await setCachedGame({ ...roomData, tournament: roomData.tournament });
-      console.log("tournament in do allIn ==>", roomData.tournament);
+      // console.log("tournament in do allIn ==>", roomData.tournament);
       io.in(roomData._id.toString()).emit("actionperformed", {
         id: playerid,
         action: "all-in",
@@ -3281,7 +3280,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     await setCachedGame(roomData);
 
     if (roomData.sidePots.length || roomData.allinPlayers.length) {
-      console.log("all folded and allin");
+      // console.log("all folded and allin");
       await getSidePOt(roomData._id);
       roomData = await getCachedGame(roomid);
       let sidePotTotal = roomData.sidePots.reduce((acc, el) => acc + el.pot, 0);
