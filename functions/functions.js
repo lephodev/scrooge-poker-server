@@ -3701,8 +3701,10 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
     // Calculate the ideal number of players per table
     const idealPlayerCount = Math.floor(totalPlayers / allRooms.length);
     console.log(" idealPlayerCount ==>", idealPlayerCount);
-
-    let playersWaitingztoPlay = room.players.filter((el) => {
+    let remainingPlayers = room.players.filter(
+      (pl) => !room.eleminatedPlayers.find((el) => el.id === pl.id)
+    );
+    let playersWaitingztoPlay = remainingPlayers.filter((el) => {
       let isWaiting = true;
       room.showdown.forEach((el2) => {
         if (el2.userid.toString() === el.userid.toString()) {
@@ -3802,7 +3804,6 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
 
         const updatedRoom = {
           ...room,
-          players: [...room.players, ...playersToMove],
           showdown: [...room.players, ...playersToMove],
         };
 
@@ -3814,7 +3815,6 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
             _id: room._id,
           },
           {
-            players: updatedRoom.players,
             showdown: updatedRoom.players,
           },
           { new: true }
