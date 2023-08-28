@@ -3124,7 +3124,7 @@ export const doAllin = async (roomData, playerid, io) => {
       roomData.lastAction = "all-in";
       roomData.allinPlayers = allinPlayers;
       roomData[gameState[runninground]] = players;
-      await setCachedGame(roomData);
+      await setCachedGame({ ...roomData, tournament: roomData.tournament });
       io.in(roomData._id.toString()).emit("actionperformed", {
         id: playerid,
         action: "all-in",
@@ -5826,9 +5826,8 @@ const pushPlayerInRoom = async (
         },
         { upsert: true, new: true }
       );
-      const newRoom = await roomModel
-        .findOne({ _id: roomId })
-        .populate("tournament");
+      const newRoom = await roomModel.findOne({ _id: roomId });
+      // .populate("tournament");
       await setCachedGame(newRoom);
     }
     const getAllTournament = await tournamentModel.find({}).populate("rooms");
