@@ -295,7 +295,7 @@ export const preflopround = async (room, io) => {
     }
     console.log(
       "preflop round before update room for new hand tourrnament value",
-      room.tournament
+      room
     );
 
     await updateRoomForNewHand(room._id, io);
