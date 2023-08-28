@@ -3702,7 +3702,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
     const idealPlayerCount = Math.floor(totalPlayers / allRooms.length);
     console.log(" idealPlayerCount ==>", idealPlayerCount);
     let remainingPlayers = room.players.filter(
-      (pl) => !room.eleminatedPlayers.find((el) => el.id === pl.id)
+      (pl) => !room.eleminated.find((el) => el.id === pl.id)
     );
     let playersWaitingztoPlay = remainingPlayers.filter((el) => {
       let isWaiting = true;
