@@ -3696,7 +3696,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
 
     // console.log("totalPlayers ==>", totalPlayers);
 
-    const userIds = [];
+    let userIds = [];
 
     // Calculate the ideal number of players per table
     const idealPlayerCount = Math.floor(totalPlayers / allRooms.length);
@@ -3724,7 +3724,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
     if (totalPlayersInRoom.length > idealPlayerCount) {
       let noOfPlayersToMove = totalPlayersInRoom.length - idealPlayerCount;
       console.log("no of players to move ", noOfPlayersToMove);
-      let playersToMove = room.players.splice(0, noOfPlayersToMove);
+      let playersToMove = room.showdown.splice(0, noOfPlayersToMove);
 
       // console.log("playersToMove ==>", playersToMove);
 
@@ -3857,6 +3857,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
           totalPlayersInRoom[0].position = blankPositions[0];
 
           newRoom.players = [...newRoom.players, ...totalPlayersInRoom];
+          newRoom.watchers = [...newRoom.watchers, room.watchers];
           await setCachedGame({ ...newRoom, tournament: tournamentId });
           await roomModel.updateOne(
             {
@@ -3864,6 +3865,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
             },
             {
               players: newRoom.players,
+              watchers: newRoom.watchers,
             }
           );
           blankSpotFound = true;
@@ -3871,6 +3873,13 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
             userId: room.players[0].id,
             newRoomId: newRoom._id,
           });
+          userIds = [
+            ...userIds,
+            newRoom.watchers.map((el) => ({
+              userId: el,
+              newRoomId: newRoom._id,
+            })),
+          ];
           io.in(room._id.toString()).emit("roomchanged", {
             userIds,
           });
