@@ -1184,7 +1184,7 @@ export const showdown = async (roomid, io) => {
     console.log("----showdown-----");
 
     let roomData = await getCachedGame(roomid);
-    console.log("tournament in showdown", roomid, roomData.tournament);
+    // console.log("tournament in showdown", roomid, roomData.tournament);
     if (!roomData.isGameRunning) return;
     let playersHand = [];
     let hands = [];
@@ -2705,7 +2705,7 @@ export const doFold = async (roomData, playerid, io, isAuto = true) => {
       roomData.lastAction = lastAction;
 
       roomData[gameState[roomData.runninground]] = players;
-      console.log("tournament in do fold ==>", roomData.tournament);
+      // console.log("tournament in do fold ==>", roomData.tournament);
       await setCachedGame({ ...roomData, tournament: roomData.tournament });
 
       io.in(roomData._id.toString()).emit("actionperformed", {
@@ -3205,7 +3205,7 @@ export const socketDoAllin = async (dta, io, socket) => {
 const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
   try {
     let roomData = await getCachedGame(roomid);
-    console.log("tournament in winnerBefore Show", roomData.tournament);
+    // console.log("tournament in winnerBefore Show", roomData.tournament);
     let winnerAmount = 0;
     let showDownPlayers = [];
     let playerData = null;
@@ -3648,7 +3648,7 @@ const reArrangementBeforeTournamentStart = async (
 const fillSpot = async (allRooms, io, tournamentId, roomId) => {
   try {
     console.log("fill spot called");
-    console.log("tournament in do fillSPot ==>", tournamentId);
+    console.log("tournament in do fillSPot ==>", tournamentId._id);
     if (allRooms.length === 1) {
       if (allRooms[0].showdown.length > 1) {
         return preflopround(allRooms[0], io);
@@ -3732,6 +3732,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
 
       for await (let newRoom of OtherRoom) {
         newRoom = await getCachedGame(newRoom._id);
+        console.log("new room ==>", newRoom);
         if (noOfPlayersToMove) {
           let playersWaitingtoPlayInNewRoom = newRoom.players.filter((el) => {
             let isWaiting = true;
