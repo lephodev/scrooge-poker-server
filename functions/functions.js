@@ -302,7 +302,7 @@ export const preflopround = async (room, io) => {
     }
     console.log(
       "preflop round before update room for new hand tourrnament value",
-      room
+      room._id
     );
 
     await updateRoomForNewHand(room._id, io);
@@ -592,6 +592,7 @@ export const preflopround = async (room, io) => {
           await deductBigBlind();
           await setCachedGame({ ...room1111, tournament: room1111.tournament });
           if (!io.room.find((el) => el.room === room._id.toString())?.preflop) {
+            console.log("game turn timer for room", room1111._id);
             gameTurnTimer(room._id, io);
             let updatedRoom = await getCachedGame(room._id);
             io.in(room._id.toString()).emit("preflopround", updatedRoom);
@@ -1533,7 +1534,7 @@ export const showdown = async (roomid, io) => {
     // console.log("player after showdwon winner", upRoom.showdown);
     // console.log("game finished");
     setTimeout(async () => {
-      console.log("game IS THIS A TOURNAMENT", upRoom.tournament);
+      console.log("showdown room ==>", upRoom._id);
       if (upRoom.tournament) {
         await elemination(upRoom, io);
         await reArrangeTables(upRoom.tournament, io, upRoom._id);
@@ -3379,6 +3380,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     gameRestartSeconds = 5000;
     console.log("game finished");
     setTimeout(async () => {
+      console.log("winner before showdown room ==>", roomData._id);
       if (updatedRoom?.tournament) {
         // await elemination(roomData, io);
         // await reArrangeTables(updatedRoom.tournament, io, updatedRoom._id);
@@ -3769,12 +3771,12 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
 
       for await (let newRoom of OtherRoom) {
         newRoom = await getCachedGame(newRoom._id);
-        console.log("new room ==>", newRoom);
+        console.log("new room ==>", newRoom._id);
         if (noOfPlayersToMove) {
           let playersWaitingtoPlayInNewRoom = newRoom.players;
           const totalPlayersInNewRoom = newRoom.players.length;
 
-          console.log("cached room ==>", playersWaitingtoPlayInNewRoom);
+          // console.log("cached room ==>", playersWaitingtoPlayInNewRoom);
 
           console.log(
             "totalPlayersInNewRoom ===>",
