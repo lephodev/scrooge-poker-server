@@ -1512,8 +1512,6 @@ export const showdown = async (roomid, io) => {
       ...upRoomData,
       showdown: upRoomData.showdown,
       winnerPlayer: winnerPlayers,
-      isGameRunning: false,
-      gamestart: false,
       handWinner,
       isShowdown: true,
       runninground: 5,
@@ -1525,8 +1523,6 @@ export const showdown = async (roomid, io) => {
         showdown: upRoomData.showdown,
         winnerPlayer: winnerPlayers,
         handWinner,
-        isGameRunning: false,
-        gamestart: false,
         isShowdown: true,
         runninground: 5,
       }
@@ -1534,14 +1530,14 @@ export const showdown = async (roomid, io) => {
     // console.log("player after showdwon winner", upRoom.showdown);
     // console.log("game finished");
     setTimeout(async () => {
-      console.log("showdown room ==>", upRoom._id);
+      console.log("showdown room ==>", upRoom._id, upRoom.tournament?._id);
       if (upRoom.tournament) {
         // await elemination(upRoom, io);
         // await reArrangeTables(upRoom.tournament, io, upRoom._id);
         rearrangeQueue.push({
           roomData: upRoom,
           io,
-          tounament: upRoom.tournament,
+          tournament: upRoom.tournament,
           roomId: upRoom._id,
         });
       } else {
@@ -1862,6 +1858,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
 export const elemination = async (roomData, io) => {
   try {
     // console.log("elemination runs for at starting ===>", roomData.tournament);
+    console.log("elemination called ==>", roomData._id);
     roomData = await getCachedGame(roomData._id);
     let eleminated_players = roomData.eleminated;
     let noOfElemination = 0;
@@ -3386,7 +3383,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
       }
     });
 
-    roomData.isGameRunning = false;
+    // roomData.isGameRunning = false;
     roomData.showdown = showDownPlayers;
     roomData.pot = 0;
     roomData.winnerPlayer = winnerPlayer;
@@ -3416,14 +3413,18 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     gameRestartSeconds = 5000;
     console.log("game finished");
     setTimeout(async () => {
-      console.log("winner before showdown room ==>", roomData._id);
+      console.log(
+        "winner before showdown room ==>",
+        roomData._id,
+        updatedRoom.tournament?._id
+      );
       if (updatedRoom?.tournament) {
         // await elemination(roomData, io);
         // await reArrangeTables(updatedRoom.tournament, io, updatedRoom._id);
         rearrangeQueue.push({
           roomData,
           io,
-          tounament: updatedRoom.tournament,
+          tournament: updatedRoom.tournament,
           roomId: updatedRoom._id,
         });
       } else {
@@ -3521,8 +3522,8 @@ export const getPlayerwallet = async (roomData, playerid) => {
 
 export const reArrangeTables = async (tournament, io, roomId) => {
   try {
-    console.log("tournamentId", tournamentId);
-    let tournamentId = tournament._id;
+    console.log("tournamentId", tournament);
+    let tournamentId = tournament?._id;
     const tournamentData = await tournamentModel
       .findOne(
         { _id: tournamentId },
@@ -3717,7 +3718,10 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
     console.log("fill spot called", roomId);
     console.log("tournament in do fillSPot ==>", tournamentId._id);
     if (allRooms.length === 1) {
-      if (allRooms[0].showdown.length > 1) {
+      let remainingPlayers = allRooms[0].players.filter(
+        (pl) => !allRooms[0].eleminated.find((el) => el.id === pl.id)
+      );
+      if (remainingPlayers.length > 1) {
         return preflopround(allRooms[0], io);
       } else {
         let totalPlayers = allRooms[0].showdown.length;
@@ -3733,7 +3737,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         if (totalPlayers > 1) {
           return preflopround(allRooms[0], io);
         }
-        console.log("only one player in tournament");
+        console.log("Last table in tournament", remainingPlayers.length);
         await distributeTournamentPrize(tournamentId, allRooms[0].showdown[0]);
         io.in(allRooms[0]._id.toString()).emit("tournamentFinished", {
           tournamentId,
