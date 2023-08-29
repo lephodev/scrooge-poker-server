@@ -2712,7 +2712,7 @@ export const doFold = async (roomData, playerid, io, isAuto = true) => {
       let players = roomData[gameState[roomData.runninground]];
       //check is already acted
       if (players.find((pl) => pl.id === playerid)?.action) {
-        return;
+        return true;
       }
       players.forEach((pl) => {
         if (pl.id === playerid) {
