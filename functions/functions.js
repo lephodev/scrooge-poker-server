@@ -3704,17 +3704,28 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
     let remainingPlayers = room.players.filter(
       (pl) => !room.eleminated.find((el) => el.id === pl.id)
     );
-    let playersWaitingztoPlay = remainingPlayers.filter((el) => {
-      let isWaiting = true;
-      room.showdown.forEach((el2) => {
-        if (el2.userid.toString() === el.userid.toString()) {
-          isWaiting = false;
-        }
-      });
-      return isWaiting;
+    remainingPlayers = remainingPlayers.map((pl) => {
+      let el = room.showdown.find((el) => el.id === pl.id);
+      if (el) {
+        return {
+          ...pl,
+          wallet: el.wallet,
+        };
+      } else {
+        return { ...pl };
+      }
     });
+    // let playersWaitingztoPlay = remainingPlayers.filter((el) => {
+    //   let isWaiting = true;
+    //   room.showdown.forEach((el2) => {
+    //     if (el2.userid.toString() === el.userid.toString()) {
+    //       isWaiting = false;
+    //     }
+    //   });
+    //   return isWaiting;
+    // });
 
-    const totalPlayersInRoom = [...room.showdown, ...playersWaitingztoPlay];
+    const totalPlayersInRoom = [...remainingPlayers];
 
     console.log(
       "ideal count condition ==>",
@@ -3726,11 +3737,11 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
     if (totalPlayersInRoom.length > idealPlayerCount) {
       let noOfPlayersToMove = totalPlayersInRoom.length - idealPlayerCount;
       console.log("no of players to move ", noOfPlayersToMove);
-      let playersToMove = room.showdown.splice(0, noOfPlayersToMove);
+      let playersToMove = remainingPlayers.splice(0, noOfPlayersToMove);
 
-      // console.log("playersToMove ==>", playersToMove);
+      console.log("playersToMove ==>", playersToMove);
 
-      // console.log("OtherRooms ===>", OtherRoom);
+      console.log("remianing in showdown ===>", remainingPlayers);
 
       for await (let newRoom of OtherRoom) {
         newRoom = await getCachedGame(newRoom._id);
@@ -3796,7 +3807,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
       // console.log("user ids to  move ==>", userIds);
 
       if (userIds.length) {
-        console.log("now currnt room players", { ...room.players });
+        console.log("now currnt room players", { ...remainingPlayers });
 
         console.log("remaining players ==>", { ...playersToMove });
 
@@ -3804,7 +3815,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
 
         const updatedRoom = {
           ...room,
-          showdown: [...room.showdown, ...playersToMove],
+          showdown: [...remainingPlayers, ...playersToMove],
         };
 
         room = updatedRoom;
@@ -3815,11 +3826,15 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
             _id: room._id,
           },
           {
+            players: updatedRoom.players,
             showdown: updatedRoom.players,
           },
           { new: true }
         );
-        console.log("updatedTable ==>", { room: room.players });
+        console.log("updatedTable ==>", {
+          players: room.players,
+          showdown: room.showdown,
+        });
         io.in(room._id.toString()).emit("updateGame", { game: updatedRoom });
         io.in(room._id.toString()).emit("roomchanged", {
           userIds,
@@ -5569,14 +5584,14 @@ export const JoinTournament = async (data, io, socket) => {
     let endTime = endDate.getTime();
     let crrTime = new Date().getTime();
 
-    // if (crrTime > endTime && tournament.tournamentType !== "sit&go") {
-    //   socket.emit("tournamentAlreadyStarted", {
-    //     message: "Joining time has been exceeded",
-    //     code: 400,
-    //   });
+    if (crrTime > endTime && tournament.tournamentType !== "sit&go") {
+      socket.emit("tournamentAlreadyStarted", {
+        message: "Joining time has been exceeded",
+        code: 400,
+      });
 
-    //   return;
-    // }
+      return;
+    }
     if (tournament.isStart && tournament.tournamentType === "sit&go") {
       await joinAsWatcher(
         { gameId: tournament.rooms[0], userId: userId },
