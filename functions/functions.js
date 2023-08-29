@@ -724,7 +724,7 @@ export const gameTurnTimer = async (roomid, io) => {
                   }
                   await setCachedGame({ ...data, tournament: data.tournament });
                   isContinue = await doFold(data, intervalPlayer[0]?.id, io);
-                  console.log("automatic do Fold completed", data.tournament);
+                  console.log("automatic do Fold completed", data._id);
                   io.in(data?._id?.toString()).emit("automaticFold", {
                     msg: `${intervalPlayer[0]?.name} has automatically folded`,
                   });
@@ -1620,8 +1620,6 @@ export const updateRoomForNewHand = async (roomid, io) => {
       try {
         let roomData = await getCachedGame(roomid);
         if (roomData?.tournament) {
-          console.log("id populate", roomData.tournament);
-
           const tourId = roomData.tournament._id
             ? roomData.tournament._id
             : roomData.tournament;
@@ -1630,7 +1628,10 @@ export const updateRoomForNewHand = async (roomid, io) => {
             .findOne({ _id: tourId })
             .lean();
         } else {
-          console.log("tournament not found in update room for new hand");
+          console.log(
+            "tournament not found in update room for new hand",
+            roomid
+          );
         }
         let newHandPlayer = [];
         let buyin = roomData?.buyin;
@@ -1834,8 +1835,8 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 tournament: roomData.tournament,
               });
               console.log(
-                "room data tournament in updateRoomForNewHand: " +
-                  roomData.tournament
+                "room data tournament in updateRoomForNewHand: " + roomData._id,
+                roomData.tournament?._id
               );
               io.in(roomData._id.toString()).emit("newhand", {
                 updatedRoom: roomData,
@@ -2696,6 +2697,13 @@ export const doFold = async (roomData, playerid, io, isAuto = true) => {
     let playingPlayer = [];
     let res = true;
 
+    console.log(
+      "do fold for room id ==>",
+      roomData._id,
+      "playerid ==>",
+      playerid
+    );
+
     let lastAction = "fold";
     if (roomData.lastAction === "check") {
       lastAction = "check";
@@ -2800,6 +2808,12 @@ export const doCall = async (roomData, playerid, io, amout) => {
     if (players.find((pl) => pl.id === playerid)?.action) {
       return;
     }
+    console.log(
+      "do call for room id ==>",
+      roomData._id,
+      "playerid ==>",
+      playerid
+    );
     players.forEach((pl) => {
       if (pl.id === playerid) {
         amt -= pl.pot;
@@ -2879,6 +2893,13 @@ export const doBet = async (roomData, playerid, io, amt) => {
       if (currentPlayer?.action) {
         return;
       }
+
+      console.log(
+        "do do bet for room id ==>",
+        roomData._id,
+        "playerid ==>",
+        playerid
+      );
       players.forEach((pl) => {
         if (
           pl.tentativeAction &&
@@ -2934,6 +2955,7 @@ export const socketDoBet = async (dta, io, socket) => {
       let playerid = userid;
       let amt = parseInt(dta.amount);
       const data = await getCachedGame(roomid);
+
       console.log("do bet with", dta.amount);
       if (data !== null) {
         if (data.raiseAmount <= amt) {
@@ -2974,6 +2996,13 @@ export const doRaise = async (roomData, playerid, io, amt) => {
       if (currentPlayer?.action) {
         return;
       }
+
+      console.log(
+        "do raise for room id ==>",
+        roomData._id,
+        "playerid ==>",
+        playerid
+      );
       players.forEach((e) => {
         if (
           e.tentativeAction &&
@@ -3067,6 +3096,12 @@ export const doCheck = async (roomData, playerid, io) => {
       if (players.find((pl) => pl.id === playerid)?.action) {
         return;
       }
+      console.log(
+        "do check for room id ==>",
+        roomData._id,
+        "playerid ==>",
+        playerid
+      );
       players.forEach((pl) => {
         if (pl.id === playerid) {
           pl.action = true;
@@ -3129,8 +3164,10 @@ export const doAllin = async (roomData, playerid, io) => {
         return;
       }
       console.log(
-        "do allin with -",
-        currentPlayer?.wallet + currentPlayer?.pot + currentPlayer?.prevPot
+        "do allin for room id ==>",
+        roomData._id,
+        "playerid ==>",
+        playerid
       );
       raisePlayerPosition =
         raiseAmount < currentPlayer.wallet + currentPlayer.pot
@@ -3206,7 +3243,6 @@ export const socketDoAllin = async (dta, io, socket) => {
       let playerid = userid;
       // let amt  = body.amount;
       const data = await getCachedGame(roomid);
-      console.log("at socket do all in ==>", data.tournament);
       if (data !== null) {
         await doAllin(data, playerid, io);
       } else {
@@ -3513,7 +3549,10 @@ export const reArrangeTables = async (tournamentId, io, roomId) => {
 
       rooms = rooms.filter((room) => room);
 
-      console.log("not destoryed rooms", rooms);
+      console.log(
+        "not destoryed rooms",
+        rooms.map((el) => el._id)
+      );
       const allRooms = rooms.sort((a, b) => {
         // ASC  -> a.length - b.length
         // DESC -> b.length - a.length
@@ -5621,7 +5660,11 @@ export const JoinTournament = async (data, io, socket) => {
 
       return;
     }
-    if (tournament.isStart && tournament.tournamentType === "sit&go") {
+    if (
+      tournament.isStart &&
+      tournament.tournamentType === "sit&go" &&
+      userId
+    ) {
       await joinAsWatcher(
         { gameId: tournament.rooms[0], userId: userId },
         socket,
@@ -6069,7 +6112,7 @@ export const spectateMultiTable = async (data, io, socket) => {
       // console.log("entered in first if", room);
       return io.in(roomId.toString()).emit("updateGame", { game: room });
     }
-    if (room) {
+    if (room && userId) {
       await joinAsWatcher({ gameId: roomId, userId }, socket, io);
     }
   } catch (err) {
