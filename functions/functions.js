@@ -1536,8 +1536,8 @@ export const showdown = async (roomid, io) => {
     setTimeout(async () => {
       console.log("showdown room ==>", upRoom._id);
       if (upRoom.tournament) {
-        await elemination(upRoom, io);
-        await reArrangeTables(upRoom.tournament, io, upRoom._id);
+        // await elemination(upRoom, io);
+        // await reArrangeTables(upRoom.tournament, io, upRoom._id);
         rearrangeQueue.push({
           roomData: upRoom,
           io,
@@ -3519,8 +3519,10 @@ export const getPlayerwallet = async (roomData, playerid) => {
   }
 };
 
-export const reArrangeTables = async (tournamentId, io, roomId) => {
+export const reArrangeTables = async (tournament, io, roomId) => {
   try {
+    console.log("tournamentId", tournamentId);
+    let tournamentId = tournament._id;
     const tournamentData = await tournamentModel
       .findOne(
         { _id: tournamentId },
@@ -3559,7 +3561,7 @@ export const reArrangeTables = async (tournamentId, io, roomId) => {
         return a.players.length - b.players.length;
       });
       if (allRooms.length > 0) {
-        await fillSpot(allRooms, io, tournamentId, roomId);
+        await fillSpot(allRooms, io, tournamentData, roomId);
       } else {
         console.log("no rooms in tournament");
       }
