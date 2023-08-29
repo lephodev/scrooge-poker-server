@@ -208,7 +208,10 @@ export const getSidePOt = async (roomId) => {
     updatedRoomData[state] = playerData;
     updatedRoomData.pot = 0;
   }
-  await setCachedGame(updatedRoomData);
+  await setCachedGame({
+    ...updatedRoomData,
+    tournament: updatedRoomData.tournament,
+  });
 };
 
 export const preflopPlayerPush = async (players, room) => {
@@ -272,7 +275,7 @@ export const preflopPlayerPush = async (players, room) => {
     });
 
     roomData.preflopround = newP;
-    await setCachedGame(roomData);
+    await setCachedGame({ ...roomData, tournament: roomData.tournament });
   } catch (error) {
     console.log("error in preflopplayer push function =>", error);
   }
@@ -290,13 +293,18 @@ export const preflopround = async (room, io) => {
       console.log("preflop round already executed");
       return;
     }
-    console.log("preflop round execution start");
+    console.log(
+      "preflop round before update room for new hand tourrnament value",
+      room
+    );
 
     await updateRoomForNewHand(room._id, io);
 
     room = await getCachedGame(room._id);
+
+    // console.log("preflop round after update room for new hand", room);
     // console.log("io", io);
-    console.log("afetr update roomfor new hand", room.players);
+    // console.log("afetr update roomfor new hand", room.players);
 
     let playingPlayer = room?.players?.filter(
       (el) => el.playing && el.wallet > 0
@@ -575,7 +583,7 @@ export const preflopround = async (room, io) => {
             }
           };
           await deductBigBlind();
-          await setCachedGame(room1111);
+          await setCachedGame({ ...room1111, tournament: room1111.tournament });
           if (!io.room.find((el) => el.room === room._id.toString())?.preflop) {
             gameTurnTimer(room._id, io);
             let updatedRoom = await getCachedGame(room._id);
@@ -606,6 +614,7 @@ export const preflopround = async (room, io) => {
 export const gameTurnTimer = async (roomid, io) => {
   try {
     const roomData = await getCachedGame(roomid);
+    console.log("");
     let state = gameState[roomData.runninground];
     console.log("game round", state);
     io.room = io.room.map((el) => {
@@ -631,7 +640,7 @@ export const gameTurnTimer = async (roomid, io) => {
 
     totalPlayer++;
 
-    console.log("totalPlayer =======>", totalPlayer);
+    // console.log("totalPlayer =======>", totalPlayer);
 
     const timer = async (i, maxPosition) => {
       let j = roomData.timer;
@@ -670,7 +679,7 @@ export const gameTurnTimer = async (roomid, io) => {
             }
           });
           udata.timerPlayer = cp;
-          await setCachedGame(udata);
+          await setCachedGame({ ...udata, tournamentData: udata.tournament });
 
           let playerinterval = setInterval(async () => {
             const data = await getCachedGame(roomid);
@@ -686,7 +695,7 @@ export const gameTurnTimer = async (roomid, io) => {
                 data.players.length !== 1
               ) {
                 await doCheck(data, intervalPlayer[0]?.id, io);
-                console.log("auto do Check completed");
+                // console.log("auto do Check completed");
                 timer(++i, maxPosition);
               } else {
                 let isContinue = false;
@@ -705,9 +714,9 @@ export const gameTurnTimer = async (roomid, io) => {
                       }
                     });
                   }
-                  await setCachedGame(data);
+                  await setCachedGame({ ...data, tournament: data.tournament });
                   isContinue = await doFold(data, intervalPlayer[0]?.id, io);
-                  console.log("automatic do Fold completed");
+                  console.log("automatic do Fold completed", data.tournament);
                   io.in(data?._id?.toString()).emit("automaticFold", {
                     msg: `${intervalPlayer[0]?.name} has automatically folded`,
                   });
@@ -757,7 +766,7 @@ export const gameTurnTimer = async (roomid, io) => {
         ) {
           newPosition = 0;
           udata.isCircleCompleted = true;
-          await setCachedGame(udata);
+          await setCachedGame({ ...udata, tournament: udata.tournament });
         } else {
           if (
             udata?.raisePlayerPosition !== null &&
@@ -767,7 +776,7 @@ export const gameTurnTimer = async (roomid, io) => {
           } else {
             newPosition = udata?.bigBlindPosition + 1;
             udata.isCircleCompleted = true;
-            await setCachedGame(udata);
+            await setCachedGame({ ...udata, tournament: udata.tournament });
           }
         }
         timer(0, newPosition);
@@ -900,9 +909,11 @@ export const flopround = async (roomid, io) => {
         lastAction: "check",
         isCircleCompleted: false,
       };
-      await setCachedGame(roomData);
+      // console.log("flop round tourrnament before", roomData.tournament);
+      await setCachedGame({ ...roomData, tournament: roomData.tournament });
       await getSidePOt(roomid);
       const updatedRoom = await getCachedGame(roomid);
+      // console.log("turn round tourrnament value after", roomData.tournament);
       io.in(updatedRoom?._id?.toString()).emit("flopround", updatedRoom);
       if (playingPlayer > 1) {
         setTimeout(() => {
@@ -1019,9 +1030,11 @@ export const turnround = async (roomid, io) => {
         lastAction: "check",
         isCircleCompleted: false,
       };
-      await setCachedGame(roomData);
+      // console.log("turn round tourrnament value before", roomData.tournament);
+      await setCachedGame({ ...roomData, tournament: roomData.tournament });
       await getSidePOt(roomid);
       const updatedRoom = await getCachedGame(roomid);
+      // console.log("river round tourrnament value after", roomData.tournament);
       io.in(updatedRoom?._id?.toString()).emit("turnround", updatedRoom);
       if (playingPlayer > 1) {
         setTimeout(() => {
@@ -1136,9 +1149,11 @@ export const riverround = async (roomid, io) => {
         lastAction: "check",
         isCircleCompleted: false,
       };
-      await setCachedGame(roomData);
+      // console.log("river round tourrnament value before", roomData.tournament);
+      await setCachedGame({ ...roomData, tournament: roomData.tournament });
       await getSidePOt(roomid);
       const updatedRoom = await getCachedGame(roomid);
+      // console.log("river round tourrnament value after", roomData.tournament);
 
       io.in(updatedRoom?._id?.toString()).emit("riverround", updatedRoom);
       if (playingPlayer > 1) {
@@ -1169,6 +1184,7 @@ export const showdown = async (roomid, io) => {
     console.log("----showdown-----");
 
     let roomData = await getCachedGame(roomid);
+    // console.log("tournament in showdown", roomid, roomData.tournament);
     if (!roomData.isGameRunning) return;
     let playersHand = [];
     let hands = [];
@@ -1243,7 +1259,7 @@ export const showdown = async (roomid, io) => {
       pot: totalPot,
     };
 
-    await setCachedGame(roomData);
+    await setCachedGame({ ...roomData, tournament: roomData.tournament });
 
     if (roomData.sidePots.length || roomData.allinPlayers.length) {
       await getSidePOt(roomData._id);
@@ -1394,8 +1410,6 @@ export const showdown = async (roomid, io) => {
     };
     await findWinner();
 
-    console.log("playerWithWallets ===>", playerWithWallets);
-
     const handWinner = updatedRoom.handWinner;
     handWinner.push(winnerPlayers);
     const upRoomData = await getCachedGame(roomid);
@@ -1494,11 +1508,21 @@ export const showdown = async (roomid, io) => {
       isShowdown: true,
       runninground: 5,
     };
-    await setCachedGame(upRoom);
-    await roomModel.updateOne({ _id: upRoom._id }, { ...upRoom });
-    console.log("player after showdwon wiiner", upRoom.showdown);
-    console.log("game finished");
+    await setCachedGame({ ...upRoom, tournament: upRoom.tournament });
+    await roomModel.updateOne(
+      { _id: upRoom._id },
+      {
+        showdown: upRoomData.showdown,
+        winnerPlayer: winnerPlayers,
+        handWinner,
+        isShowdown: true,
+        runninground: 5,
+      }
+    );
+    // console.log("player after showdwon winner", upRoom.showdown);
+    // console.log("game finished");
     setTimeout(async () => {
+      console.log("game IS THIS A TOURNAMENT", upRoom.tournament);
       if (upRoom.tournament) {
         await elemination(upRoom, io);
         await reArrangeTables(upRoom.tournament, io, upRoom._id);
@@ -1545,7 +1569,10 @@ export const showdown = async (roomid, io) => {
           }
         } else {
           updatedRoomPlayers.gamestart = false;
-          await setCachedGame(updatedRoomPlayers);
+          await setCachedGame({
+            ...updatedRoomPlayers,
+            tournament: updatedRoomPlayers.tournament,
+          });
 
           io.in(upRoom._id.toString()).emit("tablestopped", {
             msg: "Table stopped by host",
@@ -1576,9 +1603,16 @@ export const updateRoomForNewHand = async (roomid, io) => {
         let roomData = await getCachedGame(roomid);
         if (roomData?.tournament) {
           console.log("id populate", roomData.tournament);
+
+          const tourId = roomData.tournament._id
+            ? roomData.tournament._id
+            : roomData.tournament;
+
           roomData.tournament = await tournamentModel
-            .findOne({ _id: roomData.tournament._id })
+            .findOne({ _id: tourId })
             .lean();
+        } else {
+          console.log("tournament not found in update room for new hand");
         }
         let newHandPlayer = [];
         let buyin = roomData?.buyin;
@@ -1589,11 +1623,11 @@ export const updateRoomForNewHand = async (roomid, io) => {
           roomData?.tournament?.levels?.smallBlind?.amount ||
           roomData?.smallBlind;
         let playerData = roomData[gameState[roomData.runninground]];
-        console.log(
-          "running round =================>",
-          roomData?.runninground,
-          roomData.tournament
-        );
+        // console.log(
+        //   "running round =================>",
+        //   roomData?.runninground,
+        //   roomData.tournament
+        // );
 
         if (!playerData.length) {
           return;
@@ -1735,7 +1769,10 @@ export const updateRoomForNewHand = async (roomid, io) => {
             //Success callback
             try {
               newHandPlayer = await anyNewPlayer(newHandPlayer, roomData);
-              console.log("new hand playersssssss ===>", newHandPlayer);
+              // console.log("new hand playersssssss ===>", newHandPlayer);
+
+              // console.log("tournamnettttt +====>", roomData.tournament);
+
               roomData = {
                 ...roomData,
                 players: newHandPlayer,
@@ -1774,7 +1811,14 @@ export const updateRoomForNewHand = async (roomid, io) => {
                 leavereq: leavereq,
                 availablerequest: [],
               };
-              await setCachedGame(roomData);
+              await setCachedGame({
+                ...roomData,
+                tournament: roomData.tournament,
+              });
+              console.log(
+                "room data tournament in updateRoomForNewHand: " +
+                  roomData.tournament
+              );
               io.in(roomData._id.toString()).emit("newhand", {
                 updatedRoom: roomData,
               });
@@ -1798,6 +1842,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
 
 export const elemination = async (roomData, io) => {
   try {
+    // console.log("elemination runs for at starting ===>", roomData.tournament);
     let eleminated_players = roomData.eleminated;
     let noOfElemination = 0;
     let newHandPlayer = [];
@@ -1842,6 +1887,13 @@ export const elemination = async (roomData, io) => {
         });
       }
     });
+
+    // console.log(
+    //   "eleminated playersssss ===>",
+    //   noOfElemination,
+    //   eleminated_players
+    // );
+
     const upRoom = await roomModel
       .findOneAndUpdate(
         {
@@ -1883,6 +1935,9 @@ export const elemination = async (roomData, io) => {
         }
       )
       .populate("tournament");
+
+    // console.log("elemination runs for at starting ===>", upRoom.tournament);
+
     await setCachedGame({
       ...roomData,
       players,
@@ -1911,6 +1966,7 @@ export const elemination = async (roomData, io) => {
       allinPlayers: [],
       eliminationCount: eleminated_players?.length,
       autoNextHand: true,
+      tournament: roomData.tournament,
     });
     if (eleminated_players.length > 0 && noOfElemination > 0) {
       const availablePlayerCount =
@@ -1921,7 +1977,7 @@ export const elemination = async (roomData, io) => {
           (a, b) => a.chipsBeforeHandStart - b.chipsBeforeHandStart
         )
       );
-      console.log("eleminated players length", eleminatedPlayers.length);
+      // console.log("eleminated players length", eleminatedPlayers);
 
       await tournamentModel.updateOne(
         { _id: upRoom.tournament._id },
@@ -2030,6 +2086,57 @@ const fixedPrizeDistribution = (tournamentdata, elem) => {
     console.log("error in fixedPrizeDistribution", error);
   }
 };
+
+// const fixedPrizeDistribution = (tournamentdata, elem) => {
+//   try {
+//     let { winPlayer, winTotalPlayer, totalJoinPlayer } = tournamentdata;
+//     let winners = elem.slice(
+//       elem.length - tournamentdata.winTotalPlayer,
+//       elem.length
+//     );
+//     console.log("winners ====>", winners);
+
+//     if (totalJoinPlayer === 2 && winners.length === 2) {
+//       winners.shift();
+//     }
+
+//     winners.reverse().forEach((ele) => {
+//       if (
+//         winTotalPlayer === 25 &&
+//         winPlayer["11-25"] &&
+//         winPlayer["11-25"].userIds.length < winPlayer["11-25"].playerCount &&
+//         winners.length > 25
+//       ) {
+//         winPlayer["11-25"].userIds.push(ele.id || ele.userid);
+//         return;
+//       }
+//       if (
+//         winTotalPlayer === 10 &&
+//         winPlayer["4-10"] &&
+//         winPlayer["4-10"].userIds.length <= winPlayer["4-10"].playerCount &&
+//         winners.length > 10
+//       ) {
+//         winPlayer["4-10"].userIds.push(ele.id || ele.userid);
+//         return;
+//       }
+//       if (!winPlayer.third.userId && winners.length > 2) {
+//         winPlayer.third.userId = ele.id || ele.userid;
+//         return;
+//       }
+//       if (!winPlayer.second.userId && winners.length > 1) {
+//         winPlayer.second.userId = ele.id || ele.userid;
+//         return;
+//       }
+//       if (!winPlayer.first.userId) {
+//         winPlayer.first.userId = ele.id || ele.userid;
+//         return;
+//       }
+//     });
+//     return winPlayer;
+//   } catch (error) {
+//     console.log("error in fixedPrizeDistribution", error);
+//   }
+// };
 
 export const distributeTournamentPrize = async (
   tournamentId,
@@ -2598,7 +2705,8 @@ export const doFold = async (roomData, playerid, io, isAuto = true) => {
       roomData.lastAction = lastAction;
 
       roomData[gameState[roomData.runninground]] = players;
-      await setCachedGame({ ...roomData });
+      // console.log("tournament in do fold ==>", roomData.tournament);
+      await setCachedGame({ ...roomData, tournament: roomData.tournament });
 
       io.in(roomData._id.toString()).emit("actionperformed", {
         id: playerid,
@@ -2687,6 +2795,7 @@ export const doCall = async (roomData, playerid, io, amout) => {
     });
     roomData[gameState[roomData.runninground]] = players;
     roomData.lastAction = "call";
+    // console.log("tournament in do call ==>", roomData.tournament);
     await setCachedGame(roomData);
     io.in(roomData._id.toString()).emit("actionperformed", {
       id: playerid,
@@ -2782,6 +2891,7 @@ export const doBet = async (roomData, playerid, io, amt) => {
       roomData.raisePlayerPosition = currentPlayer.position;
       roomData.raiseAmount = updatedRaiseAmt;
       roomData.lastAction = "bet";
+      // console.log("tournament in do bet ==>", roomData.tournament);
       await setCachedGame(roomData);
       io.in(roomData._id.toString()).emit("actionperformed", {
         id: playerid,
@@ -2877,6 +2987,7 @@ export const doRaise = async (roomData, playerid, io, amt) => {
       roomData.raiseAmount = unpdatedRaisdAmt;
       roomData.lastAction = "raise";
       await setCachedGame(roomData);
+      // console.log("tournament in do raise ==>", roomData.tournament);
       io.in(roomData._id.toString()).emit("actionperformed", {
         id: playerid,
         action: "raise",
@@ -2949,6 +3060,7 @@ export const doCheck = async (roomData, playerid, io) => {
       roomData[gameState[roomData.runninground]] = players;
       roomData.lastAction = "check";
       await setCachedGame(roomData);
+      // console.log("tournament in do check ==>", roomData.tournament);
       io.in(roomData._id.toString()).emit("actionperformed", {
         id: playerid,
         action: "check",
@@ -2990,6 +3102,7 @@ export const doAllin = async (roomData, playerid, io) => {
   try {
     let { raiseAmount, raisePlayerPosition, allinPlayers, runninground } =
       roomData;
+    // console.log("tournament in do allIn ==>", roomData.tournament);
     if (roomData?.timerPlayer?.toString() === playerid?.toString()) {
       let players = roomData[gameState[runninground]];
       let currentPlayer = players.find((pl) => pl.id === playerid);
@@ -3050,7 +3163,8 @@ export const doAllin = async (roomData, playerid, io) => {
       roomData.lastAction = "all-in";
       roomData.allinPlayers = allinPlayers;
       roomData[gameState[runninground]] = players;
-      await setCachedGame(roomData);
+      await setCachedGame({ ...roomData, tournament: roomData.tournament });
+      // console.log("tournament in do allIn ==>", roomData.tournament);
       io.in(roomData._id.toString()).emit("actionperformed", {
         id: playerid,
         action: "all-in",
@@ -3073,6 +3187,7 @@ export const socketDoAllin = async (dta, io, socket) => {
       let playerid = userid;
       // let amt  = body.amount;
       const data = await getCachedGame(roomid);
+      console.log("at socket do all in ==>", data.tournament);
       if (data !== null) {
         await doAllin(data, playerid, io);
       } else {
@@ -3090,6 +3205,7 @@ export const socketDoAllin = async (dta, io, socket) => {
 const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
   try {
     let roomData = await getCachedGame(roomid);
+    // console.log("tournament in winnerBefore Show", roomData.tournament);
     let winnerAmount = 0;
     let showDownPlayers = [];
     let playerData = null;
@@ -3158,12 +3274,13 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
       runninground: 5,
       timerPlayer: null,
       pot: totalPot,
+      tournament: roomData.tournament,
     };
 
     await setCachedGame(roomData);
 
     if (roomData.sidePots.length || roomData.allinPlayers.length) {
-      console.log("all folded and allin");
+      // console.log("all folded and allin");
       await getSidePOt(roomData._id);
       roomData = await getCachedGame(roomid);
       let sidePotTotal = roomData.sidePots.reduce((acc, el) => acc + el.pot, 0);
@@ -3221,16 +3338,20 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     roomData.handWinner = handWinner;
 
     io.in(roomData._id.toString()).emit("winner", { updatedRoom: roomData });
-    await setCachedGame(roomData);
+    await setCachedGame({ ...roomData, tournament: roomData.tournament });
     console.log("winner decieded");
-    console.log("showdown players after winner", roomData.showdown);
+    // console.log("showdown players after winner", roomData.showdown);
 
     const updatedRoom = await roomModel.findOneAndUpdate(
       {
         _id: roomid,
       },
       {
-        ...roomData,
+        isGameRunning: false,
+        showdown: showDownPlayers,
+        pot: 0,
+        winnerPlayer,
+        handWinner,
       },
       {
         new: true,
@@ -3348,7 +3469,7 @@ export const reArrangeTables = async (tournamentId, io, roomId) => {
     //   return;
     // }
     let rooms = [];
-    console.log("reArrange Called");
+    console.log("reArrange Called for room -", roomId);
     if (tournamentData) {
       const notDestroyedYet = tournamentData.rooms.filter((el) => {
         let r = true;
@@ -3461,8 +3582,10 @@ const reArrangementBeforeTournamentStart = async (
             },
             { new: true }
           )
-          .populate("tournament");
-        await setCachedGame(room);
+          .populate("tournament")
+          .lean();
+        console.log("udpatedRoom =====>", udpatedRoom);
+        await setCachedGame({ ...room, tournament: udpatedRoom.tournament });
         console.log(
           "udpatedRoom changed players for room ==>",
           udpatedRoom._id,
@@ -3482,7 +3605,8 @@ const reArrangementBeforeTournamentStart = async (
             { new: true }
           )
           .populate("tournament");
-        await setCachedGame(room);
+        console.log("udpatedRoom =====>", udpatedRoom, room.tournament);
+        await setCachedGame({ ...room, tournament: udpatedRoom.tournament });
         console.log("udpatedRoom ==>", udpatedRoom?.players);
       }
     }
@@ -3509,17 +3633,22 @@ const reArrangementBeforeTournamentStart = async (
       // More than one room still underfilled, continue the redistribution process
       console.log("Continue redistributing players");
     }
-    return await roomModel.find({
-      tournament: tournamentId,
-    });
+
+    return await roomModel
+      .find({
+        tournament: tournamentId,
+      })
+      .populate("tournament")
+      .lean();
   } catch (error) {
-    console.log("error in fillSpot function =>", error);
+    console.log("error in reArragnement before start function =>", error);
   }
 };
 
 const fillSpot = async (allRooms, io, tournamentId, roomId) => {
   try {
-    console.log("fill spot called");
+    console.log("fill spot called", roomId);
+    console.log("tournament in do fillSPot ==>", tournamentId._id);
     if (allRooms.length === 1) {
       if (allRooms[0].showdown.length > 1) {
         return preflopround(allRooms[0], io);
@@ -3555,161 +3684,242 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
         return;
       }
     }
-    const room = await getCachedGame(roomId);
+    let room = await getCachedGame(roomId);
     const OtherRoom = allRooms.filter(
       (r) => r._id.toString() !== roomId.toString()
     );
-    let blankSpot = 0;
-    OtherRoom.forEach((c) => {
-      blankSpot += playerLimit - c.players.length;
-    });
-    let totalPlayers = room.showdown.length;
-    room.players.forEach((pl) => {
-      if (
-        room.showdown.find(
-          (sPl) => pl.userid.toString() !== sPl.userid.toString()
-        )
-      ) {
-        totalPlayers += 1;
+
+    const totalPlayers = allRooms.reduce(
+      (count, room) => count + room.players.length,
+      0
+    );
+
+    // console.log("totalPlayers ==>", totalPlayers);
+
+    let userIds = [];
+
+    // Calculate the ideal number of players per table
+    const idealPlayerCount = Math.floor(totalPlayers / allRooms.length);
+    console.log(" idealPlayerCount ==>", idealPlayerCount);
+    let remainingPlayers = room.players.filter(
+      (pl) => !room.eleminated.find((el) => el.id === pl.id)
+    );
+    remainingPlayers = remainingPlayers.map((pl) => {
+      let el = room.showdown.find((el) => el.id === pl.id);
+      if (el) {
+        return {
+          ...pl,
+          wallet: el.wallet,
+        };
+      } else {
+        return { ...pl };
       }
     });
-    // room.showdown.length
-    console.log("blank spot ==>", blankSpot);
-    if (blankSpot >= totalPlayers) {
-      let playersWaitingztoPlay = room.players.filter((el) => {
-        let isWaiting = true;
-        room.showdown.forEach((el2) => {
-          if (el2.userid.toString() === el.userid.toString()) {
-            isWaiting = false;
-          }
-        });
-        return isWaiting;
-      });
-      let playersToMove = [...room.showdown, ...playersWaitingztoPlay];
+    // let playersWaitingztoPlay = remainingPlayers.filter((el) => {
+    //   let isWaiting = true;
+    //   room.showdown.forEach((el2) => {
+    //     if (el2.userid.toString() === el.userid.toString()) {
+    //       isWaiting = false;
+    //     }
+    //   });
+    //   return isWaiting;
+    // });
+
+    const totalPlayersInRoom = [...remainingPlayers];
+
+    console.log(
+      "ideal count condition ==>",
+      totalPlayersInRoom.length,
+      idealPlayerCount
+    );
+    // console.log("totalPlayersInRoom ==>", totalPlayersInRoom);
+
+    if (totalPlayersInRoom.length > idealPlayerCount) {
+      let noOfPlayersToMove = totalPlayersInRoom.length - idealPlayerCount;
+      console.log("no of players to move ", noOfPlayersToMove);
+      let playersToMove = remainingPlayers.splice(0, noOfPlayersToMove);
+
       console.log("playersToMove ==>", playersToMove);
-      let userIds = [];
-      for await (const r of OtherRoom) {
-        if (playersToMove.length === 0 || blankSpot === 0) {
-          break;
-        }
-        if (r.players.length >= playerLimit) {
-          continue;
-        }
-        let newPlayers = [...r.players];
-        let tempSpotArr = [...Array(playerLimit - r.players.length).keys()];
-        for await (const temp of tempSpotArr) {
-          if (playersToMove[temp]) {
-            let position = await findAvailablePosition(newPlayers);
-            newPlayers.push({ ...playersToMove[temp], position });
-            userIds.push({
-              userId: playersToMove[temp].userid,
-              newRoomId: r._id,
-            });
-          }
-        }
-        await setCachedGame({ ...r, players: newPlayers });
-        const updatedRoom = await roomModel.findOneAndUpdate(
-          {
-            _id: r._id,
-          },
-          {
-            players: newPlayers,
-          },
-          {
-            new: true,
-          }
-        );
-        playersToMove.splice(0, tempSpotArr.length);
-        blankSpot -= tempSpotArr.length;
-      }
-      console.log("users who have moved", userIds);
-      if (userIds.length) {
-        io.in(room._id.toString()).emit("roomchanged", {
-          userIds,
-        });
-        setTimeout(() => {
-          allRooms.forEach((r) => {
-            if (
-              userIds.find(
-                (user) => user.newRoomId.toString() === r._id.toString()
-              ) &&
-              !r.gamestart
-            ) {
-              preflopround(r, io);
-            }
-          });
-        }, 1000);
-      }
-      if (playersToMove.length === 0) {
-        await tournamentModel.updateOne(
-          { _id: room.tournament },
-          { $push: { destroyedRooms: room._id } },
-          {
-            new: true,
-          }
-        );
-        await deleteCachedGame(room._id);
-        await roomModel.deleteOne({ _id: room._id });
-      }
-    } else {
-      console.log("Not enough blank spot");
-      if (room.showdown.length > 1) {
-        // console.log("UPdateeeeddddddd dataaaaaaa -->", updatedRoom);
-        // io.in(room._id.toString()).emit("updateRoom", updatedRoom);
-        if (room.showdown.length < playerLimit) {
-          const stopedRoom = OtherRoom.filter(
-            (r) => !r.gamestart && r.players.length === 1
-          )[0];
-          if (stopedRoom) {
-            // console.log("stooped room", stopedRoom?.players);
-            const occupiedPositions = room.players.map((p) => p.position);
-            const blankPositions = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter(
+
+      console.log("remianing in showdown ===>", remainingPlayers);
+
+      for await (let newRoom of OtherRoom) {
+        newRoom = await getCachedGame(newRoom._id);
+        console.log("new room ==>", newRoom);
+        if (noOfPlayersToMove) {
+          let playersWaitingtoPlayInNewRoom = newRoom.players;
+          const totalPlayersInNewRoom = newRoom.players.length;
+
+          console.log("cached room ==>", playersWaitingtoPlayInNewRoom);
+
+          console.log(
+            "totalPlayersInNewRoom ===>",
+            totalPlayersInNewRoom,
+            idealPlayerCount
+          );
+
+          if (totalPlayersInNewRoom < idealPlayerCount) {
+            const NoOfPlayersReqInNewRoom =
+              idealPlayerCount - totalPlayersInNewRoom;
+
+            let player = playersToMove.splice(0, NoOfPlayersReqInNewRoom);
+
+            // console.log("player who s going to another table ==>", player);
+
+            const occupiedPositions = newRoom.players.map((el) => el.position);
+
+            let blankPositions = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter(
               (el) => occupiedPositions.indexOf(el) < 0
             );
 
-            room.players.push({
-              ...stopedRoom.players[0],
-              position: blankPositions[0],
+            player = player.map((el, i) => {
+              userIds.push({
+                userId: el.id,
+                newRoomId: newRoom._id,
+              });
+              return {
+                ...el,
+                position: blankPositions[i],
+              };
             });
-            console.log("running room players", room.players);
 
-            io.in(stopedRoom._id.toString()).emit("roomchanged", {
-              userIds: [
-                {
-                  userId: stopedRoom.players[0]?.userid,
-                  newRoomId: room._id,
-                },
-              ],
-            });
-            await setCachedGame(room);
-            await roomModel.updateOne(
+            const updatedPlayersInNewRoom = [...newRoom.players, ...player];
+            // console.log("now updated player ==>", updatedPlayersInNewRoom);
+
+            newRoom.players = [...updatedPlayersInNewRoom];
+            await setCachedGame({ ...newRoom, tournament: tournamentId });
+            const updatedNewRoom = await roomModel.findOneAndUpdate(
               {
-                _id: room._id,
+                _id: newRoom._id,
               },
               {
-                players: room.players,
+                players: newRoom.players,
               }
             );
 
-            await tournamentModel.updateOne(
-              { _id: stopedRoom.tournament },
-              { $push: { destroyedRooms: stopedRoom._id } },
-              {
-                new: true,
-              }
-            );
-            await deleteCachedGame(stopedRoom._id);
-            await roomModel.deleteOne({ _id: stopedRoom._id });
+            if (!updatedNewRoom.gamestart) {
+              await preflopround(newRoom, io);
+            }
           }
         }
+      }
 
-        await preflopround(room, io);
-      } else {
-        console.log(
-          "wait for rearrangesdfsdf =====>",
-          { showDown: room.showdown },
-          room._id
+      // console.log("user ids to  move ==>", userIds);
+
+      if (userIds.length) {
+        console.log("now currnt room players", { ...remainingPlayers });
+
+        console.log("remaining players ==>", { ...playersToMove });
+
+        room.players = [...remainingPlayers, ...playersToMove];
+
+        const updatedRoom = {
+          ...room,
+          showdown: [...remainingPlayers, ...playersToMove],
+        };
+
+        room = updatedRoom;
+
+        await setCachedGame({ ...updatedRoom, tournament: tournamentId });
+        await roomModel.findOneAndUpdate(
+          {
+            _id: room._id,
+          },
+          {
+            players: updatedRoom.players,
+            showdown: updatedRoom.players,
+          },
+          { new: true }
         );
+        console.log("updatedTable ==>", {
+          players: room.players,
+          showdown: room.showdown,
+        });
+        io.in(room._id.toString()).emit("updateGame", { game: updatedRoom });
+        io.in(room._id.toString()).emit("roomchanged", {
+          userIds,
+        });
+        await preflopround(updatedRoom, io);
+        return;
+      } else {
+        console.log("updatedTable1 ==>", { room: room.players });
+        await preflopround(room, io);
+      }
+    } else if (totalPlayersInRoom.length === 1) {
+      console.log("only one player in room");
+      let blankSpotFound = false;
+
+      for await (let newRoom of OtherRoom) {
+        newRoom = await getCachedGame(newRoom._id);
+        let playersWaitingtoPlayInNewRoom = newRoom.players.filter((el) => {
+          let isWaiting = true;
+          room.showdown.forEach((el2) => {
+            if (el2.userid.toString() === el.userid.toString()) {
+              isWaiting = false;
+            }
+          });
+          return isWaiting;
+        });
+        const totalPlayersInNewRoom =
+          playersWaitingtoPlayInNewRoom.length + newRoom.showdown.length;
+        if (totalPlayersInNewRoom < playerLimit) {
+          const occupiedPositions = newRoom.players.map((el) => el.position);
+
+          let blankPositions = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter(
+            (el) => occupiedPositions.indexOf(el) < 0
+          );
+
+          totalPlayersInRoom[0].position = blankPositions[0];
+
+          newRoom.players = [...newRoom.players, ...totalPlayersInRoom];
+          newRoom.watchers = [...newRoom.watchers, room.watchers];
+          await setCachedGame({ ...newRoom, tournament: tournamentId });
+          await roomModel.updateOne(
+            {
+              _id: newRoom._id,
+            },
+            {
+              players: newRoom.players,
+              watchers: newRoom.watchers,
+            }
+          );
+          blankSpotFound = true;
+          userIds.push({
+            userId: room.players[0].id,
+            newRoomId: newRoom._id,
+          });
+          userIds = [
+            ...userIds,
+            newRoom.watchers.map((el) => ({
+              userId: el,
+              newRoomId: newRoom._id,
+            })),
+          ];
+          io.in(room._id.toString()).emit("roomchanged", {
+            userIds,
+          });
+          if (!newRoom.gamestart) {
+            await preflopround(newRoom, io);
+          }
+
+          break;
+        }
+      }
+
+      if (!blankSpotFound) {
+        io.in(room._id.toString()).emit("waitForReArrange", {
+          userIds: room.showdown.map((p) => p.id || p.userid),
+        });
+
+        await setCachedGame({
+          ...room,
+          players: room.showdown,
+          runninground: 0,
+          gamestart: false,
+          communityCard: [],
+          tournament: tournamentId,
+        });
+
         const updatedRoom = await roomModel.findOneAndUpdate(
           {
             _id: convertMongoId(room._id),
@@ -3722,19 +3932,199 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
           },
           { new: true }
         );
-        await setCachedGame({
-          ...room,
-          players: room.showdown,
-          runninground: 0,
-          gamestart: false,
-          communityCard: [],
-        });
+
         io.in(room._id.toString()).emit("updateGame", { game: updatedRoom });
-        io.in(room._id.toString()).emit("waitForReArrange", {
-          userIds: room.showdown.map((p) => p.id || p.userid),
-        });
+      } else {
+        await tournamentModel.updateOne(
+          { _id: room.tournament },
+          { $push: { destroyedRooms: room._id } },
+          {
+            new: true,
+          }
+        );
+        await deleteCachedGame(room._id);
+        await roomModel.deleteOne({ _id: room._id });
       }
+    } else {
+      await preflopround(room, io);
     }
+
+    // let blankSpot = 0;
+    // OtherRoom.forEach((c) => {
+    //   blankSpot += playerLimit - c.players.length;
+    // });
+    // let totalPlayers = room.showdown.length;
+    // room.players.forEach((pl) => {
+    //   if (
+    //     room.showdown.find(
+    //       (sPl) => pl.userid.toString() !== sPl.userid.toString()
+    //     )
+    //   ) {
+    //     totalPlayers += 1;
+    //   }
+    // });
+    // // room.showdown.length
+    // console.log("blank spot ==>", blankSpot);
+    // if (blankSpot >= totalPlayers) {
+    //   let playersWaitingztoPlay = room.players.filter((el) => {
+    //     let isWaiting = true;
+    //     room.showdown.forEach((el2) => {
+    //       if (el2.userid.toString() === el.userid.toString()) {
+    //         isWaiting = false;
+    //       }
+    //     });
+    //     return isWaiting;
+    //   });
+    //   let playersToMove = [...room.showdown, ...playersWaitingztoPlay];
+    //   console.log("playersToMove ==>", playersToMove);
+    //   let userIds = [];
+    //   for await (const r of OtherRoom) {
+    //     if (playersToMove.length === 0 || blankSpot === 0) {
+    //       break;
+    //     }
+    //     if (r.players.length >= playerLimit) {
+    //       continue;
+    //     }
+    //     let newPlayers = [...r.players];
+    //     let tempSpotArr = [...Array(playerLimit - r.players.length).keys()];
+    //     for await (const temp of tempSpotArr) {
+    //       if (playersToMove[temp]) {
+    //         let position = await findAvailablePosition(newPlayers);
+    //         newPlayers.push({ ...playersToMove[temp], position });
+    //         userIds.push({
+    //           userId: playersToMove[temp].userid,
+    //           newRoomId: r._id,
+    //         });
+    //       }
+    //     }
+    //     await setCachedGame({ ...r, players: newPlayers });
+    //     const updatedRoom = await roomModel.findOneAndUpdate(
+    //       {
+    //         _id: r._id,
+    //       },
+    //       {
+    //         players: newPlayers,
+    //       },
+    //       {
+    //         new: true,
+    //       }
+    //     );
+    //     playersToMove.splice(0, tempSpotArr.length);
+    //     blankSpot -= tempSpotArr.length;
+    //   }
+    //   console.log("users who have moved", userIds);
+    //   if (userIds.length) {
+    //     io.in(room._id.toString()).emit("roomchanged", {
+    //       userIds,
+    //     });
+    //     setTimeout(() => {
+    //       allRooms.forEach((r) => {
+    //         if (
+    //           userIds.find(
+    //             (user) => user.newRoomId.toString() === r._id.toString()
+    //           ) &&
+    //           !r.gamestart
+    //         ) {
+    //           preflopround(r, io);
+    //         }
+    //       });
+    //     }, 1000);
+    //   }
+    //   if (playersToMove.length === 0) {
+    //     await tournamentModel.updateOne(
+    //       { _id: room.tournament },
+    //       { $push: { destroyedRooms: room._id } },
+    //       {
+    //         new: true,
+    //       }
+    //     );
+    //     await deleteCachedGame(room._id);
+    //     await roomModel.deleteOne({ _id: room._id });
+    //   }
+    // } else {
+    //   console.log("Not enough blank spot");
+    //   if (room.showdown.length > 1) {
+    //     // console.log("UPdateeeeddddddd dataaaaaaa -->", updatedRoom);
+    //     // io.in(room._id.toString()).emit("updateRoom", updatedRoom);
+    //     if (room.showdown.length < playerLimit) {
+    //       const stopedRoom = OtherRoom.filter(
+    //         (r) => !r.gamestart && r.players.length === 1
+    //       )[0];
+    //       if (stopedRoom) {
+    //         // console.log("stooped room", stopedRoom?.players);
+    //         const occupiedPositions = room.players.map((p) => p.position);
+    //         const blankPositions = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter(
+    //           (el) => occupiedPositions.indexOf(el) < 0
+    //         );
+
+    //         room.players.push({
+    //           ...stopedRoom.players[0],
+    //           position: blankPositions[0],
+    //         });
+    //         console.log("running room players", room.players);
+
+    //         io.in(stopedRoom._id.toString()).emit("roomchanged", {
+    //           userIds: [
+    //             {
+    //               userId: stopedRoom.players[0]?.userid,
+    //               newRoomId: room._id,
+    //             },
+    //           ],
+    //         });
+    //         await setCachedGame(room);
+    //         await roomModel.updateOne(
+    //           {
+    //             _id: room._id,
+    //           },
+    //           {
+    //             players: room.players,
+    //           }
+    //         );
+
+    //         await tournamentModel.updateOne(
+    //           { _id: stopedRoom.tournament },
+    //           { $push: { destroyedRooms: stopedRoom._id } },
+    //           {
+    //             new: true,
+    //           }
+    //         );
+    //         await deleteCachedGame(stopedRoom._id);
+    //         await roomModel.deleteOne({ _id: stopedRoom._id });
+    //       }
+    //     }
+
+    //     await preflopround(room, io);
+    //   } else {
+    //     console.log(
+    //       "wait for rearrangesdfsdf =====>",
+    //       { showDown: room.showdown },
+    //       room._id
+    //     );
+    //     const updatedRoom = await roomModel.findOneAndUpdate(
+    //       {
+    //         _id: convertMongoId(room._id),
+    //       },
+    //       {
+    //         players: room.showdown,
+    //         runninground: 0,
+    //         gamestart: false,
+    //         communityCard: [],
+    //       },
+    //       { new: true }
+    //     );
+    //     await setCachedGame({
+    //       ...room,
+    //       players: room.showdown,
+    //       runninground: 0,
+    //       gamestart: false,
+    //       communityCard: [],
+    //     });
+    //     io.in(room._id.toString()).emit("updateGame", { game: updatedRoom });
+    //     io.in(room._id.toString()).emit("waitForReArrange", {
+    //       userIds: room.showdown.map((p) => p.id || p.userid),
+    //     });
+    //   }
+    // }
   } catch (error) {
     console.log("error in fillSpot function =>", error);
   }
@@ -4499,6 +4889,8 @@ export const leaveApiCall = async (room, userId, io) => {
         tournamentModel.updateOne(
           {
             _id: room.tournament,
+            havePlayers: { $gt: 0 }, // Ensure havePlayers is greater than 0
+            totalJoinPlayer: { $gt: 0 }, // Ensure totalJoinPlayer is greater than 0
           },
           {
             $inc: {
@@ -4612,7 +5004,7 @@ export const leaveApiCall = async (room, userId, io) => {
 
     if (userId) {
       room.players = room.players.filter((pl) => pl.id !== userId);
-      console.log("pleayer after remvoe in leaveApiCall", room.players);
+      // console.log("pleayer after remvoe in leaveApiCall", room.players);
       room.watchers = room.watchers.filter((wt) => wt !== userId);
       room.handWinner = filterdHndWinnerData;
       let rrr = await getCachedGame(room._id);
@@ -5309,21 +5701,21 @@ const pushPlayerInRoom = async (
   io
 ) => {
   try {
-    const tournament = await tournamentModel.findOne({
-      _id: tournamentId,
-    });
-    checkTournament = tournament;
+    // const tournament = await tournamentModel.findOne({
+    //   _id: tournamentId,
+    // });
+    // checkTournament = tournament;
     const { username, _id, avatar, profile } = userData;
-    let rooms = [];
-    for await (let r of checkTournament.rooms) {
-      rooms.push(await getCachedGame(r));
-    }
-    rooms = rooms.filter((room) => room);
-    let roomWithSpace = rooms.find(
-      (room) => room.players.length < playerLimit && !room.gamestart
-    );
+    // let rooms = [];
+    // for await (let r of checkTournament.rooms) {
+    //   rooms.push(await getCachedGame(r));
+    // }
+    // rooms = rooms.filter((room) => room);
+    // let roomWithSpace = rooms.find(
+    //   (room) => room.players.length < playerLimit && !room.gamestart
+    // );
 
-    room = roomWithSpace;
+    // room = roomWithSpace;
 
     let roomId;
 
@@ -5361,9 +5753,12 @@ const pushPlayerInRoom = async (
         leavereq: leaveReq,
       };
 
-      const updatedRoom = await roomModel
-        .findOneAndUpdate({ _id: roomId }, payload, { new: true })
-        .populate("tournament");
+      const updatedRoom = await roomModel.findOneAndUpdate(
+        { _id: roomId },
+        payload,
+        { new: true }
+      );
+      // .populate("tournament");
       await setCachedGame(updatedRoom);
       const tournament = await tournamentModel
         .findOneAndUpdate(
@@ -5377,7 +5772,14 @@ const pushPlayerInRoom = async (
           },
           { new: true }
         )
-        .populate("rooms");
+        .lean();
+      // .populate("rooms");
+      let rooms = [];
+      for await (let r of tournament.rooms) {
+        rooms.push(await getCachedGame(r));
+      }
+
+      tournament.rooms = rooms;
 
       if (
         tournament?.tournamentType === "sit&go" &&
@@ -5482,9 +5884,8 @@ const pushPlayerInRoom = async (
         },
         { upsert: true, new: true }
       );
-      const newRoom = await roomModel
-        .findOne({ _id: roomId })
-        .populate("tournament");
+      const newRoom = await roomModel.findOne({ _id: roomId });
+      // .populate("tournament");
       await setCachedGame(newRoom);
     }
     const getAllTournament = await tournamentModel.find({}).populate("rooms");
@@ -5533,6 +5934,10 @@ export const activateTournament = async (io) => {
             checkTournament._id
           );
           for (let room of updatedRooms) {
+            console.log(
+              "room with tournament inactivate tournament",
+              room.tournament
+            );
             preflopround(room, io);
           }
         }
