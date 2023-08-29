@@ -16,7 +16,7 @@ import User from "../landing-server/models/user.model";
 import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
 import { getCachedGame, setCachedGame, deleteCachedGame } from "../redis-cache";
-
+import Queue from "better-queue";
 const gameState = {
   0: "players",
   1: "preflopround",
@@ -25,6 +25,13 @@ const gameState = {
   4: "riverround",
   5: "showdown",
 };
+
+const rearrangeQueue = new Queue(async function (task, cb) {
+  const { roomData, io, tournament, roomId } = task;
+  await elemination(roomData, io);
+  await reArrangeTables(tournament, io, roomId);
+  cb(null, 1);
+});
 
 let gameRestartSeconds = 3000;
 const playerLimit = 9;
@@ -295,7 +302,7 @@ export const preflopround = async (room, io) => {
     }
     console.log(
       "preflop round before update room for new hand tourrnament value",
-      room
+      room._id
     );
 
     await updateRoomForNewHand(room._id, io);
@@ -585,6 +592,7 @@ export const preflopround = async (room, io) => {
           await deductBigBlind();
           await setCachedGame({ ...room1111, tournament: room1111.tournament });
           if (!io.room.find((el) => el.room === room._id.toString())?.preflop) {
+            console.log("game turn timer for room", room1111._id);
             gameTurnTimer(room._id, io);
             let updatedRoom = await getCachedGame(room._id);
             io.in(room._id.toString()).emit("preflopround", updatedRoom);
@@ -1504,6 +1512,8 @@ export const showdown = async (roomid, io) => {
       ...upRoomData,
       showdown: upRoomData.showdown,
       winnerPlayer: winnerPlayers,
+      isGameRunning: false,
+      gamestart: false,
       handWinner,
       isShowdown: true,
       runninground: 5,
@@ -1515,6 +1525,8 @@ export const showdown = async (roomid, io) => {
         showdown: upRoomData.showdown,
         winnerPlayer: winnerPlayers,
         handWinner,
+        isGameRunning: false,
+        gamestart: false,
         isShowdown: true,
         runninground: 5,
       }
@@ -1522,10 +1534,16 @@ export const showdown = async (roomid, io) => {
     // console.log("player after showdwon winner", upRoom.showdown);
     // console.log("game finished");
     setTimeout(async () => {
-      console.log("game IS THIS A TOURNAMENT", upRoom.tournament);
+      console.log("showdown room ==>", upRoom._id);
       if (upRoom.tournament) {
         await elemination(upRoom, io);
         await reArrangeTables(upRoom.tournament, io, upRoom._id);
+        rearrangeQueue.push({
+          roomData: upRoom,
+          io,
+          tounament: upRoom.tournament,
+          roomId: upRoom._id,
+        });
       } else {
         await updateRoomForNewHand(roomid, io);
         let updatedRoomPlayers = await getCachedGame(roomid);
@@ -1843,6 +1861,7 @@ export const updateRoomForNewHand = async (roomid, io) => {
 export const elemination = async (roomData, io) => {
   try {
     // console.log("elemination runs for at starting ===>", roomData.tournament);
+    roomData = await getCachedGame(roomData._id);
     let eleminated_players = roomData.eleminated;
     let noOfElemination = 0;
     let newHandPlayer = [];
@@ -3361,9 +3380,16 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
     gameRestartSeconds = 5000;
     console.log("game finished");
     setTimeout(async () => {
+      console.log("winner before showdown room ==>", roomData._id);
       if (updatedRoom?.tournament) {
-        await elemination(roomData, io);
-        await reArrangeTables(updatedRoom.tournament, io, updatedRoom._id);
+        // await elemination(roomData, io);
+        // await reArrangeTables(updatedRoom.tournament, io, updatedRoom._id);
+        rearrangeQueue.push({
+          roomData,
+          io,
+          tounament: updatedRoom.tournament,
+          roomId: updatedRoom._id,
+        });
       } else {
         await updateRoomForNewHand(roomid, io);
         let updatedRoomPlayers = await getCachedGame(roomid);
@@ -3745,12 +3771,12 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
 
       for await (let newRoom of OtherRoom) {
         newRoom = await getCachedGame(newRoom._id);
-        console.log("new room ==>", newRoom);
+        console.log("new room ==>", newRoom._id);
         if (noOfPlayersToMove) {
           let playersWaitingtoPlayInNewRoom = newRoom.players;
           const totalPlayersInNewRoom = newRoom.players.length;
 
-          console.log("cached room ==>", playersWaitingtoPlayInNewRoom);
+          // console.log("cached room ==>", playersWaitingtoPlayInNewRoom);
 
           console.log(
             "totalPlayersInNewRoom ===>",
@@ -3797,11 +3823,14 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
               }
             );
 
-            if (!updatedNewRoom.gamestart) {
+            if (!newRoom.gamestart) {
               await preflopround(newRoom, io);
             }
           }
         }
+        // if (!newRoom.isGameRunning) {
+        //   preflopround(newRoom, io);
+        // }
       }
 
       // console.log("user ids to  move ==>", userIds);
