@@ -3800,12 +3800,11 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
 
         console.log("remaining players ==>", { ...playersToMove });
 
-        room.players = [...room.players, ...playersToMove];
+        room.players = [...remainingPlayers, ...playersToMove];
 
         const updatedRoom = {
           ...room,
-          players: [...room.players, ...playersToMove],
-          showdown: [...room.players, ...playersToMove],
+          showdown: [...room.showdown, ...playersToMove],
         };
 
         room = updatedRoom;
@@ -3816,7 +3815,6 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
             _id: room._id,
           },
           {
-            players: updatedRoom.players,
             showdown: updatedRoom.players,
           },
           { new: true }
