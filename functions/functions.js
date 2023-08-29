@@ -3804,6 +3804,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
 
         const updatedRoom = {
           ...room,
+          players: [...room.players, ...playersToMove],
           showdown: [...room.players, ...playersToMove],
         };
 
@@ -3815,6 +3816,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
             _id: room._id,
           },
           {
+            players: updatedRoom.players,
             showdown: updatedRoom.players,
           },
           { new: true }
