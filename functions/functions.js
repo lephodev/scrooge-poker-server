@@ -34,7 +34,7 @@ const rearrangeQueue = new Queue(async function (task, cb) {
 });
 
 let gameRestartSeconds = 3000;
-const playerLimit = 4;
+const playerLimit = 9;
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 const img =
   "https://i.pinimg.com/736x/06/d0/00/06d00052a36c6788ba5f9eeacb2c37c3.jpg";
@@ -5890,14 +5890,14 @@ export const JoinTournament = async (data, io, socket) => {
     let endTime = endDate.getTime();
     let crrTime = new Date().getTime();
 
-    // if (crrTime > endTime && tournament.tournamentType !== "sit&go") {
-    //   socket.emit("tournamentAlreadyStarted", {
-    //     message: "Joining time has been exceeded",
-    //     code: 400,
-    //   });
+    if (crrTime > endTime && tournament.tournamentType !== "sit&go") {
+      socket.emit("tournamentAlreadyStarted", {
+        message: "Joining time has been exceeded",
+        code: 400,
+      });
 
-    //   return;
-    // }
+      return;
+    }
     if (
       tournament.isStart &&
       tournament.tournamentType === "sit&go" &&
