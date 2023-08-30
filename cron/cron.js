@@ -10,7 +10,7 @@ const returnCron = async (io) => {
   const job1 = new CronJob("*    *    *    *    *", async () => {
     await gameService.sendAcknowledgementForJoinTournament(io);
     await activateTournament(io);
-    // await gameService.checkJoinTimeExceeded(io);
+    await gameService.checkJoinTimeExceeded(io);
   });
   job1.start();
 };
