@@ -5919,7 +5919,7 @@ export const JoinTournament = async (data, io, socket) => {
       });
     }
 
-    console.log("rooms ==>", rooms);
+    // console.log("rooms ==>", rooms);
 
     if (
       rooms.find((room) =>
@@ -6134,14 +6134,14 @@ const pushPlayerInRoom = async (
         // return;
       }
 
-      console.log("updatedRoom after joining player ==>", updatedRoom);
+      // console.log("updatedRoom after joining player ==>", updatedRoom);
       if (
         tournament?.tournamentType !== "sit&go" &&
         tournament?.isStart &&
         updatedRoom?.players.length > 1 &&
         !updatedRoom.gamestart
       ) {
-        console.log("started preflop round");
+        // console.log("started preflop round");
         preflopround(updatedRoom, io);
       }
     } else {
