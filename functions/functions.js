@@ -2212,7 +2212,10 @@ export const distributeTournamentPrize = async (
             prevTicket: parseFloat(user?.ticket),
             updatedTicket: parseFloat(user?.ticket),
             prevWallet: parseFloat(user?.wallet),
-            updatedWallet: parseFloat(user?.wallet),
+            updatedWallet:
+              player.amount > 0
+                ? parseFloat(user?.wallet) + player.amount
+                : parseFloat(user?.wallet),
             prevGoldCoin: parseFloat(user?.goldCoin),
             updatedGoldCoin: parseFloat(user?.goldCoin),
             transactionType: "poker tournament",
@@ -2247,7 +2250,10 @@ export const distributeTournamentPrize = async (
                 prevTicket: parseFloat(user?.ticket),
                 updatedTicket: parseFloat(user?.ticket),
                 prevWallet: parseFloat(user?.wallet),
-                updatedWallet: parseFloat(user?.wallet),
+                updatedWallet:
+                  player.amount > 0
+                    ? parseFloat(user?.wallet) + player.amount
+                    : parseFloat(user?.wallet),
                 prevGoldCoin: parseFloat(user?.goldCoin),
                 updatedGoldCoin: parseFloat(user?.goldCoin),
                 transactionType: "poker tournament",
@@ -2281,7 +2287,10 @@ export const distributeTournamentPrize = async (
                 prevTicket: parseFloat(user?.ticket),
                 updatedTicket: parseFloat(user?.ticket),
                 prevWallet: parseFloat(user?.wallet),
-                updatedWallet: parseFloat(user?.wallet),
+                updatedWallet:
+                  player.amount > 0
+                    ? parseFloat(user?.wallet) + player.amount
+                    : parseFloat(user?.wallet),
                 prevGoldCoin: parseFloat(user?.goldCoin),
                 updatedGoldCoin: parseFloat(user?.goldCoin),
                 transactionType: "poker tournament",
@@ -5077,7 +5086,8 @@ const createTransactionFromUsersArray = async (
           transactionDetails: {},
           transactionType: "poker",
           prevWallet: usersWalltAmt[i],
-          updatedWallet: updatedWallet,
+          updatedWallet:
+            ticketAmt > 0 ? updatedWallet + ticketAmt : updatedWallet,
           prevTicket: userTickets[i],
           updatedTicket: updatedTicket,
           prevGoldCoin: prevGoinCoin,
@@ -5242,7 +5252,10 @@ export const leaveApiCall = async (room, userId, io) => {
           query = { goldCoin: el.wallet };
         } else {
           query = {
-            wallet: room.gameType !== "poker-tournament" ? crrntWallt : 0,
+            wallet:
+              room.gameType !== "poker-tournament"
+                ? crrntWallt + totalTicketWon
+                : 0,
             ticket: totalTicketWon,
           };
         }
@@ -5292,7 +5305,10 @@ export const leaveApiCall = async (room, userId, io) => {
             amount: parseFloat(tournament.tournamentFee),
             transactionDetails: {},
             prevWallet: parseFloat(updateData?.wallet),
-            updatedWallet: updateData?.wallet,
+            updatedWallet:
+              tournament.tournamentFee > 0
+                ? updateData?.wallet + tournament.tournamentFee
+                : updateData?.wallet,
             prevTicket: parseFloat(updateData?.ticket),
             updatedTicket: parseFloat(updateData?.ticket),
             prevGoldCoin: parseFloat(updateData?.goldCoin),
