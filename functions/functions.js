@@ -286,7 +286,7 @@ export const preflopPlayerPush = async (players, room) => {
       gamestart: roomData.gamestart,
       isGameRunning: roomData.isGameRunning,
       pause: roomData.pause });
-      console.log("rooom data preflop player push ==>",await getCachedGame(roomData._id));
+      // console.log("rooom data preflop player push ==>",await getCachedGame(roomData._id));
   } catch (error) {
     console.log("error in preflopplayer push function =>", error);
   }
@@ -3605,7 +3605,7 @@ export const getPlayerwallet = async (roomData, playerid) => {
 export const reArrangeTables = async (tournament, io, roomId) => {
   try {
     console.log("tournamentId", tournament);
-    let tournamentId = tournament?._id; //? tournament?._id : tournament;
+    let tournamentId = tournament?._id ? tournament?._id : tournament;
     const tournamentData = await tournamentModel
       .findOne(
         { _id: tournamentId },
@@ -5501,7 +5501,7 @@ export const checkForGameTable = async (data, socket, io) => {
       });
     }
 
-    console.log("gameee =>>", game);
+    // console.log("gameee =>>", game);
 
     if(game?.tournament && !game?.players.find((el) => el?.userid?.toString() === userId?.toString())){
       return socket.emit("tablenotFound", {
