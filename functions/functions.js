@@ -2641,6 +2641,7 @@ export const doLeaveTable = async (data, io, socket) => {
   try {
     if (isValid) {
       let roomdata = await getCachedGame(tableId);
+      // console.log("roomdata ==>",roomdata);
       roomdata.players.forEach((pl) => {
         if (pl.id === userid) {
           pl.playing = false;
@@ -5500,6 +5501,8 @@ export const checkForGameTable = async (data, socket, io) => {
       });
     }
 
+    console.log("gameee =>>", game);
+
     if(game?.tournament && !game?.players.find((el) => el?.userid?.toString() === userId?.toString())){
       return socket.emit("tablenotFound", {
         message: "tablenotFound",
@@ -5520,7 +5523,7 @@ export const checkForGameTable = async (data, socket, io) => {
       });
     }
     const { players, watchers } = game;
-    if (watchers.find((el) => el?.toString() === userId?.toString())) {
+        if (watchers.find((el) => el?.toString() === userId?.toString())) {
       addUserInSocket(io, socket, gameId, userId);
       socket.join(gameId);
       socket.emit("newWatcherJoin", {
@@ -6164,7 +6167,7 @@ const pushPlayerInRoom = async (
       });
 
       let payload = {
-        // ...room,
+        ...room,
         _id: room._id,
         players,
         tournament: tournamentId,
@@ -6301,9 +6304,10 @@ const pushPlayerInRoom = async (
         },
         { upsert: true, new: true }
       );
-      const newRoom = await roomModel.findOne({ _id: roomId });
+      const newRoom = await roomModel.findOne({ _id: roomId }).lean();
       // .populate("tournament");
-      await setCachedGame(newRoom);
+      await setCachedGame({...newRoom});
+      // console.log("newRoom ==>", await getCachedGame(newRoom._id));
     }
     const getAllTournament = await tournamentModel.find({}).populate("rooms");
     io.emit("updatePlayerList", getAllTournament);

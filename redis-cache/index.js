@@ -11,7 +11,7 @@ export const getCachedGame = async (id) => {
 
 export const setCachedGame = async (updatedValues) => {
     const updatedGame = await getCachedGame(updatedValues._id);
-    await redisClient.set(updatedValues._id.toString(), JSON.stringify({...updatedGame, ...updatedValues}));
+    await redisClient.set(updatedValues._id.toString(), JSON.stringify(updatedGame ? {...updatedGame, ...updatedValues} : updatedValues));
 }
   
 export const deleteCachedGame = async (id) => {
