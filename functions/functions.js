@@ -6163,19 +6163,20 @@ const pushPlayerInRoom = async (
         away: false,
       });
 
-      const payload = {
+      let payload = {
         // ...room,
         _id: room._id,
         players,
         tournament: tournamentId,
         leavereq: leaveReq,
       };
-
+      
+      await setCachedGame(payload);
+      payload = await getCachedGame(payload._id);
       const updatedRoom = await roomModel
         .findOneAndUpdate({ _id: roomId }, payload, { new: true })
         .populate("tournament");
       // .populate("tournament");
-      await setCachedGame(payload);
       const tournament = await tournamentModel
         .findOneAndUpdate(
           { _id: tournamentId },
