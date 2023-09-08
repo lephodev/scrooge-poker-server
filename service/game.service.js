@@ -345,7 +345,7 @@ const checkJoinTimeExceeded = async (io) => {
       tournamentType: "Multi-Table",
       joinTimeExceeded: false,
     });
-    console.log("all tournaments :", allTournaments);
+    // console.log("all tournaments :", allTournaments);
     if (allTournaments.length) {
       console.log("tournament alllllllllllllll");
       for await (const tournament of allTournaments) {
