@@ -4106,7 +4106,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
 
           room = updatedRoom;
 
-          await setCachedGame({ _id: updatedRoom._id, showdown: [...remainingPlayers, ...playersToMove], tournament: tournamentId });
+          await setCachedGame({ _id: updatedRoom._id, players: room.players, showdown: [...remainingPlayers, ...playersToMove], tournament: tournamentId });
           await roomModel.findOneAndUpdate(
             {
               _id: room._id,
