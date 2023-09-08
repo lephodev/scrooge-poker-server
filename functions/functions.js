@@ -5503,11 +5503,7 @@ export const checkForGameTable = async (data, socket, io) => {
 
     // console.log("gameee =>>", game);
 
-    if(game?.tournament && !game?.players.find((el) => el?.userid?.toString() === userId?.toString())){
-      return socket.emit("tablenotFound", {
-        message: "tablenotFound",
-      });
-    }
+    
 
     const user = await userService.getUserById(userId);
 
@@ -5534,6 +5530,12 @@ export const checkForGameTable = async (data, socket, io) => {
       return;
     }
 
+    if(game?.tournament && !game?.players.find((el) => el?.userid?.toString() === userId?.toString())){
+      return socket.emit("tablenotFound", {
+        message: "tablenotFound",
+      });
+    }
+
     if (players.find((el) => el?.userid?.toString() === userId?.toString())) {
       addUserInSocket(io, socket, gameId, userId);
       socket.join(gameId);
@@ -5546,6 +5548,7 @@ export const checkForGameTable = async (data, socket, io) => {
       io.in(gameId).emit("updateGame", { game });
       return;
     }
+
     if (game.players.length >= playerLimit) {
       return socket.emit("tablefull", { message: "This table is full." });
     }
