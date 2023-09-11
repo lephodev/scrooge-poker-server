@@ -2406,7 +2406,7 @@ export const doPauseGame = async (data, io, socket) => {
       io.in(gameData._id.toString()).emit("roomPaused", {
         pause: gameData.pause,
       });
-      await setCachedGame({_id: roomData._id, pause: gameData.pause});
+      await setCachedGame({_id: gameData._id, pause: gameData.pause});
       roomModel.updateOne({ _id: roomid }, { pause: true });
     } else {
       socket.emit("actionError", { code: 400, msg: "Bad request" });
