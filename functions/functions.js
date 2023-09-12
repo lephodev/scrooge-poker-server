@@ -4014,6 +4014,14 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
           await deleteCachedGame(room._id);
           await roomModel.deleteOne({ _id: room._id });
 
+          console.log(
+            "now how many rooms ==>",
+            updatedTournament.rooms.length,
+            updatedTournament.destroyedRooms.length,
+            updatedTournament.rooms.length -
+              updatedTournament.destroyedRooms.length
+          );
+
           if (
             updatedTournament.rooms.length -
               updatedTournament.destroyedRooms.length ===
