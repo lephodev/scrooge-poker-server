@@ -4031,7 +4031,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
               updatedTournament.destroyedRooms.indexOf(el)
             )[0];
             console.log("running room ID ==>", runningRoomId);
-            io.in(room._id.toString()).emit("tournamentLastRoom");
+            io.in(runningRoomId.toString()).emit("tournamentLastRoom");
           }
         }
       }
