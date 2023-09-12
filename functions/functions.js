@@ -5611,7 +5611,7 @@ export const checkForGameTable = async (data, socket, io) => {
           player.playing = true;
         }
       });
-      await setCachedGame({ _id: game._id, players: game.players });
+      await setCachedGame({ _id: gameId, players: game.players });
       io.in(gameId).emit("updateGame", { game });
       return;
     }
