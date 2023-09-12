@@ -4014,14 +4014,6 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
           await deleteCachedGame(room._id);
           await roomModel.deleteOne({ _id: room._id });
 
-          console.log(
-            "now how many rooms ==>",
-            updatedTournament.rooms.length,
-            updatedTournament.destroyedRooms.length,
-            updatedTournament.rooms.length -
-              updatedTournament.destroyedRooms.length
-          );
-
           if (
             updatedTournament.rooms.length -
               updatedTournament.destroyedRooms.length ===
@@ -4030,8 +4022,9 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
             const runningRoomId = updatedTournament.rooms.filter((el) =>
               updatedTournament.destroyedRooms.indexOf(el)
             )[0];
-            console.log("running room ID ==>", runningRoomId);
-            io.in(runningRoomId.toString()).emit("tournamentLastRoom");
+            setTimeout(() => {
+              io.in(runningRoomId.toString()).emit("tournamentLastRoom");
+            }, 10000);
           }
         }
       }
