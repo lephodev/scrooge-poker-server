@@ -2668,6 +2668,20 @@ export const doLeaveTable = async (data, io, socket) => {
         roomid = roomdata._id;
         if (roomdata?.tournament && roomdata?.isGameRunning) {
           return socket.emit("tournamentLeave");
+        }else if(roomdata?.tournament){
+          const tournament = await tournamentModel.findOne({
+            _id: roomdata?.tournament?._id || roomdata?.tournament,
+          }).lean();
+
+          const tournamentPlayers = tournament?.tournamentPlayers?.filter(el=> (el._id.toString() !== userid.toString()) );
+
+          console.log("tournamentPlayers ==>", userid, tournamentPlayers);
+
+          await tournamentModel.updateOne({
+            _id: roomdata?.tournament?._id || roomdata?.tournament,
+          }, {
+            tournamentPlayers: tournamentPlayers
+          });
         }
 
         if (roomdata?.hostId?.toString() === userid?.toString()) {
@@ -6259,6 +6273,11 @@ const pushPlayerInRoom = async (
               totalJoinPlayer: 1,
               prizePool: checkTournament?.tournamentFee,
             },
+            $push: {
+              tournamentPlayers: {
+                username, _id, avatar, profile
+              }
+            }
           },
           { new: true }
         )
@@ -6370,7 +6389,15 @@ const pushPlayerInRoom = async (
             totalJoinPlayer: 1,
             prizePool: checkTournament?.tournamentFee,
           },
-          $push: { rooms: roomId },
+          $push: { 
+            rooms: roomId, 
+            tournamentPlayers: {
+              username, 
+              _id,
+              avatar, 
+              profile
+            } 
+        },
         },
         { upsert: true, new: true }
       );

@@ -35,6 +35,7 @@ const tournamentSchema = new Schema(
     joinTime: { type: Number, default: 0 },
     joinTimeExceeded: { type: Boolean, default: false },
     actionTime: { type: Number, default: 20 },
+    tournamentPlayers: { type: Array, default: [] },
   },
   { timestamps: true }
 );
