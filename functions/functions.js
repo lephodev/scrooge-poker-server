@@ -5141,7 +5141,7 @@ export const doLeaveWatcher = async (data, io, socket) => {
       room.watchers = room.watchers.filter((wt) => wt.userid !== userId);
 
       if (room) {
-        io.in(_id.toString()).emit("updatePlayerList", room);
+        io.in(_id.toString()).emit("updatePlayerList", room.reverse());
         setTimeout(() => {
           socket.emit("reload");
         }, 30000);
