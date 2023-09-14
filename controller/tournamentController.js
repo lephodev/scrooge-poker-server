@@ -12,7 +12,7 @@ const img =
 
 export const getAllGame = async (req, res) => {
   try {
-    const getAllTournament = await tournamentModel.find({}).populate("rooms");
+    const getAllTournament = await tournamentModel.find({}).sort({_id: -1}).populate("rooms");
     return res.status(200).send({ tournaments: getAllTournament || [] });
   } catch (error) {
     console.log("getAllGame", error);
