@@ -6379,7 +6379,7 @@ const pushPlayerInRoom = async (
       await setCachedGame({ ...newRoom });
       // console.log("newRoom ==>", await getCachedGame(newRoom._id));
     }
-    const getAllTournament = await tournamentModel.find({}).populate("rooms");
+    const getAllTournament = await tournamentModel.find({}).sort({_id: -1}).populate("rooms");
     io.emit("updatePlayerList", getAllTournament);
   } catch (error) {
     console.log("error in push player in room function =>", error);
@@ -6434,7 +6434,7 @@ export const activateTournament = async (io) => {
         }
       }
     }
-    const getAllTournament = await tournamentModel.find({}).populate("rooms");
+    const getAllTournament = await tournamentModel.find({}).sort({_id: -1}).populate("rooms");
     io.emit("updatePlayerList", getAllTournament);
   } catch (error) {
     console.log("Error in activateTournament", error);
