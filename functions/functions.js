@@ -303,6 +303,10 @@ export const preflopround = async (room, io) => {
       return;
     }
 
+    
+
+    
+
     if (
       io.room.find((el) => el.room.toString() === room._id.toString())?.preflop
     ) {
@@ -321,6 +325,29 @@ export const preflopround = async (room, io) => {
     // console.log("p/reflop round after update room for new hand", room);
     // console.log("io", io);
     // console.log("afetr update roomfor new hand", room.players);
+
+    if(room.tournament){
+
+      const updatedTournament = await tournamentModel.findOne({
+        _id: room.tournament.id || room.tournament
+      })
+
+      if (
+        updatedTournament && !updatedTournament.lastRoom && updatedTournament.destroyedRooms.length &&
+        updatedTournament.rooms.length -
+          updatedTournament.destroyedRooms.length ===
+        1
+      ) {
+        await tournamentModel.updateOne({
+          _id: updatedTournament._id
+        }, {
+          lastRoom: true
+        });
+        setTimeout(() => {
+          io.in(room._id.toString()).emit("tournamentLastRoom");
+        }, 6000);
+      }
+    }
 
     let playingPlayer = room?.players?.filter(
       (el) => el.playing && el.wallet > 0
@@ -4028,18 +4055,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
           await deleteCachedGame(room._id);
           await roomModel.deleteOne({ _id: room._id });
 
-          if (
-            updatedTournament.rooms.length -
-              updatedTournament.destroyedRooms.length ===
-            1
-          ) {
-            const runningRoomId = updatedTournament.rooms.filter((el) =>
-              updatedTournament.destroyedRooms.indexOf(el)
-            )[0];
-            setTimeout(() => {
-              io.in(runningRoomId.toString()).emit("tournamentLastRoom");
-            }, 10000);
-          }
+          
         }
       }
     } else {
