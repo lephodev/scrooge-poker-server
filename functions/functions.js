@@ -333,7 +333,7 @@ export const preflopround = async (room, io) => {
       })
 
       if (
-        updatedTournament && !updatedTournament.lastRoom &&
+        updatedTournament && !updatedTournament.lastRoom && updatedTournament.destroyedRooms.length &&
         updatedTournament.rooms.length -
           updatedTournament.destroyedRooms.length ===
         1
