@@ -342,7 +342,7 @@ export const preflopround = async (room, io) => {
         // setTimeout(() => {
         io.in(room._id.toString()).emit("tournamentLastRoom");
         // }, 6000);
-        await new Promise(r => setTimeout(r, 6000)); //Applied sleep timer for 6 seconds
+        await new Promise(r => setTimeout(r, 8000)); //Applied sleep timer for 6 seconds
     //   }
     // }
 
