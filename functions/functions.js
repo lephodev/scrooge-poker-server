@@ -2265,7 +2265,7 @@ export const distributeTournamentPrize = async (
             prevWallet: parseFloat(user?.wallet),
             updatedWallet:
               player.amount > 0
-                ? parseFloat(user?.wallet) + player.amount
+                ? parseFloat(user?.wallet)
                 : parseFloat(user?.wallet),
             prevGoldCoin: parseFloat(user?.goldCoin),
             updatedGoldCoin: parseFloat(user?.goldCoin),
@@ -2303,7 +2303,7 @@ export const distributeTournamentPrize = async (
                 prevWallet: parseFloat(user?.wallet),
                 updatedWallet:
                   player.amount > 0
-                    ? parseFloat(user?.wallet) + player.amount
+                    ? parseFloat(user?.wallet)
                     : parseFloat(user?.wallet),
                 prevGoldCoin: parseFloat(user?.goldCoin),
                 updatedGoldCoin: parseFloat(user?.goldCoin),
@@ -2340,7 +2340,7 @@ export const distributeTournamentPrize = async (
                 prevWallet: parseFloat(user?.wallet),
                 updatedWallet:
                   player.amount > 0
-                    ? parseFloat(user?.wallet) + player.amount
+                    ? parseFloat(user?.wallet)
                     : parseFloat(user?.wallet),
                 prevGoldCoin: parseFloat(user?.goldCoin),
                 updatedGoldCoin: parseFloat(user?.goldCoin),
