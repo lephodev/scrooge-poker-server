@@ -2242,7 +2242,7 @@ export const distributeTournamentPrize = async (
         if (player.userId) {
           const user = await userModel.findOneAndUpdate(
             { _id: player.userId },
-            { $inc: { ticket: player.amount } },
+            { $inc: { wallet: player.amount } },
             { new: true }
           );
 
@@ -2279,7 +2279,7 @@ export const distributeTournamentPrize = async (
             for await (let userId of player?.userIds) {
               const user = await userModel.findOneAndUpdate(
                 { _id: userId },
-                { $inc: { ticket: player.amount } },
+                { $inc: { wallet: player.amount } },
                 { new: true }
               );
 
@@ -2317,7 +2317,7 @@ export const distributeTournamentPrize = async (
             for await (let userId of player?.userIds) {
               const user = await userModel.findOneAndUpdate(
                 { _id: userId },
-                { $inc: { ticket: player.amount } },
+                { $inc: { wallet: player.amount } },
                 { new: true }
               );
               const { _id, username, email, firstName, lastName, profile } =
