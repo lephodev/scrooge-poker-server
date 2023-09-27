@@ -318,9 +318,33 @@ export const preflopround = async (room, io) => {
 
     room = await getCachedGame(room._id);
 
-    // console.log("p/reflop round after update room for new hand", room);
-    // console.log("io", io);
-    // console.log("afetr update roomfor new hand", room.players);
+    console.log("p/reflop round after update room for new hand", room);
+    console.log("io", io);
+    console.log("afetr update roomfor new hand", room.players);
+
+    if(room.tournament){
+
+      const updatedTournament = await tournamentModel.findOne({
+        _id: room.tournament.id || room.tournament
+      })
+
+      if (
+        updatedTournament && !updatedTournament.lastRoom && updatedTournament.destroyedRooms.length &&
+        updatedTournament.rooms.length -
+          updatedTournament.destroyedRooms.length ===
+        1
+      ) {
+        await tournamentModel.updateOne({
+          _id: updatedTournament._id
+        }, {
+          lastRoom: true
+        });
+        // setTimeout(() => {
+        io.in(room._id.toString()).emit("tournamentLastRoom");
+        // }, 6000);
+        await new Promise(r => setTimeout(r, 8000)); //Applied sleep timer for 6 seconds
+      }
+    }
 
     let playingPlayer = room?.players?.filter(
       (el) => el.playing && el.wallet > 0
@@ -2218,7 +2242,7 @@ export const distributeTournamentPrize = async (
         if (player.userId) {
           const user = await userModel.findOneAndUpdate(
             { _id: player.userId },
-            { $inc: { ticket: player.amount } },
+            { $inc: { wallet: player.amount } },
             { new: true }
           );
 
@@ -2241,7 +2265,7 @@ export const distributeTournamentPrize = async (
             prevWallet: parseFloat(user?.wallet),
             updatedWallet:
               player.amount > 0
-                ? parseFloat(user?.wallet) + player.amount
+                ? parseFloat(user?.wallet)
                 : parseFloat(user?.wallet),
             prevGoldCoin: parseFloat(user?.goldCoin),
             updatedGoldCoin: parseFloat(user?.goldCoin),
@@ -2255,7 +2279,7 @@ export const distributeTournamentPrize = async (
             for await (let userId of player?.userIds) {
               const user = await userModel.findOneAndUpdate(
                 { _id: userId },
-                { $inc: { ticket: player.amount } },
+                { $inc: { wallet: player.amount } },
                 { new: true }
               );
 
@@ -2279,7 +2303,7 @@ export const distributeTournamentPrize = async (
                 prevWallet: parseFloat(user?.wallet),
                 updatedWallet:
                   player.amount > 0
-                    ? parseFloat(user?.wallet) + player.amount
+                    ? parseFloat(user?.wallet)
                     : parseFloat(user?.wallet),
                 prevGoldCoin: parseFloat(user?.goldCoin),
                 updatedGoldCoin: parseFloat(user?.goldCoin),
@@ -2293,7 +2317,7 @@ export const distributeTournamentPrize = async (
             for await (let userId of player?.userIds) {
               const user = await userModel.findOneAndUpdate(
                 { _id: userId },
-                { $inc: { ticket: player.amount } },
+                { $inc: { wallet: player.amount } },
                 { new: true }
               );
               const { _id, username, email, firstName, lastName, profile } =
@@ -2316,7 +2340,7 @@ export const distributeTournamentPrize = async (
                 prevWallet: parseFloat(user?.wallet),
                 updatedWallet:
                   player.amount > 0
-                    ? parseFloat(user?.wallet) + player.amount
+                    ? parseFloat(user?.wallet)
                     : parseFloat(user?.wallet),
                 prevGoldCoin: parseFloat(user?.goldCoin),
                 updatedGoldCoin: parseFloat(user?.goldCoin),
@@ -2668,6 +2692,20 @@ export const doLeaveTable = async (data, io, socket) => {
         roomid = roomdata._id;
         if (roomdata?.tournament && roomdata?.isGameRunning) {
           return socket.emit("tournamentLeave");
+        }else if(roomdata?.tournament){
+          const tournament = await tournamentModel.findOne({
+            _id: roomdata?.tournament?._id || roomdata?.tournament,
+          }).lean();
+
+          const tournamentPlayers = tournament?.tournamentPlayers?.filter(el=> (el._id.toString() !== userid.toString()) );
+
+          console.log("tournamentPlayers ==>", userid, tournamentPlayers);
+
+          await tournamentModel.updateOne({
+            _id: roomdata?.tournament?._id || roomdata?.tournament,
+          }, {
+            tournamentPlayers: tournamentPlayers
+          });
         }
 
         if (roomdata?.hostId?.toString() === userid?.toString()) {
@@ -4014,18 +4052,7 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
           await deleteCachedGame(room._id);
           await roomModel.deleteOne({ _id: room._id });
 
-          if (
-            updatedTournament.rooms.length -
-              updatedTournament.destroyedRooms.length ===
-            1
-          ) {
-            const runningRoomId = updatedTournament.rooms.filter((el) =>
-              updatedTournament.destroyedRooms.indexOf(el)
-            )[0];
-            setTimeout(() => {
-              io.in(runningRoomId.toString()).emit("tournamentLastRoom");
-            }, 10000);
-          }
+          
         }
       }
     } else {
@@ -5141,7 +5168,7 @@ export const doLeaveWatcher = async (data, io, socket) => {
       room.watchers = room.watchers.filter((wt) => wt.userid !== userId);
 
       if (room) {
-        io.in(_id.toString()).emit("updatePlayerList", room);
+        io.in(_id.toString()).emit("updatePlayerList", room.reverse());
         setTimeout(() => {
           socket.emit("reload");
         }, 30000);
@@ -5611,7 +5638,7 @@ export const checkForGameTable = async (data, socket, io) => {
           player.playing = true;
         }
       });
-      await setCachedGame({ _id: game._id, players: game.players });
+      await setCachedGame({ _id: gameId, players: game.players });
       io.in(gameId).emit("updateGame", { game });
       return;
     }
@@ -6259,6 +6286,11 @@ const pushPlayerInRoom = async (
               totalJoinPlayer: 1,
               prizePool: checkTournament?.tournamentFee,
             },
+            $push: {
+              tournamentPlayers: {
+                username, _id, avatar, profile
+              }
+            }
           },
           { new: true }
         )
@@ -6370,7 +6402,15 @@ const pushPlayerInRoom = async (
             totalJoinPlayer: 1,
             prizePool: checkTournament?.tournamentFee,
           },
-          $push: { rooms: roomId },
+          $push: { 
+            rooms: roomId, 
+            tournamentPlayers: {
+              username, 
+              _id,
+              avatar, 
+              profile
+            } 
+        },
         },
         { upsert: true, new: true }
       );
@@ -6379,7 +6419,7 @@ const pushPlayerInRoom = async (
       await setCachedGame({ ...newRoom });
       // console.log("newRoom ==>", await getCachedGame(newRoom._id));
     }
-    const getAllTournament = await tournamentModel.find({}).populate("rooms");
+    const getAllTournament = await tournamentModel.find({}).sort({_id: -1}).populate("rooms");
     io.emit("updatePlayerList", getAllTournament);
   } catch (error) {
     console.log("error in push player in room function =>", error);
@@ -6434,7 +6474,7 @@ export const activateTournament = async (io) => {
         }
       }
     }
-    const getAllTournament = await tournamentModel.find({}).populate("rooms");
+    const getAllTournament = await tournamentModel.find({}).sort({_id: -1}).populate("rooms");
     io.emit("updatePlayerList", getAllTournament);
   } catch (error) {
     console.log("Error in activateTournament", error);
