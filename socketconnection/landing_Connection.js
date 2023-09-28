@@ -10,7 +10,7 @@ const connetToLanding = (pokerSocket) => {
     rejectUnauthorized: false,
   });
   socket.on("connect", () => {
-    console.log("conected to landing server server");
+    console.log("conected to landing server server", socket.user);
   });
 
   // socket.on("tournamentAction", async (data) => {
