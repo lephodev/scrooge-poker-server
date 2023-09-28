@@ -26,6 +26,7 @@ import { createClient } from "redis";
 import tournamentModel from "./models/tournament";
 import logger from "./landing-server/config/logger";
 import { getAllKeysAndValues, getCachedGame } from "./redis-cache";
+import socketsAuthentication from "./landing-server/middlewares/socketsMiddleware.js";
 
 let app = express();
 dotenv.config();
@@ -50,6 +51,20 @@ app.use(
 const io = socket(server, {
   pingInterval: 10000,
   pingTimeout: 5000,
+});
+
+io.use((socket, next) => {
+  // Middleware logic here
+  // You can access socket.request and socket.handshake to inspect the request and handshake data.
+  socketsAuthentication(socket.handshake).then(resp=>{
+    socket.user = {
+      userId: resp.userId, 
+    }
+    return next();
+  }).catch(err=>{
+    next(new Error('Authentication failed'));
+    return;
+  });
 });
 
 app.use((req, _, next) => {

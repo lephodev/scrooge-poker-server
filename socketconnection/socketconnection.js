@@ -38,6 +38,7 @@ import Queue from "better-queue";
 import { refillWallet } from "../controller/pokerController";
 import { connetToLanding, landingSocket } from "./landing_Connection";
 import lock from "async-lock";
+import User from "../landing-server/models/user.model";
 
 const convertMongoId = (id) => mongoose.Types.ObjectId(id);
 
@@ -56,13 +57,18 @@ let returnSocket = (io) => {
   io.room = [];
   io.on("connection", async (socket) => {
     connetToLanding(socket);
-    console.log("sockket connecteds");
+    console.log("sockket connecteds", socket.user);
     socket.on("room", (roomData) => {
       socket.join(roomData.roomid);
       socket.emit("welcome", { msg: "hello welcome to socket.io" });
     });
+
     socket.on("checkTable", async (data) => {
       try {
+        data = {
+          ...data,
+          userId: socket.user.userId
+        }
         await checkForGameTable(data, socket, io);
       } catch (err) {
         console.log("Error in checkTable =>", err.message);
@@ -70,6 +76,10 @@ let returnSocket = (io) => {
     });
 
     socket.on("joinGame", async (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
       await joinRequest(data, socket, io);
     });
 
@@ -82,19 +92,41 @@ let returnSocket = (io) => {
     });
 
     socket.on("leaveWatcherJoinPlayer", async (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
       await doLeaveWatcher(data, io, socket);
       await joinRequest(data, socket, io);
     });
 
     socket.on("joinWatcher", async (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
       await joinWatcherRequest(data, socket, io);
     });
 
     socket.on("newBet", async (data) => {
+      const user = await User.findOne({
+        _id: socket.user.userId
+      });
+      data = {
+        ...data,
+        user
+      }
       await handleNewBet(data, socket, io);
     });
 
     socket.on("acceptBet", async (data) => {
+      const betAcceptBy = await User.findOne({
+        _id: socket.user.userId
+      });
+      data = {
+        ...data,
+        betAcceptBy
+      }
       await acceptBet(data, socket, io);
     });
 
@@ -111,30 +143,58 @@ let returnSocket = (io) => {
     });
 
     socket.on("dofold", async (data) => {
+      data = {
+        ...data,
+        userid: socket.user.userId
+      }
       await socketDoFold(data, io, socket);
     });
 
     socket.on("docall", async (data) => {
+      data = {
+        ...data,
+        userid: socket.user.userId
+      }
       await socketDoCall(data, io, socket);
     });
 
     socket.on("dobet", async (data) => {
+      data = {
+        ...data,
+        userid: socket.user.userId
+      }
       await socketDoBet(data, io, socket);
     });
 
     socket.on("doraise", async (data) => {
+      data = {
+        ...data,
+        userid: socket.user.userId
+      }
       await socketDoRaise(data, io, socket);
     });
 
     socket.on("docheck", async (data) => {
+      data = {
+        ...data,
+        userid: socket.user.userId
+      }
       await socketDoCheck(data, io, socket);
     });
 
     socket.on("doallin", async (data) => {
+      data = {
+        ...data,
+        userid: socket.user.userId
+      }
       await socketDoAllin(data, io, socket);
     });
 
     socket.on("dopausegame", async (data) => {
+      data = {
+        ...data,
+        userid: socket.user.userId
+      }
       await doPauseGame(data, io, socket);
     });
 
@@ -143,22 +203,42 @@ let returnSocket = (io) => {
     });
 
     socket.on("dofinishgame", async (data) => {
+      data = {
+        ...data,
+        userid: socket.user.userId
+      }
       await doFinishGame(data, io, socket);
     });
 
     socket.on("doresumegame", async (data) => {
+      data = {
+        ...data,
+        userid: socket.user.userId
+      }
       await doResumeGame(data, io, socket);
     });
 
     socket.on("dositout", async (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
       await doSitOut(data, io, socket);
     });
 
     socket.on("dositin", async (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
       await doSitIn(data, io, socket);
     });
 
     socket.on("doleavetable", async (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
       if (data.isWatcher) {
         await doLeaveWatcher(data, io, socket);
       } else {
@@ -167,13 +247,19 @@ let returnSocket = (io) => {
     });
 
     socket.on("leaveJoinWatcher", async (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
       await leaveAndJoinWatcher(data, io, socket);
     });
 
+    // Not used socket
     socket.on("typing", async (data) => {
       socket.to(data.roomid).emit("usrtyping", { usr: data.user });
     });
 
+    // Not used socket
     socket.on("msg_send", async (data) => {
       socket.to(data.roomid).emit("user_message", {
         usr: data.user,
@@ -182,6 +268,7 @@ let returnSocket = (io) => {
       });
     });
 
+    // Not used socket
     socket.on("join room", (data) => {
       if (users[data.roomid]) {
         users[data.roomid].push({ userid: data.userid, socketid: socket.id });
@@ -195,6 +282,7 @@ let returnSocket = (io) => {
       socket.emit("all users", usersInThisRoom);
     });
 
+    // Not used socket
     // BuyIn socket
     socket.on("addCoins", async (data) => {
       await addBuyIn(
@@ -209,6 +297,8 @@ let returnSocket = (io) => {
       );
     });
 
+
+    // Not used socket
     socket.on("sending signal", (payload) => {
       io.to(payload.userToSignal).emit("user joined", {
         signal: payload.signal,
@@ -217,6 +307,7 @@ let returnSocket = (io) => {
       });
     });
 
+    // Not used socket
     socket.on("returning signal", (payload) => {
       io.to(payload.callerID).emit("receiving returned signal", {
         signal: payload.signal,
@@ -226,9 +317,17 @@ let returnSocket = (io) => {
     });
 
     socket.on("showCard", (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
       io.in(data.gameId).emit("showCard", data);
     });
     socket.on("hideCard", (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
       io.in(data.gameId).emit("hideCard", data);
     });
 
@@ -289,11 +388,19 @@ let returnSocket = (io) => {
     });
 
     socket.on("chatMessage", async (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
       io.in(data.tableId.toString()).emit("newMessage", data);
       await UpdateRoomChat(data, socket, io);
     });
 
     socket.on("invPlayers", async (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
       InvitePlayers(data, socket, io);
     });
 
@@ -302,24 +409,44 @@ let returnSocket = (io) => {
     });
 
     socket.on("clearData", async (data) => {
+      data = {
+        ...data,
+        userid: socket.user.userId
+      }
       if (data.tableId) doFinishGame(data, io, socket);
     });
 
     socket.on("playerTentativeAction", async (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
       await playerTentativeAction(data, socket, io);
     });
 
     socket.on("updateChatIsRead", async (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
       await updateSeenBy(data, socket, io);
     });
 
     socket.on("updateChatIsReadWhileChatHistoryOpen", async (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
       if (data.openChatHistory) {
         await updateSeenBy(data, socket, io);
       }
     });
 
     socket.on("typingOnChat", async (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
       await emitTyping(data, socket, io);
     });
 
@@ -329,6 +456,10 @@ let returnSocket = (io) => {
     });
 
     socket.on("joinTournament", async (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
        q.push({ data, io, socket, type: "joinTournament" });
       // const lockedProcess = new lock();
       // await lockedProcess.acquire("joinTournament", async () => {
@@ -345,10 +476,18 @@ let returnSocket = (io) => {
     });
 
     socket.on("spectateMultiTable", async (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
       await spectateMultiTable(data, io, socket);
     });
 
     socket.on("setAvailability", async (data) => {
+      data = {
+        ...data,
+        userId: socket.user.userId
+      }
       await setAvailability(data, io, socket);
     });
   });
