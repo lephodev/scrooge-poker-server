@@ -322,27 +322,31 @@ export const preflopround = async (room, io) => {
     console.log("io", io);
     console.log("afetr update roomfor new hand", room.players);
 
-    if(room.tournament){
-
+    if (room.tournament) {
       const updatedTournament = await tournamentModel.findOne({
-        _id: room.tournament.id || room.tournament
-      })
+        _id: room.tournament.id || room.tournament,
+      });
 
       if (
-        updatedTournament && !updatedTournament.lastRoom && updatedTournament.destroyedRooms.length &&
+        updatedTournament &&
+        !updatedTournament.lastRoom &&
+        updatedTournament.destroyedRooms.length &&
         updatedTournament.rooms.length -
           updatedTournament.destroyedRooms.length ===
-        1
+          1
       ) {
-        await tournamentModel.updateOne({
-          _id: updatedTournament._id
-        }, {
-          lastRoom: true
-        });
+        await tournamentModel.updateOne(
+          {
+            _id: updatedTournament._id,
+          },
+          {
+            lastRoom: true,
+          }
+        );
         // setTimeout(() => {
         io.in(room._id.toString()).emit("tournamentLastRoom");
         // }, 6000);
-        await new Promise(r => setTimeout(r, 8000)); //Applied sleep timer for 6 seconds
+        await new Promise((r) => setTimeout(r, 8000)); //Applied sleep timer for 6 seconds
       }
     }
 
@@ -2246,7 +2250,15 @@ export const distributeTournamentPrize = async (
             { new: true }
           );
 
-          const { _id, username, email, firstName, lastName, profile } = user;
+          const {
+            _id,
+            username,
+            email,
+            firstName,
+            lastName,
+            profile,
+            ipAddress,
+          } = user;
 
           await transactionModel.create({
             userId: {
@@ -2256,6 +2268,7 @@ export const distributeTournamentPrize = async (
               firstName,
               lastName,
               profile,
+              ipAddress,
             },
             eleminatedPlayers: [],
             amount: player.amount,
@@ -2283,8 +2296,15 @@ export const distributeTournamentPrize = async (
                 { new: true }
               );
 
-              const { _id, username, email, firstName, lastName, profile } =
-                user;
+              const {
+                _id,
+                username,
+                email,
+                firstName,
+                lastName,
+                profile,
+                ipAddress,
+              } = user;
 
               await transactionModel.create({
                 userId: {
@@ -2294,6 +2314,7 @@ export const distributeTournamentPrize = async (
                   firstName,
                   lastName,
                   profile,
+                  ipAddress,
                 },
                 amount: player.amount,
                 eleminatedPlayers: [],
@@ -2320,8 +2341,15 @@ export const distributeTournamentPrize = async (
                 { $inc: { wallet: player.amount } },
                 { new: true }
               );
-              const { _id, username, email, firstName, lastName, profile } =
-                user;
+              const {
+                _id,
+                username,
+                email,
+                firstName,
+                lastName,
+                profile,
+                ipAddress,
+              } = user;
 
               await transactionModel.create({
                 userId: {
@@ -2331,6 +2359,7 @@ export const distributeTournamentPrize = async (
                   firstName,
                   lastName,
                   profile,
+                  ipAddress,
                 },
                 amount: player.amount,
                 transactionDetails: {},
@@ -2692,20 +2721,27 @@ export const doLeaveTable = async (data, io, socket) => {
         roomid = roomdata._id;
         if (roomdata?.tournament && roomdata?.isGameRunning) {
           return socket.emit("tournamentLeave");
-        }else if(roomdata?.tournament){
-          const tournament = await tournamentModel.findOne({
-            _id: roomdata?.tournament?._id || roomdata?.tournament,
-          }).lean();
+        } else if (roomdata?.tournament) {
+          const tournament = await tournamentModel
+            .findOne({
+              _id: roomdata?.tournament?._id || roomdata?.tournament,
+            })
+            .lean();
 
-          const tournamentPlayers = tournament?.tournamentPlayers?.filter(el=> (el._id.toString() !== userid.toString()) );
+          const tournamentPlayers = tournament?.tournamentPlayers?.filter(
+            (el) => el._id.toString() !== userid.toString()
+          );
 
           console.log("tournamentPlayers ==>", userid, tournamentPlayers);
 
-          await tournamentModel.updateOne({
-            _id: roomdata?.tournament?._id || roomdata?.tournament,
-          }, {
-            tournamentPlayers: tournamentPlayers
-          });
+          await tournamentModel.updateOne(
+            {
+              _id: roomdata?.tournament?._id || roomdata?.tournament,
+            },
+            {
+              tournamentPlayers: tournamentPlayers,
+            }
+          );
         }
 
         if (roomdata?.hostId?.toString() === userid?.toString()) {
@@ -4051,8 +4087,6 @@ const fillSpot = async (allRooms, io, tournamentId, roomId) => {
           );
           await deleteCachedGame(room._id);
           await roomModel.deleteOne({ _id: room._id });
-
-          
         }
       }
     } else {
@@ -5459,8 +5493,15 @@ export const leaveApiCall = async (room, userId, io) => {
             { new: true }
           );
 
-          const { _id, username, email, firstName, lastName, profile } =
-            updateData;
+          const {
+            _id,
+            username,
+            email,
+            firstName,
+            lastName,
+            profile,
+            ipAddress,
+          } = updateData;
           try {
             io?.emit("leaveTournament", {
               message: "You leave the game.",
@@ -5478,6 +5519,7 @@ export const leaveApiCall = async (room, userId, io) => {
               firstName,
               lastName,
               profile,
+              ipAddress,
             },
             eleminatedPlayers: [],
             amount: parseFloat(tournament.tournamentFee),
@@ -6177,7 +6219,8 @@ export const JoinTournament = async (data, io, socket) => {
       { new: true }
     );
 
-    const { _id, username, email, firstName, lastName, profile } = updatedUser;
+    const { _id, username, email, firstName, lastName, profile, ipAddress } =
+      updatedUser;
 
     await transactionModel.create({
       userId: {
@@ -6187,6 +6230,7 @@ export const JoinTournament = async (data, io, socket) => {
         firstName,
         lastName,
         profile,
+        ipAddress,
       },
       amount: -parseFloat(fees),
       transactionDetails: {},
@@ -6288,9 +6332,12 @@ const pushPlayerInRoom = async (
             },
             $push: {
               tournamentPlayers: {
-                username, _id, avatar, profile
-              }
-            }
+                username,
+                _id,
+                avatar,
+                profile,
+              },
+            },
           },
           { new: true }
         )
@@ -6402,15 +6449,15 @@ const pushPlayerInRoom = async (
             totalJoinPlayer: 1,
             prizePool: checkTournament?.tournamentFee,
           },
-          $push: { 
-            rooms: roomId, 
+          $push: {
+            rooms: roomId,
             tournamentPlayers: {
-              username, 
+              username,
               _id,
-              avatar, 
-              profile
-            } 
-        },
+              avatar,
+              profile,
+            },
+          },
         },
         { upsert: true, new: true }
       );
@@ -6419,7 +6466,10 @@ const pushPlayerInRoom = async (
       await setCachedGame({ ...newRoom });
       // console.log("newRoom ==>", await getCachedGame(newRoom._id));
     }
-    const getAllTournament = await tournamentModel.find({}).sort({_id: -1}).populate("rooms");
+    const getAllTournament = await tournamentModel
+      .find({})
+      .sort({ _id: -1 })
+      .populate("rooms");
     io.emit("updatePlayerList", getAllTournament);
   } catch (error) {
     console.log("error in push player in room function =>", error);
@@ -6474,7 +6524,10 @@ export const activateTournament = async (io) => {
         }
       }
     }
-    const getAllTournament = await tournamentModel.find({}).sort({_id: -1}).populate("rooms");
+    const getAllTournament = await tournamentModel
+      .find({})
+      .sort({ _id: -1 })
+      .populate("rooms");
     io.emit("updatePlayerList", getAllTournament);
   } catch (error) {
     console.log("Error in activateTournament", error);
