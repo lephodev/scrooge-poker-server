@@ -37,6 +37,7 @@ const tournamentSchema = new Schema(
     actionTime: { type: Number, default: 20 },
     tournamentPlayers: { type: Array, default: [] },
     lastRoom: { type: Boolean, default: false  },
+    tournamentStartTime: {type: Date, default: new Date()}
   },
   { timestamps: true }
 );
