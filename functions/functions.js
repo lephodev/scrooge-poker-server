@@ -2241,6 +2241,7 @@ export const distributeTournamentPrize = async (
     );
 
     for await (let player of Object.values(tournament.winPlayer)) {
+      console.log("player in distribute prize ==>", player)
       if (player?.playerCount === 1) {
         //player.userId is the winner of amount player.amount
         if (player.userId) {
@@ -6142,14 +6143,14 @@ export const JoinTournament = async (data, io, socket) => {
     let endTime = endDate.getTime();
     let crrTime = new Date().getTime();
 
-    if (crrTime > endTime && tournament.tournamentType !== "sit&go") {
-      socket.emit("tournamentAlreadyStarted", {
-        message: "Joining time has been exceeded",
-        code: 400,
-      });
+    // if (crrTime > endTime && tournament.tournamentType !== "sit&go") {
+    //   socket.emit("tournamentAlreadyStarted", {
+    //     message: "Joining time has been exceeded",
+    //     code: 400,
+    //   });
 
-      return;
-    }
+    //   return;
+    // }
     if (
       tournament.isStart &&
       tournament.tournamentType === "sit&go" &&
