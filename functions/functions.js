@@ -2413,7 +2413,7 @@ const calculatePercentagePrizes = async (tournamentdata, elem) => {
     if (winners.length < amount.length) {
       winners = elem;
     }
-
+ 
     let allWinnersWithAmount = {};
     amount.forEach((el, i) => {
       if (i < 9) {
@@ -2423,6 +2423,7 @@ const calculatePercentagePrizes = async (tournamentdata, elem) => {
             amount: totalPoolAmt * (el[i] / 100),
             name: winners[i]?.name,
             profile: winners[i]?.photoURI,
+            playerCount: 1
           };
         }
       } else {
@@ -2433,6 +2434,7 @@ const calculatePercentagePrizes = async (tournamentdata, elem) => {
         let reqData = winners.slice(startIndx, endIndx + 1);
         allWinnersWithAmount[key] = {
           userIds: [],
+          playerCount: 0
         };
         reqData.forEach((winnr) => {
           allWinnersWithAmount[key] = {
@@ -2446,6 +2448,7 @@ const calculatePercentagePrizes = async (tournamentdata, elem) => {
             ],
             amount: totalPoolAmt * (el[key] / 100),
           };
+          allWinnersWithAmount.playerCount++;
         });
       }
     });
