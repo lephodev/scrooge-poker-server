@@ -5454,7 +5454,7 @@ export const leaveApiCall = async (room, userId, io) => {
           _id: room.tournament,
         })
         .populate("rooms");
-    }else{
+    }else if(room.gameMode !== "goldCoin"){
       await BonusModel.updateMany({
         userId: users[0].uid || users[0].id,
         isExpired: false
