@@ -17,6 +17,7 @@ import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
 import { getCachedGame, setCachedGame, deleteCachedGame } from "../redis-cache";
 import Queue from "better-queue";
+import BonusModel from "../models/bonusModel";
 const gameState = {
   0: "players",
   1: "preflopround",
@@ -3548,6 +3549,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
           amount: amt,
           date: new Date(),
           isWatcher: false,
+          betAmount: player.prevPot
         });
       }
     });
@@ -5247,6 +5249,8 @@ const createTransactionFromUsersArray = async (
       });
     }
 
+    let totalUserBetAmt = 0;
+
     users.forEach(async (el, i) => {
       let updatedAmount = el.coinsBeforeJoin; //el.wallet;
       const userId = el.uid;
@@ -5267,6 +5271,7 @@ const createTransactionFromUsersArray = async (
             totalWinAmount += elem.amount;
             totalWin++;
           }
+          totalUserBetAmt += elem.betAmount;    
         });
 
         const ticketAmt =
@@ -5338,7 +5343,7 @@ const createTransactionFromUsersArray = async (
       users[i].newBalance = updatedAmount;
     });
 
-    return [transactionObjectsArray, rankModelUpdate];
+    return [transactionObjectsArray, rankModelUpdate, totalUserBetAmt];
   } catch (error) {
     console.log("Error in createTransactionFromUsersArray", error);
   }
@@ -5434,8 +5439,13 @@ export const leaveApiCall = async (room, userId, io) => {
       );
     }
 
-    const [transactions, rankModelUpdate] =
+    const [transactions, rankModelUpdate, totalUserBetAmt] =
       await createTransactionFromUsersArray(room._id, users, room.tournament);
+
+
+      console.log("totalUserBetAmt ==>", totalUserBetAmt, users);
+      console.log("transactions ==>", transactions);
+
 
     let tournament = null;
     if (room.tournament) {
@@ -5444,6 +5454,15 @@ export const leaveApiCall = async (room, userId, io) => {
           _id: room.tournament,
         })
         .populate("rooms");
+    }else if(room.gameMode !== "goldCoin"){
+      await BonusModel.updateMany({
+        userId: users[0].uid || users[0].id,
+        isExpired: false
+      }, {
+        $inc: {
+          wageredAmount: totalUserBetAmt/2
+        }
+      });
     }
 
     const userBalancePromise = users.map(async (el) => {
@@ -5577,10 +5596,10 @@ export const leaveApiCall = async (room, userId, io) => {
         ...userBalancePromise,
         ...rankModelUpdate,
       ]);
-      console.log(
-        "leaveApiCALL FINAL RESPONSE:1"
-        /* JSON.stringify(response.map((el) => el.value)), */
-      );
+      // console.log(
+      //   "leaveApiCALL FINAL RESPONSE:1"
+      //   /* JSON.stringify(response.map((el) => el.value)), */
+      // );
     } else {
       const response = await Promise.allSettled([
         // Create transaction
@@ -5590,10 +5609,10 @@ export const leaveApiCall = async (room, userId, io) => {
         ...userBalancePromise,
         ...rankModelUpdate,
       ]);
-      console.log(
-        "leaveApiCALL FINAL RESPONSE:2"
-        /* JSON.stringify(response.map((el) => el.value)), */
-      );
+      // console.log(
+      //   "leaveApiCALL FINAL RESPONSE:2"
+      //   /* JSON.stringify(response.map((el) => el.value)), */
+      // );
     }
 
     return true;
@@ -6143,14 +6162,14 @@ export const JoinTournament = async (data, io, socket) => {
     let endTime = endDate.getTime();
     let crrTime = new Date().getTime();
 
-    // if (crrTime > endTime && tournament.tournamentType !== "sit&go") {
-    //   socket.emit("tournamentAlreadyStarted", {
-    //     message: "Joining time has been exceeded",
-    //     code: 400,
-    //   });
+    if (crrTime > endTime && tournament.tournamentType !== "sit&go") {
+      socket.emit("tournamentAlreadyStarted", {
+        message: "Joining time has been exceeded",
+        code: 400,
+      });
 
-    //   return;
-    // }
+      return;
+    }
     if (
       tournament.isStart &&
       tournament.tournamentType === "sit&go" &&
@@ -6222,6 +6241,15 @@ export const JoinTournament = async (data, io, socket) => {
       { $inc: { wallet: -parseFloat(fees) } },
       { new: true }
     );
+
+    await BonusModel.updateMany({
+      userId: userId,
+      isExpired: false
+    }, {
+      $inc: {
+        wageredAmount: parseFloat(fees)/2
+      }
+    });
 
     const { _id, username, email, firstName, lastName, profile, ipAddress } =
       updatedUser;
