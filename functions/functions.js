@@ -5252,6 +5252,7 @@ const createTransactionFromUsersArray = async (
     }
 
     let totalUserBetAmt = 0;
+    let totalDailyspinAmt = 0;
     let i = -1;
 
     for await (const el of users){
@@ -5281,10 +5282,12 @@ const createTransactionFromUsersArray = async (
           console.log("room.gameMode ==>", room.gameMode, "user.dailySpinBonus ==>",  user.dailySpinBonus, "user.monthlyClaimBonus ==>", user.monthlyClaimBonus, "betAmount ==>",betAmount)
           if(room.gameMode !== "goldCoin"){
             if(user.dailySpinBonus >= betAmount){
-              user.dailySpinBonus -= betAmount
+              user.dailySpinBonus -= betAmount;
               user.nonWithdrawableAmt = user.dailySpinBonus + user.monthlyClaimBonus;
+              totalDailyspinAmt += betAmount;
             }else if(user.dailySpinBonus < betAmount && user.dailySpinBonus !== 0){
               const restAmt = betAmount - user.dailySpinBonus;
+              totalDailyspinAmt += user.dailySpinBonus;
               user.dailySpinBonus = 0;
               let mnthlyPercntage = 0;
               let mnthlyBetAmt = 0;
@@ -5450,7 +5453,7 @@ const createTransactionFromUsersArray = async (
       users[i].newBalance = updatedAmount;
     };
 
-    return [transactionObjectsArray, rankModelUpdate, totalUserBetAmt];
+    return [transactionObjectsArray, rankModelUpdate, totalUserBetAmt, totalDailyspinAmt];
   } catch (error) {
     console.log("Error in createTransactionFromUsersArray", error);
   }
@@ -5546,7 +5549,7 @@ export const leaveApiCall = async (room, userId, io) => {
       );
     }
 
-    const [transactions, rankModelUpdate, totalUserBetAmt] =
+    const [transactions, rankModelUpdate, totalUserBetAmt, totalDailyspinAmt] =
       await createTransactionFromUsersArray(room._id, users, room.tournament);
 
 
@@ -5561,14 +5564,32 @@ export const leaveApiCall = async (room, userId, io) => {
         })
         .populate("rooms");
     }else if(room.gameMode !== "goldCoin"){
-      await BonusModel.updateMany({
-        userId: users[0].uid || users[0].id,
-        isExpired: false
-      }, {
-        $inc: {
-          wageredAmount: totalUserBetAmt/2
-        }
-      });
+      if(totalUserBetAmt){
+        await BonusModel.updateMany({
+          userId: users[0].uid || users[0].id,
+          isExpired: false,
+          bonusExpirationTime: { $gte: new Date() },
+          bonusType: 'monthly'
+        }, {
+          $inc: {
+            wageredAmount: totalUserBetAmt
+          }
+        });
+      }
+
+      if(totalDailyspinAmt){
+        await BonusModel.updateMany({
+          userId: users[0].uid || users[0].id,
+          isExpired: false,
+          bonusExpirationTime: { $gte: new Date() },
+          bonusType: 'daily'
+        }, {
+          $inc: {
+            wageredAmount: totalDailyspinAmt
+          }
+        });
+      }
+      
     }
 
     const userBalancePromise = users.map(async (el) => {
