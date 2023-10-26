@@ -154,6 +154,25 @@ if (process.env.ENVIROMENT !== "test") {
 
 require("./socketconnection/socketconnection")(io);
 
+const fun = async ()=>{
+  try {
+    await User.updateMany({ dailySpinBonus: { $exists: false } }, {
+      $set: {
+        nonWithdrawableAmt: 0,
+        dailySpinBonus: 0,
+        monthlyClaimBonus: 0,
+        redeemableAmount: 0,
+        lastBetFrom: {}
+      }
+    });
+    console.log("executed successfuly");
+  } catch (error) {
+    console.log("error in fun", error);
+  }
+}
+
+// fun();
+
 // app.use("/api/user", tournamentRoute(socket));
 app.get("/checkTableExist/:tableId", async (req, res) => {
   try {

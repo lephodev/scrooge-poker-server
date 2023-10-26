@@ -5234,8 +5234,10 @@ const createTransactionFromUsersArray = async (
     const room = await getCachedGame(roomId);
     tournament = room?.tournament;
     const userData = [];
+    const allUsers = [];
     for await (const user of users) {
-      const crrUser = await userModel.findOne({ _id: user.uid });
+      const crrUser = await userModel.findOne({ _id: user.uid }).lean();
+      allUsers.push(crrUser);
       usersWalltAmt.push(crrUser.wallet);
       userTickets.push(crrUser.ticket);
       userGoldCoins.push(crrUser.goldCoin);
@@ -5250,10 +5252,15 @@ const createTransactionFromUsersArray = async (
     }
 
     let totalUserBetAmt = 0;
+    let totalDailyspinAmt = 0;
+    let i = -1;
 
-    users.forEach(async (el, i) => {
+    for await (const el of users){
+      i++;
       let updatedAmount = el.coinsBeforeJoin; //el.wallet;
       const userId = el.uid;
+      const user = allUsers[i];
+      console.log("user ==>", user);
 
       let totalWinAmount = 0;
       let totalLossAmount = 0;
@@ -5264,6 +5271,7 @@ const createTransactionFromUsersArray = async (
       if (!tournament) {
         el.hands.forEach((elem) => {
           console.log({ elem });
+          const {action, amount, date, isWatcher, betAmount } = elem;
           if (elem.action === "game-lose") {
             totalLossAmount += elem.amount;
             totalLose++;
@@ -5271,8 +5279,110 @@ const createTransactionFromUsersArray = async (
             totalWinAmount += elem.amount;
             totalWin++;
           }
-          totalUserBetAmt += elem.betAmount;    
+          console.log("room.gameMode ==>", room.gameMode, "user.dailySpinBonus ==>",  user.dailySpinBonus, "user.monthlyClaimBonus ==>", user.monthlyClaimBonus, "betAmount ==>",betAmount)
+          if(room.gameMode !== "goldCoin"){
+            if(user.dailySpinBonus >= betAmount){
+              user.dailySpinBonus -= betAmount;
+              user.nonWithdrawableAmt = user.dailySpinBonus + user.monthlyClaimBonus;
+              totalDailyspinAmt += betAmount;
+            }else if(user.dailySpinBonus < betAmount && user.dailySpinBonus !== 0){
+              const restAmt = betAmount - user.dailySpinBonus;
+              totalDailyspinAmt += user.dailySpinBonus;
+              user.dailySpinBonus = 0;
+              let mnthlyPercntage = 0;
+              let mnthlyBetAmt = 0;
+              if(user.monthlyClaimBonus >= restAmt){
+                mnthlyPercntage = (restAmt * 100) / betAmount;
+                mnthlyBetAmt = restAmt;
+                totlBetAmt += mnthlyBetAmt
+                user.monthlyClaimBonus -= restAmt;
+                totalUserBetAmt += mnthlyBetAmt;
+              }else if(user.monthlyClaimBonus > 0){
+                mnthlyPercntage = (user.monthlyClaimBonus * 100) / betAmount;
+                mnthlyBetAmt = user.monthlyClaimBonus;
+                user.monthlyClaimBonus = 0;
+                totlBetAmt += mnthlyBetAmt
+                totalUserBetAmt += mnthlyBetAmt;
+              }
+              
+        
+              if(action === 'game-win'){
+                const winAmtForMonthly = (mnthlyPercntage/100) * amount;
+                user.monthlyClaimBonus += winAmtForMonthly;
+                user.nonWithdrawableAmt = user.dailySpinBonus + user.monthlyClaimBonus;
+              }else{
+                user.nonWithdrawableAmt = user.dailySpinBonus + user.monthlyClaimBonus;
+              }
+            }else if(user.monthlyClaimBonus >= betAmount){
+              const mnthlyPercntage = 100;
+              const mnthlyBetAmt = betAmount;
+              totlBetAmt += mnthlyBetAmt;
+              totalUserBetAmt += mnthlyBetAmt;
+              user.monthlyClaimBonus -= betAmount;
+              if(action === 'game-win'){
+                const winAmtForMonthly = (mnthlyPercntage/100) * amount;
+                user.monthlyClaimBonus += winAmtForMonthly;
+                user.nonWithdrawableAmt = user.dailySpinBonus + user.monthlyClaimBonus;
+              }else{
+                user.nonWithdrawableAmt = user.dailySpinBonus + user.monthlyClaimBonus;
+              }
+              
+              // promises.push(
+              //   BonusModel.updateMany({
+              //     userId: user._id
+              //   }, {
+              //     $inc: {wageredAmount: mnthlyBetAmt}
+              //   })
+              // )
+            }else if(user.monthlyClaimBonus < betAmount && user.monthlyClaimBonus !== 0){
+              const mnthlyPercntage = (user.monthlyClaimBonus * 100) / betAmount;
+              const mnthlyBetAmt = user.monthlyClaimBonus;
+              totlBetAmt += mnthlyBetAmt;
+              totalUserBetAmt += mnthlyBetAmt;
+              user.monthlyClaimBonus = 0;
+              if(action === 'game-win'){
+                const winAmtForMonthly = (mnthlyPercntage/100) * amount;
+                user.monthlyClaimBonus += winAmtForMonthly;
+                user.nonWithdrawableAmt = user.dailySpinBonus + user.monthlyClaimBonus;
+              }else{
+                user.nonWithdrawableAmt = user.dailySpinBonus + user.monthlyClaimBonus;
+              }
+              // promises.push(
+              //   BonusModel.updateMany({
+              //     userId: user._id
+              //   }, {
+              //     $inc: {wageredAmount: mnthlyBetAmt}
+              //   })
+              // )
+            }
+          }
+
+
         });
+
+        if(room.gameMode !== "goldCoin"){
+          console.log("user normal data ", {
+            monthlyClaimBonus: user.monthlyClaimBonus,
+            nonWithdrawableAmt: user.nonWithdrawableAmt,
+            dailySpinBonus: user.dailySpinBonus,
+            redeemableAmount: user.redeemableAmount
+          });
+          const updatedUser = await User.findOneAndUpdate({
+            _id: user._id
+          }, {
+            monthlyClaimBonus: user.monthlyClaimBonus,
+            nonWithdrawableAmt: user.nonWithdrawableAmt,
+            dailySpinBonus: user.dailySpinBonus,
+            redeemableAmount: user.redeemableAmount
+          }, {
+            new: true
+          });
+          console.log("updatedUser ==>", updatedUser);
+        }
+        
+
+
+
 
         const ticketAmt =
           totalLossAmount >= totalWinAmount
@@ -5341,9 +5451,9 @@ const createTransactionFromUsersArray = async (
         ...handsTransaction,
       ];
       users[i].newBalance = updatedAmount;
-    });
+    };
 
-    return [transactionObjectsArray, rankModelUpdate, totalUserBetAmt];
+    return [transactionObjectsArray, rankModelUpdate, totalUserBetAmt, totalDailyspinAmt];
   } catch (error) {
     console.log("Error in createTransactionFromUsersArray", error);
   }
@@ -5439,13 +5549,12 @@ export const leaveApiCall = async (room, userId, io) => {
       );
     }
 
-    const [transactions, rankModelUpdate, totalUserBetAmt] =
+    const [transactions, rankModelUpdate, totalUserBetAmt, totalDailyspinAmt] =
       await createTransactionFromUsersArray(room._id, users, room.tournament);
 
 
       console.log("totalUserBetAmt ==>", totalUserBetAmt, users);
       console.log("transactions ==>", transactions);
-
 
     let tournament = null;
     if (room.tournament) {
@@ -5455,14 +5564,32 @@ export const leaveApiCall = async (room, userId, io) => {
         })
         .populate("rooms");
     }else if(room.gameMode !== "goldCoin"){
-      await BonusModel.updateMany({
-        userId: users[0].uid || users[0].id,
-        isExpired: false
-      }, {
-        $inc: {
-          wageredAmount: totalUserBetAmt/2
-        }
-      });
+      if(totalUserBetAmt){
+        await BonusModel.updateMany({
+          userId: users[0].uid || users[0].id,
+          isExpired: false,
+          bonusExpirationTime: { $gte: new Date() },
+          bonusType: 'monthly'
+        }, {
+          $inc: {
+            wageredAmount: totalUserBetAmt
+          }
+        });
+      }
+
+      if(totalDailyspinAmt){
+        await BonusModel.updateMany({
+          userId: users[0].uid || users[0].id,
+          isExpired: false,
+          bonusExpirationTime: { $gte: new Date() },
+          bonusType: 'daily'
+        }, {
+          $inc: {
+            wageredAmount: totalDailyspinAmt
+          }
+        });
+      }
+      
     }
 
     const userBalancePromise = users.map(async (el) => {
