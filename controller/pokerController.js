@@ -43,7 +43,7 @@ export const createTable = async (req, res, io) => {
       gameMode,
     } = req.body;
     const userData = req.user;
-    const { username, wallet, goldCoin, email, _id, avatar, profile } =
+    const { username, wallet, goldCoin, email, _id, avatar, profile, monthlyClaimBonus } =
       userData;
     const timer = actionTime;
     console.log("timer ==>", actionTime);
@@ -71,6 +71,12 @@ export const createTable = async (req, res, io) => {
       return res
         .status(403)
         .send({ message: "You don't have enough gold coin" });
+    }
+
+    if(sitInAmount > (wallet - monthlyClaimBonus)){
+      return res
+        .status(403)
+        .send({ message: "You can only create with One Time Wager and Withdrawable amount" });
     }
 
     // const limit = await checkLimits(_id, gameMode, sitInAmount, userData);
