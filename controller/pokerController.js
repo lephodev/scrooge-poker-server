@@ -73,7 +73,7 @@ export const createTable = async (req, res, io) => {
         .send({ message: "You don't have enough gold coin" });
     }
 
-    if(sitInAmount > (wallet - monthlyClaimBonus)){
+    if(sitInAmount > (wallet - monthlyClaimBonus && gameMode !== "goldCoin")){
       return res
         .status(403)
         .send({ message: "You can only create with One Time Wager and Withdrawable amount" });
