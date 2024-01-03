@@ -5826,7 +5826,7 @@ export const checkForGameTable = async (data, socket, io) => {
       });
     }
 
-    if(sitInAmount > (user.wallet - user.monthlyClaimBonus)){
+    if(sitInAmount > (user.wallet - user.monthlyClaimBonus) && gameMode !== "goldCoin"){
       return socket.emit("tablenotFound", {
         message: "You can only play with One Time Wager and Withdrawable amount",
       });
