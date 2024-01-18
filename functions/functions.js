@@ -17,6 +17,7 @@ import { decryptCard, EncryptCard } from "../validation/poker.validation";
 import payouts from "../config/payout.json";
 import { getCachedGame, setCachedGame, deleteCachedGame } from "../redis-cache";
 import Queue from "better-queue";
+import BonusModel from "../models/bonusModel";
 const gameState = {
   0: "players",
   1: "preflopround",
@@ -3548,6 +3549,7 @@ const winnerBeforeShowdown = async (roomid, playerid, runninground, io) => {
           amount: amt,
           date: new Date(),
           isWatcher: false,
+          betAmount: player.prevPot
         });
       }
     });
@@ -5232,8 +5234,10 @@ const createTransactionFromUsersArray = async (
     const room = await getCachedGame(roomId);
     tournament = room?.tournament;
     const userData = [];
+    const allUsers = [];
     for await (const user of users) {
-      const crrUser = await userModel.findOne({ _id: user.uid });
+      const crrUser = await userModel.findOne({ _id: user.uid }).lean();
+      allUsers.push(crrUser);
       usersWalltAmt.push(crrUser.wallet);
       userTickets.push(crrUser.ticket);
       userGoldCoins.push(crrUser.goldCoin);
@@ -5247,9 +5251,16 @@ const createTransactionFromUsersArray = async (
       });
     }
 
-    users.forEach(async (el, i) => {
+    let totalUserBetAmt = 0;
+    let totalDailyspinAmt = 0;
+    let i = -1;
+
+    for await (const el of users){
+      i++;
       let updatedAmount = el.coinsBeforeJoin; //el.wallet;
       const userId = el.uid;
+      const user = allUsers[i];
+      console.log("user ==>", user);
 
       let totalWinAmount = 0;
       let totalLossAmount = 0;
@@ -5257,9 +5268,11 @@ const createTransactionFromUsersArray = async (
       let totalLose = 0;
       let prevAmount = el.coinsBeforeJoin;
       let handsTransaction = [];
+      const promises = [];
       if (!tournament) {
         el.hands.forEach((elem) => {
           console.log({ elem });
+          const {action, amount, date, isWatcher, betAmount } = elem;
           if (elem.action === "game-lose") {
             totalLossAmount += elem.amount;
             totalLose++;
@@ -5267,7 +5280,105 @@ const createTransactionFromUsersArray = async (
             totalWinAmount += elem.amount;
             totalWin++;
           }
+          console.log("room.gameMode ==>", room.gameMode, "user.dailySpinBonus ==>",  user.dailySpinBonus, "user.monthlyClaimBonus ==>", user.monthlyClaimBonus, "betAmount ==>",betAmount)
+          if(room.gameMode !== "goldCoin"){
+            // if(action !== 'game-win'){
+              if (user.dailySpinBonus >= betAmount) {
+                user.dailySpinBonus -= betAmount;
+                // nonWithdrawableAmt -= action.amount;
+                user.lastBetFrom = {
+                  betFrom: "dailybonus",
+                  value: betAmount,
+                };
+                user.nonWithdrawableAmt =
+                  user.dailySpinBonus + user.monthlyClaimBonus;
+                promises.push(
+                  BonusModel.updateOne(
+                    {
+                      userId: user._id,
+                      isExpired: false,
+                      bonusExpirationTime: { $gte: new Date() },
+                      bonusType: "daily",
+                      restAmount: { $gt: 0 },
+                    },
+                    {
+                      $inc: {
+                        wageredAmount: betAmount,
+                        restAmount: betAmount * -1,
+                        expiredAmount: betAmount * -1,
+                      },
+                    }
+                  )
+                );
+              } else if (
+                user.dailySpinBonus < betAmount &&
+                user.dailySpinBonus !== 0
+              ) {
+                // nonWithdrawableAmt -= user.dailySpinBonus;
+                // const restAmt = betAmount - user.dailySpinBonus;
+                
+                promises.push(
+                  BonusModel.updateOne(
+                    {
+                      userId: user._id,
+                      isExpired: false,
+                      bonusExpirationTime: { $gte: new Date() },
+                      bonusType: "daily",
+                      restAmount: { $gt: 0 },
+                    },
+                    {
+                      $inc: {
+                        wageredAmount: user.dailySpinBonus,
+                        restAmount: user.dailySpinBonus * -1,
+                        expiredAmount: user.dailySpinBonus * -1,
+                      },
+                    }
+                  )
+                );
+                user.dailySpinBonus = 0;
+
+                user.lastBetFrom = {
+                  betFrom: "dailybonus",
+                  percentage: 100,
+                  value: betAmount,
+                };
+
+                user.nonWithdrawableAmt =
+                  user.dailySpinBonus + user.monthlyClaimBonus;
+              } else {
+                user.lastBetFrom = {};
+              }
+            // }
+            
+          }
+
+
         });
+
+        if(room.gameMode !== "goldCoin"){
+          console.log("user normal data ", {
+            monthlyClaimBonus: user.monthlyClaimBonus,
+            nonWithdrawableAmt: user.nonWithdrawableAmt,
+            dailySpinBonus: user.dailySpinBonus,
+            redeemableAmount: user.redeemableAmount
+          });
+          const updatedUser = await User.findOneAndUpdate({
+            _id: user._id
+          }, {
+            monthlyClaimBonus: user.monthlyClaimBonus,
+            nonWithdrawableAmt: user.nonWithdrawableAmt,
+            dailySpinBonus: user.dailySpinBonus,
+            redeemableAmount: user.redeemableAmount
+          }, {
+            new: true
+          });
+          console.log("updatedUser ==>", updatedUser);
+          await Promise.allSettled(promises);
+        }
+        
+
+
+
 
         const ticketAmt =
           totalLossAmount >= totalWinAmount
@@ -5336,9 +5447,9 @@ const createTransactionFromUsersArray = async (
         ...handsTransaction,
       ];
       users[i].newBalance = updatedAmount;
-    });
+    };
 
-    return [transactionObjectsArray, rankModelUpdate];
+    return [transactionObjectsArray, rankModelUpdate, totalUserBetAmt, totalDailyspinAmt];
   } catch (error) {
     console.log("Error in createTransactionFromUsersArray", error);
   }
@@ -5434,8 +5545,12 @@ export const leaveApiCall = async (room, userId, io) => {
       );
     }
 
-    const [transactions, rankModelUpdate] =
+    const [transactions, rankModelUpdate, totalUserBetAmt, totalDailyspinAmt] =
       await createTransactionFromUsersArray(room._id, users, room.tournament);
+
+
+      console.log("totalUserBetAmt ==>", totalUserBetAmt, users);
+      console.log("transactions ==>", transactions);
 
     let tournament = null;
     if (room.tournament) {
@@ -5444,6 +5559,19 @@ export const leaveApiCall = async (room, userId, io) => {
           _id: room.tournament,
         })
         .populate("rooms");
+    }else if(room.gameMode !== "goldCoin"){
+      if(totalUserBetAmt){
+        // await BonusModel.updateMany({
+        //   userId: users[0].uid || users[0].id,
+        //   isExpired: false,
+        //   bonusExpirationTime: { $gte: new Date() },
+        //   bonusType: 'monthly'
+        // }, {
+        //   $inc: {
+        //     wageredAmount: totalUserBetAmt
+        //   }
+        // });
+      }
     }
 
     const userBalancePromise = users.map(async (el) => {
@@ -5577,10 +5705,10 @@ export const leaveApiCall = async (room, userId, io) => {
         ...userBalancePromise,
         ...rankModelUpdate,
       ]);
-      console.log(
-        "leaveApiCALL FINAL RESPONSE:1"
-        /* JSON.stringify(response.map((el) => el.value)), */
-      );
+      // console.log(
+      //   "leaveApiCALL FINAL RESPONSE:1"
+      //   /* JSON.stringify(response.map((el) => el.value)), */
+      // );
     } else {
       const response = await Promise.allSettled([
         // Create transaction
@@ -5590,10 +5718,10 @@ export const leaveApiCall = async (room, userId, io) => {
         ...userBalancePromise,
         ...rankModelUpdate,
       ]);
-      console.log(
-        "leaveApiCALL FINAL RESPONSE:2"
-        /* JSON.stringify(response.map((el) => el.value)), */
-      );
+      // console.log(
+      //   "leaveApiCALL FINAL RESPONSE:2"
+      //   /* JSON.stringify(response.map((el) => el.value)), */
+      // );
     }
 
     return true;
@@ -5695,6 +5823,12 @@ export const checkForGameTable = async (data, socket, io) => {
     if (!sitInAmount) {
       return socket.emit("notInvitedPlayer", {
         message: "notInvited",
+      });
+    }
+
+    if(sitInAmount > (user.wallet - user.monthlyClaimBonus) && gameMode !== "goldCoin"){
+      return socket.emit("tablenotFound", {
+        message: "You can only play with One Time Wager and Withdrawable amount",
       });
     }
 
@@ -6143,14 +6277,14 @@ export const JoinTournament = async (data, io, socket) => {
     let endTime = endDate.getTime();
     let crrTime = new Date().getTime();
 
-    // if (crrTime > endTime && tournament.tournamentType !== "sit&go") {
-    //   socket.emit("tournamentAlreadyStarted", {
-    //     message: "Joining time has been exceeded",
-    //     code: 400,
-    //   });
+    if (crrTime > endTime && tournament.tournamentType !== "sit&go") {
+      socket.emit("tournamentAlreadyStarted", {
+        message: "Joining time has been exceeded",
+        code: 400,
+      });
 
-    //   return;
-    // }
+      return;
+    }
     if (
       tournament.isStart &&
       tournament.tournamentType === "sit&go" &&
@@ -6222,6 +6356,15 @@ export const JoinTournament = async (data, io, socket) => {
       { $inc: { wallet: -parseFloat(fees) } },
       { new: true }
     );
+
+    await BonusModel.updateMany({
+      userId: userId,
+      isExpired: false
+    }, {
+      $inc: {
+        wageredAmount: parseFloat(fees)/2
+      }
+    });
 
     const { _id, username, email, firstName, lastName, profile, ipAddress } =
       updatedUser;
