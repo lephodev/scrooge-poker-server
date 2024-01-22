@@ -26,6 +26,7 @@ import { createClient } from "redis";
 import tournamentModel from "./models/tournament";
 import logger from "./landing-server/config/logger";
 import { getAllKeysAndValues, getCachedGame } from "./redis-cache";
+import socketsAuthentication from "./landing-server/middlewares/socketsMiddleware.js";
 
 let app = express();
 dotenv.config();
@@ -50,6 +51,20 @@ app.use(
 const io = socket(server, {
   pingInterval: 10000,
   pingTimeout: 5000,
+});
+
+io.use((socket, next) => {
+  // Middleware logic here
+  // You can access socket.request and socket.handshake to inspect the request and handshake data.
+  socketsAuthentication(socket.handshake).then(resp=>{
+    socket.user = {
+      userId: resp.userId, 
+    }
+    return next();
+  }).catch(err=>{
+    next(new Error('Authentication failed'));
+    return;
+  });
 });
 
 app.use((req, _, next) => {
@@ -138,6 +153,25 @@ if (process.env.ENVIROMENT !== "test") {
 }
 
 require("./socketconnection/socketconnection")(io);
+
+const fun = async ()=>{
+  try {
+    await User.updateMany({ dailySpinBonus: { $exists: false } }, {
+      $set: {
+        nonWithdrawableAmt: 0,
+        dailySpinBonus: 0,
+        monthlyClaimBonus: 0,
+        redeemableAmount: 0,
+        lastBetFrom: {}
+      }
+    });
+    console.log("executed successfuly");
+  } catch (error) {
+    console.log("error in fun", error);
+  }
+}
+
+// fun();
 
 // app.use("/api/user", tournamentRoute(socket));
 app.get("/checkTableExist/:tableId", async (req, res) => {

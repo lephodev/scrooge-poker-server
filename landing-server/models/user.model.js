@@ -71,6 +71,10 @@ const userSchema = mongoose.Schema(
       type: Number,
       default: 0,
     },
+
+    ipAddress: {
+      type: String,
+    },
     goldCoin: {
       type: Number,
       default: 0,
@@ -109,6 +113,11 @@ const userSchema = mongoose.Schema(
       type: Number,
       default: 0,
     },
+    nonWithdrawableAmt: { type: Number, default: 0 },
+    dailySpinBonus:  { type: Number, default: 0 },
+    monthlyClaimBonus:  { type: Number, default: 0 },
+    redeemableAmount:  { type: Number, default: 0 },
+    lastBetFrom:   { type: Object, default: {} },
   },
 
   {
